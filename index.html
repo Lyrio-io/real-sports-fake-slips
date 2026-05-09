@@ -35,10 +35,37 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root { --safe-bottom: env(safe-area-inset-bottom, 0px); }
+  :root { --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-top: env(safe-area-inset-top, 0px); }
   * { -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   html, body { background: #06070a; }
-  body { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; color: #ebeef3; min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: "Onest", ui-sans-serif, system-ui, sans-serif;
+    color: #ebeef3;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    text-rendering: optimizeLegibility;
+  }
+  /* Prevent text selection on UI elements (taps shouldn't select labels) */
+  button, .pick, .gc-cell, .chip, .tab-btn, .nav-rail-btn, .bottom-nav-btn,
+  .gc-summary-pair, .alt-picker-side, .alt-picker-row, .gc-chevron,
+  .gc-chevron-corner, .quick-swap, .ledger-card, .ai-preview, .pod-card,
+  .vs-card, .vs-divider, .gc-team-position, .goal-row, .period-section,
+  .alt-picker-handle, .alt-picker-cancel-btn, .alt-picker-confirm-btn,
+  .alt-picker-cancel { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  /* Inputs should still be selectable */
+  input, textarea, .num.selectable { user-select: text; -webkit-user-select: text; }
+  /* Smooth scrolling on all scroll containers (mobile momentum) */
+  .scrollbar-thin, .alt-picker-list, .scrollable, [data-tab-content] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  /* Prevent double-tap zoom on tap targets */
+  button, [role="button"], .pick, .gc-cell, .chip, .tab-btn, .alt-picker-side,
+  .alt-picker-row, .gc-chevron, .gc-chevron-corner, .gc-summary-pair { touch-action: manipulation; }
   .num { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
   .display { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; }
   h1, h2, h3 { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.015em; }
@@ -837,6 +864,22 @@
     .gc-summary-pair { padding: 12px 8px; min-height: 70px; }
     .gc-summary-pair .value { font-size: 18px; }
     .gc-chevron-corner { width: 72px; height: 24px; }
+    /* On touch devices, hover states get stuck after tap. Disable them. */
+    .pick:hover { transform: none; }
+    .gc-cell:hover { transform: none; }
+    .gc-summary-pair:hover { transform: none; }
+    .alt-picker-side:hover { transform: none; }
+    /* Active state still works for tap feedback */
+    /* Make modals snug to the screen edges with a tiny safe-area margin */
+    .alt-picker-modal { padding: 8px; }
+    .alt-picker-sheet { max-width: 100%; }
+    /* Bigger tap targets for small icons/chips */
+    .chip { padding: 9px 14px; }
+    .quick-swap { padding: 7px 12px; font-size: 12px; }
+  }
+  /* Reduce motion respects user OS preference */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   }
 
   /* Bet placed confirmation — clean UI feedback, not a reward loop */
@@ -2623,6 +2666,11 @@ function showAltPicker(gameId, sportKey, market) {
   function onBackdropClick(e) { if (e.target === modal) close(); }
   modal.addEventListener('click', onBackdropClick);
 
+  // Swipe-down on the handle pill to close (mobile-friendly)
+  const sheet = modal.querySelector('.alt-picker-sheet');
+  const handle = modal.querySelector('.alt-picker-handle');
+  if (handle && sheet) attachSwipeDownToClose(handle, sheet, close);
+
   modal.querySelector('.alt-picker-cancel').addEventListener('click', close);
   modal.querySelector('[data-confirm-cancel]').addEventListener('click', hideConfirmStep);
   modal.querySelector('[data-confirm-go]').addEventListener('click', () => {
@@ -3674,6 +3722,50 @@ function checkGuardrails(stake) {
   return null;
 }
 
+// Generic backdrop-click closer for modals
+function attachBackdropClose(modal, onClose) {
+  if (!modal || modal._backdropAttached) return;
+  modal._backdropAttached = true;
+  modal.addEventListener('click', (e) => { if (e.target === modal) onClose(); });
+}
+
+// Swipe-down-to-dismiss for sheets/modals (touch-only)
+function attachSwipeDownToClose(handleEl, sheetEl, onClose, threshold = 80) {
+  let startY = null, dragging = false;
+  function onStart(e) {
+    const t = e.touches ? e.touches[0] : null;
+    if (!t) return;
+    startY = t.clientY; dragging = true;
+  }
+  function onMove(e) {
+    if (!dragging) return;
+    const t = e.touches[0];
+    const delta = t.clientY - startY;
+    if (delta > 0) {
+      sheetEl.style.transition = 'none';
+      sheetEl.style.transform = `translateY(${delta}px)`;
+    }
+  }
+  function onEnd(e) {
+    if (!dragging) return;
+    dragging = false;
+    const t = (e.changedTouches && e.changedTouches[0]) || null;
+    const delta = t ? (t.clientY - startY) : 0;
+    sheetEl.style.transition = 'transform 220ms ease';
+    if (delta > threshold) {
+      sheetEl.style.transform = `translateY(110%)`;
+      setTimeout(() => { sheetEl.style.transform = ''; sheetEl.style.transition = ''; onClose(); }, 220);
+    } else {
+      sheetEl.style.transform = '';
+      setTimeout(() => { sheetEl.style.transition = ''; }, 220);
+    }
+  }
+  handleEl.addEventListener('touchstart', onStart, { passive: true });
+  handleEl.addEventListener('touchmove', onMove, { passive: true });
+  handleEl.addEventListener('touchend', onEnd);
+  handleEl.addEventListener('touchcancel', onEnd);
+}
+
 function showGuardrailModal(block, onOverride) {
   const m = document.getElementById('guardrail-modal');
   document.getElementById('guardrail-icon').textContent = block.icon || '🛑';
@@ -3685,6 +3777,7 @@ function showGuardrailModal(block, onOverride) {
   const close = () => { m.classList.add('hidden'); m.classList.remove('flex'); };
   document.getElementById('guardrail-dismiss').onclick = close;
   override.onclick = () => { close(); if (onOverride) onOverride(); };
+  attachBackdropClose(m, close);
 }
 
 function startCoolingTimer(stake, onConfirm) {
@@ -3710,6 +3803,7 @@ function startCoolingTimer(stake, onConfirm) {
   const close = () => { m.classList.add('hidden'); m.classList.remove('flex'); clearInterval(tick); };
   document.getElementById('cooling-cancel').onclick = () => { close(); toast('Bet canceled'); };
   document.getElementById('cooling-confirm').onclick = () => { close(); onConfirm(); };
+  attachBackdropClose(m, () => { close(); toast('Bet canceled'); });
 }
 
 // Fly a small token from the bet-placed card to the Open Bets nav button (visual flow feedback)
