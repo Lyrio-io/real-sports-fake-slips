@@ -680,6 +680,9 @@
   .nav-rail-btn[data-active="true"] .nav-icon { color: #a3ff12; }
   .nav-rail-btn .nav-icon { color: #aab4c5; transition: color 120ms ease; }
   .bottom-nav-btn { transition: color 120ms ease; min-height: 56px; position: relative; }
+  .bottom-nav-btn .bn-label { white-space: nowrap; }
+  .more-item .font-bold, .more-item div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .more-item > div:last-child { min-width: 0; flex: 1 1 auto; }
   .bottom-nav-btn[data-active="true"] .bn-icon { color: #a3ff12; }
   .bottom-nav-btn[data-active="true"] .bn-label { color: #fff; }
   .bottom-nav-btn[data-active="true"]::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 32px; height: 3px; background: #a3ff12; border-radius: 0 0 4px 4px; }
@@ -910,12 +913,21 @@
 
   /* Score panel in bet cards */
   .score-row { display: grid; grid-template-columns: 1fr auto auto auto 1fr; align-items: center; gap: 10px; padding: 10px 12px; background: #0a0c12; border-radius: 12px; }
-  .score-row .team-name { font-size: 12px; font-weight: 600; color: #e3e7ef; min-width: 0; }
+  .score-row .team-name { font-size: 12px; font-weight: 600; color: #e3e7ef; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .score-row .team-name.away { text-align: right; }
   .score-row .score { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 22px; color: #fff; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
   .score-row .score.dim { color: #aab4c5; }
   .score-row .score.win { color: #a3ff12; }
-  .score-row .vs { font-size: 10px; color: #aab4c5; font-weight: 700; }
+  .score-row .vs { font-size: 10px; color: #aab4c5; font-weight: 700; white-space: nowrap; }
+  @media (max-width: 640px) {
+    .score-row { gap: 6px; padding: 8px 10px; grid-template-columns: minmax(0,1fr) auto auto auto minmax(0,1fr); }
+    .score-row .team-name { font-size: 11px; }
+    .score-row .score { font-size: 19px; }
+  }
+  /* Defensive: any element rendering teamA @ teamB stays on one line */
+  .matchup-line, .team-name, .gc-team-code, .gc-row-label, .gc-cell-line {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .countdown-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: #181c25; color: #cfd6e3; font-size: 11px; font-weight: 600; }
 
   /* Bet resolution notifications — subtle, no sounds, no confetti */
@@ -1653,12 +1665,39 @@
       <svg class="bn-icon w-6 h-6 text-ink-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/></svg>
       <span class="bn-label text-[10px] text-ink-400 font-semibold">Open</span>
     </button>
-    <button class="bottom-nav-btn flex flex-col items-center gap-0.5 py-3" data-tab="stats">
-      <svg class="bn-icon w-6 h-6 text-ink-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-7"/></svg>
-      <span class="bn-label text-[10px] text-ink-400 font-semibold">Stats</span>
+    <button id="bn-more-btn" class="bottom-nav-btn flex flex-col items-center gap-0.5 py-3">
+      <svg class="bn-icon w-6 h-6 text-ink-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+      <span class="bn-label text-[10px] text-ink-400 font-semibold">More</span>
     </button>
   </div>
 </nav>
+
+<!-- MOBILE "MORE" SHEET -->
+<div id="more-sheet" class="hidden fixed inset-0 z-40 modal-backdrop items-end justify-center">
+  <div class="w-full max-w-md bg-ink-900 border-t-2 border-ink-700 rounded-t-3xl p-4 pb-[calc(20px+var(--safe-bottom))] animate-slide-up">
+    <div class="w-12 h-1.5 bg-ink-600 rounded-full mx-auto mb-4"></div>
+    <h3 class="display text-lg font-bold mb-3 px-2">More</h3>
+    <div class="grid grid-cols-2 gap-2">
+      <button class="more-item bg-ink-800 hover:bg-ink-700 active:scale-95 transition rounded-2xl p-4 text-left flex items-center gap-3" data-tab="stats">
+        <svg class="w-6 h-6 text-neon-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-7"/></svg>
+        <div><div class="font-bold text-sm">Stats</div><div class="text-[11px] text-ink-300">Goals, P&amp;L, sport breakdown</div></div>
+      </button>
+      <button class="more-item bg-ink-800 hover:bg-ink-700 active:scale-95 transition rounded-2xl p-4 text-left flex items-center gap-3" data-tab="history">
+        <svg class="w-6 h-6 text-violet-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        <div><div class="font-bold text-sm">History</div><div class="text-[11px] text-ink-300">All settled bets</div></div>
+      </button>
+      <button class="more-item bg-ink-800 hover:bg-ink-700 active:scale-95 transition rounded-2xl p-4 text-left flex items-center gap-3" data-tab="settings">
+        <svg class="w-6 h-6 text-ink-100 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <div><div class="font-bold text-sm">Settings</div><div class="text-[11px] text-ink-300">API keys, profiles, guards</div></div>
+      </button>
+      <button id="more-admin-btn" class="more-item hidden bg-ink-800 hover:bg-ink-700 active:scale-95 transition rounded-2xl p-4 text-left flex items-center gap-3" data-tab="admin">
+        <svg class="w-6 h-6 text-warn-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
+        <div><div class="font-bold text-sm">Admin</div><div class="text-[11px] text-ink-300">Owner dashboard</div></div>
+      </button>
+    </div>
+    <button id="more-close-btn" class="w-full mt-3 bg-ink-700 hover:bg-ink-600 text-white font-semibold py-3 rounded-2xl">Close</button>
+  </div>
+</div>
 
 <!-- PROFILE MENU POPOVER -->
 <div id="profile-menu" class="hidden fixed z-50 bg-ink-900 border border-ink-700 rounded-2xl shadow-2xl min-w-[260px] p-2">
@@ -4685,6 +4724,8 @@ function isAdmin() {
 function refreshAdminVisibility() {
   const btn = document.getElementById('nav-admin-btn');
   if (btn) btn.classList.toggle('hidden', !isAdmin());
+  const moreAdmin = document.getElementById('more-admin-btn');
+  if (moreAdmin) moreAdmin.classList.toggle('hidden', !isAdmin());
 }
 
 function renderAdmin() {
@@ -5377,6 +5418,32 @@ function init() {
   if (sak) sak.addEventListener('click', () => { state.anthropicKey = document.getElementById('anthropic-key-input').value.trim(); save(LS.ANTHROPIC_KEY, state.anthropicKey); toast('Anthropic key saved'); });
   const ra = document.getElementById('run-analysis'); if (ra) ra.addEventListener('click', runAnalysis);
   const am = document.getElementById('analyst-model'); if (am) { am.value = state.analystModel; am.addEventListener('change', () => { state.analystModel = am.value; save(LS.ANALYST_MODEL, am.value); }); }
+
+  // Mobile "More" sheet
+  const moreBtn = document.getElementById('bn-more-btn');
+  const moreSheet = document.getElementById('more-sheet');
+  const moreClose = document.getElementById('more-close-btn');
+  function openMoreSheet() {
+    if (!moreSheet) return;
+    refreshAdminVisibility();
+    moreSheet.classList.remove('hidden');
+    moreSheet.classList.add('flex');
+  }
+  function closeMoreSheet() {
+    if (!moreSheet) return;
+    moreSheet.classList.add('hidden');
+    moreSheet.classList.remove('flex');
+  }
+  if (moreBtn) moreBtn.addEventListener('click', (e) => { e.stopPropagation(); openMoreSheet(); });
+  if (moreClose) moreClose.addEventListener('click', closeMoreSheet);
+  if (moreSheet) {
+    // Backdrop click closes; click on inner panel does not
+    moreSheet.addEventListener('click', (e) => { if (e.target === moreSheet) closeMoreSheet(); });
+    // Any item click switches and closes (switchTab is handled by global [data-tab] listener)
+    moreSheet.querySelectorAll('.more-item').forEach(item => {
+      item.addEventListener('click', () => { closeMoreSheet(); });
+    });
+  }
 
   // Demo mode controls
   const eb = document.getElementById('exit-demo-btn'); if (eb) eb.addEventListener('click', exitDemoMode);
