@@ -919,6 +919,84 @@
   .bet-placed-stat-label { font-size: 12px; color: #aab4c5; font-weight: 600; }
   .bet-placed-stat-value { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
+  /* Live game state panel — fed by ESPN's free scoreboard */
+  .live-state {
+    background: linear-gradient(180deg, #1a0f1a 0%, #0a0c12 100%);
+    border: 1.5px solid rgba(239,68,68,0.35);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 16px -8px rgba(239,68,68,0.25);
+  }
+  .live-state-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .live-state-label { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; font-weight: 800; font-size: 11px; letter-spacing: 0.16em; color: #ef4444; text-transform: uppercase; }
+  .live-extras { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+  .live-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,0.06); color: #e3e7ef; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .poss-dot { display: inline-block; width: 6px; height: 6px; border-radius: 999px; background: #fbbf24; box-shadow: 0 0 6px #fbbf24; }
+  /* Baseball diamond */
+  .diamond {
+    position: relative; width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transform: rotate(45deg);
+    margin: 0 2px;
+  }
+  .diamond .base {
+    position: absolute; width: 8px; height: 8px;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 1px;
+    transition: all 200ms ease;
+  }
+  .diamond .base.on { background: #a3ff12; border-color: #a3ff12; box-shadow: 0 0 8px #a3ff12; }
+  .diamond .first  { right: -2px; top: 50%; transform: translateY(-50%); }
+  .diamond .second { top: -2px; left: 50%; transform: translateX(-50%); }
+  .diamond .third  { left: -2px; top: 50%; transform: translateY(-50%); }
+  /* Live score row */
+  .live-score-row {
+    display: grid; grid-template-columns: minmax(0,1fr) auto auto auto minmax(0,1fr);
+    align-items: center; gap: 10px; padding: 6px 4px;
+  }
+  .lt-team { font-size: 12px; font-weight: 700; color: #e3e7ef; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lt-team:last-child { text-align: left; }
+  .lt-team:first-child { text-align: right; }
+  .lt-score { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; font-weight: 800; font-size: 24px; color: #aab4c5; font-variant-numeric: tabular-nums; min-width: 32px; text-align: center; }
+  .lt-score.lead { color: #ffffff; }
+  .lt-vs { font-size: 10px; color: #8b95a5; font-weight: 700; }
+  .live-last-play { margin-top: 8px; font-size: 12px; color: #cfd6e3; line-height: 1.4; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); }
+  .live-last-play .lp-label { font-size: 9px; font-weight: 800; color: #8b95a5; text-transform: uppercase; letter-spacing: 0.1em; margin-right: 4px; }
+  @media (max-width: 640px) {
+    .live-state { padding: 10px 12px; }
+    .live-pill { font-size: 10px; padding: 3px 7px; }
+    .lt-score { font-size: 20px; }
+    .live-extras { gap: 4px; }
+  }
+
+  /* Date group headers in Open Bets / History */
+  .date-group-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px; margin: 18px 0 10px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--accent, #8b95a5) 14%, transparent) 0%, transparent 100%);
+    border-left: 3px solid var(--accent, #8b95a5);
+    border-radius: 4px 14px 14px 4px;
+    position: sticky; top: 64px; z-index: 5;
+    backdrop-filter: blur(8px);
+  }
+  .date-group-header:first-child { margin-top: 4px; }
+  .date-group-label {
+    font-family: "Onest", ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px; font-weight: 800; letter-spacing: -0.01em;
+    color: #ffffff; text-transform: uppercase;
+  }
+  .date-group-count {
+    font-size: 11px; font-weight: 600; color: #aab4c5;
+    background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 999px;
+    margin-left: 6px;
+  }
+  @media (max-width: 640px) {
+    .date-group-header { padding: 12px 12px; margin: 14px 0 8px; }
+    .date-group-label { font-size: 14px; }
+  }
+
   /* Score panel in bet cards */
   .score-row { display: grid; grid-template-columns: 1fr auto auto auto 1fr; align-items: center; gap: 10px; padding: 10px 12px; background: #0a0c12; border-radius: 12px; }
   .score-row .team-name { font-size: 12px; font-weight: 600; color: #e3e7ef; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -4060,14 +4138,282 @@ function applyTemplate(name) {
 }
 
 /* ---------- open / history ---------- */
+// ===========================================================
+// LIVE GAME STATE — via ESPN's free public scoreboard endpoints.
+// NOTE: ESPN's site.api isn't an officially supported API. It can change
+// or stop working without notice. We swallow errors silently and fall
+// back to the simple "LIVE" badge if ESPN is unavailable.
+// ===========================================================
+const ESPN_SPORT_PATH = {
+  baseball_mlb: 'baseball/mlb',
+  americanfootball_nfl: 'football/nfl',
+  americanfootball_ncaaf: 'football/college-football',
+  basketball_nba: 'basketball/nba',
+  basketball_wnba: 'basketball/wnba',
+  basketball_ncaab: 'basketball/mens-college-basketball',
+  basketball_ncaaw: 'basketball/womens-college-basketball',
+  icehockey_nhl: 'hockey/nhl',
+  soccer_epl: 'soccer/eng.1',
+  soccer_uefa_champs_league: 'soccer/uefa.champions',
+  soccer_usa_mls: 'soccer/usa.1',
+};
+const LIVE_CACHE_TTL = 90 * 1000; // 90 seconds
+const _liveCache = {}; // { sportKey: { data, fetchedAt } }
+let _liveRefreshTimer = null;
+
+async function _fetchEspn(sportKey) {
+  const path = ESPN_SPORT_PATH[sportKey];
+  if (!path) return null;
+  const cached = _liveCache[sportKey];
+  if (cached && (Date.now() - cached.fetchedAt) < LIVE_CACHE_TTL) return cached.data;
+  try {
+    const r = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    _liveCache[sportKey] = { data, fetchedAt: Date.now() };
+    return data;
+  } catch (e) { return null; }
+}
+
+function _normTeam(s) { return (s || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim(); }
+function _findEspnEvent(scoreboard, awayName, homeName) {
+  if (!scoreboard?.events) return null;
+  const tA = _normTeam(awayName), tH = _normTeam(homeName);
+  for (const ev of scoreboard.events) {
+    const comp = ev.competitions?.[0]; if (!comp) continue;
+    const home = comp.competitors.find(c => c.homeAway === 'home');
+    const away = comp.competitors.find(c => c.homeAway === 'away');
+    if (!home || !away) continue;
+    const hN = _normTeam(home.team.displayName);
+    const aN = _normTeam(away.team.displayName);
+    const hMatch = hN.includes(tH) || tH.includes(hN);
+    const aMatch = aN.includes(tA) || tA.includes(aN);
+    if (hMatch && aMatch) return { event: ev, comp, home, away };
+  }
+  return null;
+}
+
+function _ordinal(n) {
+  if (n == null) return '';
+  const s = ['th','st','nd','rd'], v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
+}
+
+function _buildLiveStateHtml(sportKey, match) {
+  if (!match) return null;
+  const { event, comp, home, away } = match;
+  const status = event.status || {};
+  const stType = status.type || {};
+  const state = stType.state; // pre, in, post
+  const homeScore = parseInt(home.score, 10) || 0;
+  const awayScore = parseInt(away.score, 10) || 0;
+  const homeAbbr = home.team.abbreviation || home.team.shortDisplayName || home.team.displayName;
+  const awayAbbr = away.team.abbreviation || away.team.shortDisplayName || away.team.displayName;
+  const homeWin = homeScore > awayScore, awayWin = awayScore > homeScore;
+
+  if (state === 'pre') return null; // not started, keep countdown UI
+  if (state === 'post' || stType.completed) {
+    // Game's done — render a clean FINAL row
+    return `<div class="score-row mb-1.5">
+      <div class="team-name away truncate">${escapeHtml(awayAbbr)}</div>
+      <div class="score ${awayWin?'win':homeWin?'dim':''}">${awayScore}</div>
+      <div class="vs">FINAL</div>
+      <div class="score ${homeWin?'win':awayWin?'dim':''}">${homeScore}</div>
+      <div class="team-name truncate">${escapeHtml(homeAbbr)}</div>
+    </div>`;
+  }
+  // state === 'in' — game is live. Build sport-specific extras.
+  const sit = comp.situation || {};
+  const period = status.period;
+  const clock = status.displayClock || '';
+  const detail = stType.detail || stType.shortDetail || '';
+  let extraHtml = '';
+
+  if (sportKey === 'baseball_mlb') {
+    const balls = sit.balls ?? 0, strikes = sit.strikes ?? 0, outs = sit.outs ?? 0;
+    const on1 = !!sit.onFirst, on2 = !!sit.onSecond, on3 = !!sit.onThird;
+    const half = (detail || '').toLowerCase();
+    const halfLabel = half.includes('bot') ? 'Bot' : half.includes('mid') ? 'Mid' : half.includes('end') ? 'End' : 'Top';
+    const basesLabel = [on1?'1st':'',on2?'2nd':'',on3?'3rd':''].filter(Boolean).join(', ') || 'Bases empty';
+    extraHtml = `
+      <div class="live-extras">
+        <div class="live-pill">${halfLabel} ${_ordinal(period)}</div>
+        <div class="live-pill">${balls}-${strikes} · ${outs} out${outs===1?'':'s'}</div>
+        <div class="diamond" title="${basesLabel}">
+          <span class="base second ${on2?'on':''}"></span>
+          <span class="base first ${on1?'on':''}"></span>
+          <span class="base third ${on3?'on':''}"></span>
+        </div>
+      </div>`;
+  } else if (sportKey.startsWith('americanfootball_')) {
+    const possId = sit.possession;
+    let possAbbr = '', possSide = '';
+    if (possId) {
+      const pTeam = comp.competitors.find(c => c.id === possId);
+      if (pTeam) { possAbbr = pTeam.team.abbreviation || ''; possSide = pTeam.homeAway; }
+    }
+    const downStr = sit.down ? `${_ordinal(sit.down)} & ${sit.distance ?? ''}` : '';
+    const ballAt = (sit.down && sit.yardLine != null) ? ` at ${sit.yardLine}` : '';
+    extraHtml = `
+      <div class="live-extras">
+        <div class="live-pill">Q${period} · ${escapeHtml(clock)}</div>
+        ${possAbbr ? `<div class="live-pill"><span class="poss-dot"></span>${escapeHtml(possAbbr)} ball</div>` : ''}
+        ${downStr ? `<div class="live-pill">${downStr}${ballAt}</div>` : ''}
+      </div>`;
+  } else if (sportKey.startsWith('basketball_')) {
+    const lbl = period > 4 ? `OT${period - 4}` : `Q${period}`;
+    extraHtml = `<div class="live-extras"><div class="live-pill">${lbl} · ${escapeHtml(clock)}</div></div>`;
+  } else if (sportKey === 'icehockey_nhl') {
+    const lbl = period > 3 ? (period === 4 ? 'OT' : `OT${period-3}`) : `P${period}`;
+    extraHtml = `<div class="live-extras"><div class="live-pill">${lbl} · ${escapeHtml(clock)}</div></div>`;
+  } else if (sportKey.startsWith('soccer_')) {
+    extraHtml = `<div class="live-extras"><div class="live-pill">${escapeHtml(clock || (period+"'"))}</div></div>`;
+  }
+
+  const lastPlay = sit.lastPlay?.text
+    ? `<div class="live-last-play"><span class="lp-label">Last:</span> ${escapeHtml(sit.lastPlay.text)}</div>` : '';
+
+  return `
+    <div class="live-state">
+      <div class="live-state-header">
+        <span class="pulse-dot" style="background:#ef4444"></span>
+        <span class="live-state-label">LIVE</span>
+        ${extraHtml}
+      </div>
+      <div class="live-score-row">
+        <div class="lt-team">${escapeHtml(awayAbbr)}</div>
+        <div class="lt-score ${awayWin?'lead':''}">${awayScore}</div>
+        <div class="lt-vs">@</div>
+        <div class="lt-score ${homeWin?'lead':''}">${homeScore}</div>
+        <div class="lt-team">${escapeHtml(homeAbbr)}</div>
+      </div>
+      ${lastPlay}
+    </div>`;
+}
+
+// Scan the DOM for live-slot elements and fill them with ESPN data
+async function populateLiveStates() {
+  const slots = document.querySelectorAll('.live-slot');
+  if (!slots.length) return;
+  // Group slots by sportKey so we only fetch each scoreboard once
+  const bySport = {};
+  slots.forEach(s => {
+    const sk = s.dataset.sportKey || '';
+    if (!ESPN_SPORT_PATH[sk]) return;
+    if (!bySport[sk]) bySport[sk] = [];
+    bySport[sk].push(s);
+  });
+  for (const sk of Object.keys(bySport)) {
+    const data = await _fetchEspn(sk);
+    if (!data) continue;
+    for (const slot of bySport[sk]) {
+      const match = _findEspnEvent(data, slot.dataset.away, slot.dataset.home);
+      if (!match) continue;
+      const html = _buildLiveStateHtml(sk, match);
+      if (html) slot.innerHTML = html;
+    }
+  }
+}
+
+function startLiveRefreshLoop() {
+  if (_liveRefreshTimer) return;
+  _liveRefreshTimer = setInterval(() => {
+    if (state.activeTab !== 'open') return; // only when looking at open bets
+    populateLiveStates();
+  }, LIVE_CACHE_TTL);
+}
+function stopLiveRefreshLoop() {
+  if (_liveRefreshTimer) { clearInterval(_liveRefreshTimer); _liveRefreshTimer = null; }
+}
+
+// Date bucketing helpers — return a label for which group a date belongs to
+function _dayKey(d) { return new Date(d).toISOString().slice(0,10); }
+function _bucketForOpenBet(bet) {
+  // Use the earliest leg start time (when the game tips off / first pitch)
+  const starts = (bet.legs || []).map(l => l.start ? new Date(l.start).getTime() : null).filter(Boolean);
+  if (!starts.length) return { key: '4-later', label: 'Later' };
+  const earliest = new Date(Math.min(...starts));
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  const dayAfter = new Date(today); dayAfter.setDate(dayAfter.getDate() + 2);
+  const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() + 7);
+  const eDay = new Date(earliest); eDay.setHours(0,0,0,0);
+  if (eDay.getTime() < today.getTime()) return { key: '0-live', label: 'Live / Started' };
+  if (eDay.getTime() === today.getTime()) return { key: '1-today', label: 'Today' };
+  if (eDay.getTime() === tomorrow.getTime()) return { key: '2-tomorrow', label: 'Tomorrow' };
+  if (eDay.getTime() < weekEnd.getTime()) return { key: '3-this-week', label: 'This Week' };
+  return { key: '4-later', label: 'Later' };
+}
+function _bucketForSettled(bet) {
+  const t = new Date(bet.settledAt || bet.placedAt);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+  const weekStart = new Date(today); weekStart.setDate(weekStart.getDate() - 6);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const tDay = new Date(t); tDay.setHours(0,0,0,0);
+  if (tDay.getTime() === today.getTime()) return { key: '0-today', label: 'Today' };
+  if (tDay.getTime() === yesterday.getTime()) return { key: '1-yesterday', label: 'Yesterday' };
+  if (tDay.getTime() >= weekStart.getTime()) return { key: '2-this-week', label: 'This Week' };
+  if (tDay.getTime() >= monthStart.getTime()) return { key: '3-this-month', label: 'Earlier This Month' };
+  return { key: '4-older', label: 'Older' };
+}
+function _renderDateGroupHeader(label, count, totalStake, totalPL) {
+  const plClass = totalPL > 0 ? 'text-neon-500' : totalPL < 0 ? 'text-danger-500' : 'text-ink-300';
+  const plText = totalPL !== null && totalPL !== undefined
+    ? ` <span class="text-ink-400 text-xs">·</span> <span class="${plClass} font-bold num text-sm">${totalPL >= 0 ? '+' : ''}${fmt$(totalPL)}</span>`
+    : '';
+  const isToday = label === 'Today';
+  const isLive = label === 'Live / Started';
+  const accentColor = isLive ? '#ef4444' : isToday ? '#a3ff12' : '#8b95a5';
+  const liveDot = isLive ? '<span class="pulse-dot" style="background:#ef4444"></span> ' : '';
+  return `<div class="date-group-header" style="--accent:${accentColor}">
+    <div class="flex items-center gap-2">
+      ${liveDot}<span class="date-group-label">${label}</span>
+      <span class="date-group-count">${count} bet${count===1?'':'s'}</span>
+    </div>
+    <div class="text-xs text-ink-300">${fmt$(totalStake)} staked${plText}</div>
+  </div>`;
+}
+function _groupAndRenderBets(bets, bucketFn, sortFn) {
+  // Group bets into buckets, then render with section headers
+  const groups = {};
+  for (const b of bets) {
+    const { key, label } = bucketFn(b);
+    if (!groups[key]) groups[key] = { label, bets: [] };
+    groups[key].bets.push(b);
+  }
+  const sortedKeys = Object.keys(groups).sort();
+  return sortedKeys.map(k => {
+    const g = groups[k];
+    const sorted = sortFn ? g.bets.slice().sort(sortFn) : g.bets;
+    const totalStake = sorted.reduce((a,b) => a + (b.stake || 0), 0);
+    const totalPL = sorted.reduce((a,b) => {
+      if (b.status === 'won') return a + ((b.payout || 0) - b.stake);
+      if (b.status === 'lost') return a - b.stake;
+      return a;
+    }, 0);
+    const header = _renderDateGroupHeader(g.label, sorted.length, totalStake, k.startsWith('0-live') || k.startsWith('1-today') ? totalPL : (totalPL !== 0 ? totalPL : null));
+    return header + sorted.map(renderBetCard).join('');
+  }).join('');
+}
+
 function renderOpenBets() {
   const c = document.getElementById('open-bets-container');
   const p = P(); if (!p) return c.innerHTML = '';
   const open = p.bets.filter(b => b.status === 'pending');
   if (!open.length) { c.innerHTML = '<div class="bg-ink-900 border border-ink-700 rounded-2xl p-8 text-center text-ink-400 text-sm">No open bets.</div>'; return; }
-  c.innerHTML = open.slice().reverse().map(renderBetCard).join('');
+  // Sort within each group by earliest leg start time (soonest first)
+  const sortByEarliestStart = (a, b) => {
+    const aStart = Math.min(...(a.legs || []).map(l => l.start ? new Date(l.start).getTime() : Infinity));
+    const bStart = Math.min(...(b.legs || []).map(l => l.start ? new Date(l.start).getTime() : Infinity));
+    return aStart - bStart;
+  };
+  c.innerHTML = _groupAndRenderBets(open, _bucketForOpenBet, sortByEarliestStart);
   c.querySelectorAll('[data-manual-settle]').forEach(b => b.addEventListener('click', () => manualSettle(b.dataset.manualSettle, b.dataset.result)));
   c.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => cancelBet(b.dataset.cancel)));
+  // Async: enrich with ESPN live state where available
+  populateLiveStates();
+  startLiveRefreshLoop();
 }
 function renderHistory() {
   const c = document.getElementById('history-container');
@@ -4089,7 +4435,10 @@ function renderHistory() {
       <div class="font-bold text-lg num ${pl>=0?'text-neon-500':'text-danger-500'}">${fmt$(pl)} <span class="text-ink-300 text-sm">·</span> ${roi.toFixed(2)}% <span class="text-ink-300 text-sm">·</span> ${wrSettled>0?(wins/wrSettled*100).toFixed(1)+'%':'—'}</div></div>`;
 
   if (!settled.length) { c.innerHTML = '<div class="bg-ink-900 border border-ink-700 rounded-2xl p-8 text-center text-ink-400 text-sm">No settled bets in this range.</div>'; return; }
-  c.innerHTML = settled.slice().sort((a,b) => new Date(b.settledAt||b.placedAt) - new Date(a.settledAt||a.placedAt)).map(renderBetCard).join('');
+  // Sort within each group: most recent first
+  const sortByRecency = (a,b) => new Date(b.settledAt || b.placedAt) - new Date(a.settledAt || a.placedAt);
+  c.innerHTML = _groupAndRenderBets(settled, _bucketForSettled, sortByRecency);
+  populateLiveStates();
 }
 function renderBetCard(b) {
   const colorMap = { pending: 'text-ink-200', won: 'text-neon-500', lost: 'text-danger-500', push: 'text-warn-500', void: 'text-ink-300' };
@@ -4120,12 +4469,15 @@ function renderBetCard(b) {
     // No score yet — show countdown or live
     const isLive = start && start <= now;
     const cd = !isLive && start ? formatCountdown(start - now) : null;
-    return `<div class="score-row mb-1.5">
-      <div class="team-name away truncate">${escapeHtml(l.away)}</div>
-      <div class="score dim">—</div>
-      <div class="vs">${isLive ? '<span class="text-danger-500">LIVE</span>' : (cd || 'TBD')}</div>
-      <div class="score dim">—</div>
-      <div class="team-name truncate">${escapeHtml(l.home)}</div>
+    // Wrap in a live-slot that the ESPN fetcher can fill in with rich data
+    return `<div class="live-slot" data-sport-key="${escapeHtml(l.sportKey || '')}" data-away="${escapeHtml(l.away)}" data-home="${escapeHtml(l.home)}">
+      <div class="score-row mb-1.5">
+        <div class="team-name away truncate">${escapeHtml(l.away)}</div>
+        <div class="score dim">—</div>
+        <div class="vs">${isLive ? '<span class="text-danger-500">LIVE</span>' : (cd || 'TBD')}</div>
+        <div class="score dim">—</div>
+        <div class="team-name truncate">${escapeHtml(l.home)}</div>
+      </div>
     </div>`;
   }).join('');
 
