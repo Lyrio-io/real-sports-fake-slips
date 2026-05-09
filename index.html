@@ -724,6 +724,10 @@
 
   /* TAB CONTENT */
   .tab-content[data-active="false"] { display: none; }
+  /* Mobile only — make sure tab content has space for the bottom nav so it doesn't cover the last item */
+  @media (max-width: 1023px) {
+    .tab-content[data-active="true"] { padding-bottom: calc(80px + var(--safe-bottom)); }
+  }
 
   /* SCROLLBAR */
   .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -762,29 +766,33 @@
     box-shadow: 0 24px 60px -20px rgba(163,255,18,0.15), 0 1px 0 rgba(255,255,255,0.04) inset;
   }
 
-  /* SLIDE-UP SLIP (mobile) */
+  /* SLIDE-UP SLIP (mobile) — sits ABOVE the bottom nav, hidden when empty */
   .slip-mobile {
-    position: fixed; left: 0; right: 0; bottom: 0;
-    max-height: 80vh; overflow: auto; z-index: 45;
+    position: fixed; left: 0; right: 0;
+    bottom: calc(72px + var(--safe-bottom)); /* park above bottom nav */
+    max-height: calc(80vh - 72px); overflow: auto; z-index: 35;
     border-radius: 22px 22px 0 0;
     background: #0a0c12;
     border-top: 1px solid #181c25;
     box-shadow: 0 -8px 32px -8px rgba(0,0,0,0.6);
-    padding-bottom: var(--safe-bottom);
   }
-  .slip-mobile[data-collapsed="true"] { transform: translateY(calc(100% - 64px - var(--safe-bottom))); transition: transform 220ms ease; }
+  .slip-mobile[data-collapsed="true"] { transform: translateY(calc(100% - 56px)); transition: transform 220ms ease; }
   .slip-mobile[data-collapsed="false"] { transform: translateY(0); transition: transform 220ms ease; }
+  /* Hide mobile slip entirely when empty so it doesn't block the nav */
+  .slip-mobile[data-empty="true"] { display: none !important; }
   /* Hide mobile slip on desktop */
   @media (min-width: 1024px) {
-    .slip-mobile { position: sticky; top: 96px; max-height: calc(100vh - 7rem); transform: none !important; border-radius: 18px; border: 1px solid #181c25; padding-bottom: 0; }
+    .slip-mobile { position: sticky; top: 96px; bottom: auto; max-height: calc(100vh - 7rem); transform: none !important; border-radius: 18px; border: 1px solid #181c25; padding-bottom: 0; z-index: auto; }
+    .slip-mobile[data-empty="true"] { display: block !important; }
   }
 
-  /* BOTTOM NAV (mobile only) */
+  /* BOTTOM NAV (mobile only) — always on top of slip peek */
   .bottom-nav {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-    background: rgba(10,12,18,0.92); backdrop-filter: blur(12px);
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: rgba(10,12,18,0.95); backdrop-filter: blur(14px);
     border-top: 1px solid #181c25;
     padding-bottom: var(--safe-bottom);
+    box-shadow: 0 -2px 16px -4px rgba(0,0,0,0.6);
   }
   @media (min-width: 1024px) { .bottom-nav { display: none; } }
 
@@ -1047,15 +1055,18 @@
     <main class="flex-1 min-w-0 pb-24 lg:pb-6">
 
       <!-- MOBILE TOP BAR -->
-      <header class="lg:hidden sticky top-0 z-30 bg-ink-950/85 backdrop-blur border-b border-ink-800 px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-500 to-gold-500 grid place-items-center font-black text-ink-950 display text-sm">R</div>
-          <div>
-            <div class="display text-sm font-bold leading-none">Real Sports Fake Slips</div>
-            <div class="text-[9px] uppercase tracking-widest text-ink-300 mt-0.5">Sandbox</div>
+      <header class="lg:hidden sticky top-0 z-50 bg-ink-950/95 backdrop-blur border-b border-ink-800 px-4 py-3 flex items-center justify-between gap-2">
+        <button id="header-home-btn" class="hidden flex-shrink-0 w-9 h-9 rounded-lg bg-ink-800 border border-ink-700 grid place-items-center" title="Back to Lines" aria-label="Back to Lines">
+          <svg class="w-4 h-4 text-ink-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="flex items-center gap-2 min-w-0 flex-1">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-500 to-gold-500 grid place-items-center font-black text-ink-950 display text-sm flex-shrink-0">R</div>
+          <div class="min-w-0">
+            <div class="display text-sm font-bold leading-none truncate">Real Sports Fake Slips</div>
+            <div class="text-[9px] uppercase tracking-widest text-ink-300 mt-0.5 truncate">Sandbox</div>
           </div>
         </div>
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-1.5 flex-shrink-0">
           <button id="quick-swap-mobile" class="quick-swap" title="Swap profile" aria-label="Swap profile">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16l4-4-4-4"/><path d="M17 8l-4 4 4 4"/></svg>
             Swap
@@ -1351,6 +1362,18 @@
               <button id="save-key" class="bg-neon-500 text-ink-950 font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-neon-400">Save</button>
             </div>
             <div id="quota" class="text-xs text-ink-400 mt-2"></div>
+
+            <div class="mt-3 p-3 bg-ink-800 border border-ink-700 rounded-xl">
+              <div id="credit-counter"></div>
+            </div>
+
+            <div class="mt-3 flex items-start gap-2 p-3 bg-ink-800/60 border border-ink-700 rounded-xl">
+              <svg class="w-4 h-4 text-neon-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h0"/></svg>
+              <div class="text-[12px] text-ink-300 leading-snug">
+                <div class="font-semibold text-ink-100 mb-0.5">Refresh is throttled to once per 10 minutes.</div>
+                Spamming refresh wastes credits and doesn't change picks — lines barely move minute-to-minute. Use <button id="force-refresh-btn" class="underline text-neon-500 font-semibold">Force refresh now</button> only when you actually need fresh data (e.g., right before tip-off).
+              </div>
+            </div>
           </div>
 
           <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
@@ -1780,7 +1803,34 @@ const LS = {
   QUOTA: 'psb.quota', SPORT_FILTER: 'psb.sportFilter',
   ANTHROPIC_KEY: 'psb.anthropicKey', ANALYST_MODEL: 'psb.analystModel',
   ANALYSIS: 'psb.analysis', DEMO: 'psb.demoMode',
+  LAST_REFRESH: 'psb.lastRefresh', CREDIT_LOG: 'psb.creditLog',
 };
+
+// Refresh throttle: minimum ms between actual API hits on the Lines refresh button
+const REFRESH_THROTTLE_MS = 10 * 60 * 1000; // 10 minutes
+
+// Credit tracking helpers — counts approximate credits spent per day/month
+function logCreditUsage(credits) {
+  if (!credits || credits < 0) return;
+  const log = JSON.parse(localStorage.getItem(LS.CREDIT_LOG) || '{}');
+  const day = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+  log[day] = (log[day] || 0) + credits;
+  // Keep only last 35 days
+  const cutoff = new Date(Date.now() - 35*24*3600*1000).toISOString().slice(0,10);
+  for (const k of Object.keys(log)) { if (k < cutoff) delete log[k]; }
+  localStorage.setItem(LS.CREDIT_LOG, JSON.stringify(log));
+}
+function getCreditUsage() {
+  const log = JSON.parse(localStorage.getItem(LS.CREDIT_LOG) || '{}');
+  const today = new Date().toISOString().slice(0,10);
+  const monthStart = today.slice(0,7) + '-01';
+  let dayTotal = 0, monthTotal = 0;
+  for (const [k, v] of Object.entries(log)) {
+    if (k === today) dayTotal += v;
+    if (k >= monthStart) monthTotal += v;
+  }
+  return { today: dayTotal, month: monthTotal };
+}
 
 /* ===== MOCK DATA (demo mode) ===== */
 const _hoursFromNow = h => new Date(Date.now() + h * 3600 * 1000).toISOString();
@@ -2267,8 +2317,51 @@ async function apiEventOdds(sportKey, eventId, markets) {
   if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json();
 }
 async function apiScores(sportKey) { const url = `${API_BASE}/sports/${sportKey}/scores/?apiKey=${state.apiKey}&daysFrom=3&dateFormat=iso`; const r = await fetch(url); updateQuota(r); if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }
-function updateQuota(response) { const remaining = response.headers.get('x-requests-remaining'); const used = response.headers.get('x-requests-used'); if (remaining || used) { state.quota = { remaining, used, ts: nowISO() }; save(LS.QUOTA, state.quota); renderQuota(); } }
-function renderQuota() { const el = document.getElementById('quota'); if (!el) return; el.textContent = state.quota?.remaining != null ? `Quota: ${state.quota.remaining} remaining (used ${state.quota.used}). Updated ${new Date(state.quota.ts).toLocaleString()}.` : 'Quota: unknown — refresh to update.'; }
+function updateQuota(response) {
+  const remaining = response.headers.get('x-requests-remaining');
+  const used = response.headers.get('x-requests-used');
+  const lastCost = response.headers.get('x-requests-last');
+  if (remaining || used) {
+    // Track delta = how many credits this single response cost
+    const prevUsed = parseInt(state.quota?.used || '0', 10);
+    const newUsed = parseInt(used || '0', 10);
+    const delta = lastCost ? parseInt(lastCost, 10) : Math.max(0, newUsed - prevUsed);
+    if (delta > 0) logCreditUsage(delta);
+    state.quota = { remaining, used, ts: nowISO() };
+    save(LS.QUOTA, state.quota);
+    renderQuota();
+    renderCreditCounter();
+  }
+}
+function renderQuota() {
+  const el = document.getElementById('quota');
+  if (!el) return;
+  el.textContent = state.quota?.remaining != null ? `Quota: ${state.quota.remaining} remaining (used ${state.quota.used}). Updated ${new Date(state.quota.ts).toLocaleString()}.` : 'Quota: unknown — refresh to update.';
+}
+function renderCreditCounter() {
+  const el = document.getElementById('credit-counter');
+  if (!el) return;
+  const { today, month } = getCreditUsage();
+  // Free tier = 500/mo. Color-code based on % used.
+  const pct = Math.min(100, Math.round((month / 500) * 100));
+  let color = '#a3ff12'; // green
+  if (pct >= 80) color = '#ef4444'; // red
+  else if (pct >= 50) color = '#f59e0b'; // amber
+  el.innerHTML = `
+    <div class="flex items-baseline justify-between mb-1">
+      <span class="text-xs text-ink-300 font-semibold">Credits used</span>
+      <span class="text-[11px] text-ink-400">~estimate</span>
+    </div>
+    <div class="flex items-baseline gap-3 mb-2">
+      <div><span class="num font-bold text-lg" style="color:${color}">${today}</span> <span class="text-xs text-ink-400">today</span></div>
+      <div><span class="num font-bold text-lg" style="color:${color}">${month}</span> <span class="text-xs text-ink-400">this month</span></div>
+    </div>
+    <div style="background:#1a1f2b;border-radius:999px;height:6px;overflow:hidden;">
+      <div style="height:100%;width:${pct}%;background:${color};transition:width 300ms ease;"></div>
+    </div>
+    <div class="text-[11px] text-ink-400 mt-1">${pct}% of 500/mo free tier${pct >= 80 ? ' · upgrade soon' : ''}</div>
+  `;
+}
 
 /* best line */
 function bestOddsForOutcome(game, marketKey, outcomeName, point) {
@@ -2286,7 +2379,7 @@ function bestOddsForOutcome(game, marketKey, outcomeName, point) {
 }
 
 /* refresh */
-async function refreshLines() {
+async function refreshLines(force = false) {
   if (isDemoMode()) {
     loadMockData();
     document.getElementById('last-updated').textContent = `Updated ${new Date().toLocaleTimeString()} · demo`;
@@ -2295,6 +2388,17 @@ async function refreshLines() {
     return;
   }
   if (!state.apiKey) { toast('Add API key in Settings first'); switchTab('settings'); return; }
+
+  // Throttle: don't hit the API more than once every REFRESH_THROTTLE_MS
+  const lastRefresh = parseInt(localStorage.getItem(LS.LAST_REFRESH) || '0', 10);
+  const sinceLast = Date.now() - lastRefresh;
+  if (!force && lastRefresh && sinceLast < REFRESH_THROTTLE_MS) {
+    const minLeft = Math.ceil((REFRESH_THROTTLE_MS - sinceLast) / 60000);
+    toast(`Cached. ${minLeft} min until fresh data — saves your API credits.`);
+    document.getElementById('last-updated').textContent = `Cached · ${minLeft} min until next refresh`;
+    return;
+  }
+
   const btn = document.getElementById('refresh-btn'); const orig = btn.innerHTML;
   btn.innerHTML = '<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg> Refreshing'; btn.disabled = true;
   let ok=0, fail=0;
@@ -2303,10 +2407,12 @@ async function refreshLines() {
     catch (e) { console.error(e); fail++; }
   }
   save(LS.CACHE, state.cache);
+  localStorage.setItem(LS.LAST_REFRESH, String(Date.now()));
   document.getElementById('last-updated').textContent = `Updated ${new Date().toLocaleTimeString()} · ${ok} ok${fail?', '+fail+' failed':''}`;
   btn.innerHTML = orig; btn.disabled = false;
   renderSportChips();
   renderLines();
+  renderCreditCounter();
 }
 
 /* expand event */
@@ -3538,9 +3644,13 @@ function renderSlip() {
   const legsDiv = document.getElementById('slip-legs');
   const empty = document.getElementById('slip-empty');
   const controls = document.getElementById('slip-controls');
+  const slipEl = document.getElementById('slip');
   document.getElementById('slip-count').textContent = state.slip.length;
   document.getElementById('slip-count-desktop').textContent = state.slip.length;
   document.getElementById('slip-stake-preview').textContent = state.slip.length ? `· $${document.getElementById('stake-input')?.value || 10}` : '';
+
+  // Hide the mobile slip peek entirely when empty so it doesn't block the bottom nav
+  if (slipEl) slipEl.setAttribute('data-empty', state.slip.length === 0 ? 'true' : 'false');
 
   if (!state.slip.length) {
     legsDiv.innerHTML = ''; empty.classList.remove('hidden'); controls.classList.add('hidden'); return;
@@ -4282,6 +4392,8 @@ function renderSettings() {
   if (ai) ai.value = state.anthropicKey;
   const p = P(); document.getElementById('starting-bankroll').value = p ? p.starting : 1000;
   document.querySelectorAll('input[name=tier]').forEach(r => r.checked = r.value === state.tier);
+  renderQuota();
+  renderCreditCounter();
   // Admin mode toggle
   const adminToggle = document.getElementById('admin-mode-toggle');
   if (adminToggle) adminToggle.checked = isAdmin();
@@ -5236,6 +5348,11 @@ function switchTab(name) {
   state.activeTab = name;
   document.querySelectorAll('[data-tab]').forEach(b => b.dataset.active = b.dataset.tab === name ? 'true' : 'false');
   document.querySelectorAll('[data-tab-content]').forEach(d => d.dataset.active = d.dataset.tabContent === name ? 'true' : 'false');
+  // Show the back-arrow on the mobile header for any non-Lines tab
+  const homeBtn = document.getElementById('header-home-btn');
+  if (homeBtn) homeBtn.classList.toggle('hidden', name === 'lines');
+  // Scroll to top when switching tabs (so user doesn't land mid-page)
+  try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) {}
   if (name === 'lines') renderLedger();
   if (name === 'open') renderOpenBets();
   if (name === 'history') renderHistory();
@@ -5414,10 +5531,21 @@ function init() {
   document.getElementById('export-btn').addEventListener('click', exportCSV);
 
   document.getElementById('save-key').addEventListener('click', () => { state.apiKey = document.getElementById('api-key-input').value.trim(); save(LS.KEY, state.apiKey); toast('API key saved'); if (state.apiKey && !state.sportsList.length) reloadSports(); });
+  const forceBtn = document.getElementById('force-refresh-btn');
+  if (forceBtn) forceBtn.addEventListener('click', () => {
+    if (confirm('Force-refresh now? This will use API credits even if cached data is fresh.')) {
+      refreshLines(true);
+      switchTab('lines');
+    }
+  });
   const sak = document.getElementById('save-anthropic-key');
   if (sak) sak.addEventListener('click', () => { state.anthropicKey = document.getElementById('anthropic-key-input').value.trim(); save(LS.ANTHROPIC_KEY, state.anthropicKey); toast('Anthropic key saved'); });
   const ra = document.getElementById('run-analysis'); if (ra) ra.addEventListener('click', runAnalysis);
   const am = document.getElementById('analyst-model'); if (am) { am.value = state.analystModel; am.addEventListener('change', () => { state.analystModel = am.value; save(LS.ANALYST_MODEL, am.value); }); }
+
+  // Mobile header home/back button
+  const homeBtn = document.getElementById('header-home-btn');
+  if (homeBtn) homeBtn.addEventListener('click', () => switchTab('lines'));
 
   // Mobile "More" sheet
   const moreBtn = document.getElementById('bn-more-btn');
