@@ -699,6 +699,12 @@
   }
   .game-card:hover { border-color: #2d3445; transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 12px 40px -12px rgba(0,0,0,0.6); }
 
+  /* Vig + fair-price footer (per-card "is this a sharp or juiced line?" callout) */
+  .vig-footer { padding: 8px 14px 12px; border-top: 1px dashed #1f2530; margin: 0 4px; }
+  .vig-footer-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; font-weight: 700; margin-bottom: 4px; }
+  .vig-rows { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .vig-cell { display: inline-flex; align-items: center; gap: 0; line-height: 1.4; }
+
   /* HERO */
   .hero-card {
     background:
@@ -2355,6 +2361,35 @@ const save = (k, v) => localStorage.setItem(k, typeof v === 'string' ? v : JSON.
 const fmt$ = n => (n < 0 ? '-' : '') + '$' + Math.abs(n).toFixed(2);
 const americanToDecimal = a => { a = +a; return a > 0 ? 1 + a/100 : 1 + 100/Math.abs(a); };
 const americanToImplied = a => { a = +a; return a > 0 ? 100/(a+100) : Math.abs(a)/(Math.abs(a)+100); };
+// Inverse: implied probability (0..1) -> American odds
+const impliedToAmerican = p => { if (!(p > 0 && p < 1)) return null; return p >= 0.5 ? -Math.round((p / (1 - p)) * 100) : Math.round(((1 - p) / p) * 100); };
+// Given two American odds for opposite sides of a market, compute vig + fair (no-vig) prices.
+// Returns { vigPct, sideAImpFair, sideBImpFair, sideAFairAmerican, sideBFairAmerican }.
+function noVigPair(a1, a2) {
+  if (a1 == null || a2 == null) return null;
+  const i1 = americanToImplied(a1), i2 = americanToImplied(a2);
+  const sum = i1 + i2;
+  if (!(sum > 0)) return null;
+  const vigPct = (sum - 1) * 100;
+  const f1 = i1 / sum, f2 = i2 / sum;
+  return { vigPct, sideAImpFair: f1, sideBImpFair: f2, sideAFairAmerican: impliedToAmerican(f1), sideBFairAmerican: impliedToAmerican(f2) };
+}
+// Edge in cents (American): how much better/worse your price is vs the no-vig fair price for that side.
+// Positive = you're getting paid MORE than fair (good); negative = you're paying juice.
+function edgeCents(yourAmerican, fairAmerican) {
+  if (yourAmerican == null || fairAmerican == null) return null;
+  // Express both as decimal multipliers, compare. Positive cents = better than fair.
+  const yourDec = americanToDecimal(yourAmerican);
+  const fairDec = americanToDecimal(fairAmerican);
+  return Math.round((yourDec - fairDec) * 100);
+}
+// Color class for a vig value
+function vigClass(vigPct) {
+  if (vigPct == null) return 'text-ink-400';
+  if (vigPct < 4.5) return 'text-neon-500';
+  if (vigPct < 6.0) return 'text-warn-500';
+  return 'text-danger-500';
+}
 const decimalToAmerican = d => d >= 2 ? '+' + Math.round((d-1)*100) : Math.round(-100/(d-1)).toString();
 const fmtAmerican = a => (a > 0 ? '+' : '') + a;
 const profit = (s, d) => s * (d - 1);
@@ -3347,6 +3382,30 @@ function renderGameCard(g, sportKey, marketFilter) {
     </article>`;
   }
 
+  // Build a vig + fair-price footer to teach the user what each price is really worth
+  const spreadV = noVigPair(activeSpreadAway?.american, activeSpreadHome?.american);
+  const totalV = noVigPair(activeOver?.american, activeUnder?.american);
+  const mlV = noVigPair(h2hAway?.american, h2hHome?.american);
+  function vigPill(label, v, awayPrice, homePrice) {
+    if (!v) return '';
+    const cls = vigClass(v.vigPct);
+    const tag = v.vigPct >= 6 ? '⚠ trap' : v.vigPct < 4.5 ? 'sharp' : 'avg';
+    return `<div class="vig-cell" title="Fair away ${fmtAmerican(v.sideAFairAmerican)} · fair home ${fmtAmerican(v.sideBFairAmerican)}">
+      <span class="text-[10px] text-ink-400 uppercase tracking-wider font-semibold">${label}</span>
+      <span class="${cls} text-[11px] font-bold num ml-1">${v.vigPct.toFixed(1)}% ${tag}</span>
+      <span class="text-[10px] text-ink-300 num ml-1">fair: ${fmtAmerican(v.sideAFairAmerican)}/${fmtAmerican(v.sideBFairAmerican)}</span>
+    </div>`;
+  }
+  const vigFooter = (spreadV || totalV || mlV) ? `
+    <div class="vig-footer">
+      <div class="vig-footer-label">📊 Vig &amp; fair price</div>
+      <div class="vig-rows">
+        ${vigPill('Spread', spreadV)}
+        ${vigPill('Total', totalV)}
+        ${vigPill('ML', mlV)}
+      </div>
+    </div>` : '';
+
   // Expanded view — chevron pinned to top-right corner of the card
   return `<article class="game-card gc expanded fade-in" data-game-id="${g.id}">
     <div class="gc-stripe left" style="background:${stripeColorAway}"></div>
@@ -3359,6 +3418,7 @@ function renderGameCard(g, sportKey, marketFilter) {
       ${rowFor(away, false)}
       ${rowFor(home, true)}
     </div>
+    ${vigFooter}
     ${extraButtons || extraSection ? `<div class="px-4 pb-4 -mt-1"><div class="flex gap-3 flex-wrap">${extraButtons}</div>${extraSection}</div>` : ''}
   </article>`;
 }
@@ -3966,6 +4026,27 @@ function computeStakeFromInput() {
   return inputVal;
 }
 
+// Compute vig % for a leg's market by looking up the opposite side in the cache
+function vigForLeg(leg) {
+  const entry = state.cache[leg.sportKey]; if (!entry) return null;
+  const g = (entry.games || []).find(x => x.id === leg.gameId); if (!g) return null;
+  let myPrice = leg.american, oppPrice = null;
+  // Find the best opposing-side price for the same market/point
+  for (const bm of g.bookmakers || []) {
+    const m = (bm.markets || []).find(m => m.key === leg.market);
+    if (!m) continue;
+    for (const o of m.outcomes || []) {
+      const isOpp = leg.market === 'totals' || leg.market === 'alternate_totals'
+        ? (leg.outcome === 'Over' ? o.name === 'Under' : o.name === 'Over') && (leg.point == null || Math.abs(o.point - leg.point) < 1e-6)
+        : (o.name !== leg.outcome) && (leg.point == null || (leg.market.startsWith('h2h') ? true : Math.abs(o.point + leg.point) < 1e-6));
+      if (isOpp && (oppPrice == null || americanToDecimal(o.price) > americanToDecimal(oppPrice))) oppPrice = o.price;
+    }
+  }
+  if (oppPrice == null) return null;
+  const np = noVigPair(myPrice, oppPrice);
+  return np ? np.vigPct : null;
+}
+
 function placeBet() {
   if (!state.slip.length) return;
   const p = P(); if (!p) return toast('No active profile');
@@ -3973,6 +4054,13 @@ function placeBet() {
   if (stake <= 0 || stake > p.bankroll) return toast('Bad stake');
   const sameGame = new Set(state.slip.map(l => l.gameId));
   if (state.slip.length > 1 && sameGame.size !== state.slip.length && !S().allowSGP) return toast('Same-game parlays disabled in settings.');
+
+  // Vig sanity check: warn if any leg sits on a juiced market (>6% vig)
+  const juicedLegs = state.slip.map(l => ({ leg: l, vig: vigForLeg(l) })).filter(x => x.vig != null && x.vig > 6);
+  if (juicedLegs.length) {
+    const lines = juicedLegs.map(x => `· ${prettyMarket(x.leg.market)} ${x.leg.outcome}${x.leg.point != null ? ' ' + x.leg.point : ''} — vig ${x.vig.toFixed(1)}%`).join('\n');
+    if (!confirm(`⚠ Juiced market${juicedLegs.length > 1 ? 's' : ''}:\n${lines}\n\nThe book's cut on ${juicedLegs.length > 1 ? 'these' : 'this'} is way above the usual 4-5%. You're paying a premium. Bet anyway?`)) return;
+  }
 
   // Run guardrail checks
   const block = checkGuardrails(stake);
