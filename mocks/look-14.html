@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#ffffff" />
+<title>Look 14 — Kalshi: Crest Banner · Real Sports Fake Slips</title>
+<style>
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: #ffffff; color: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
+body { min-height: 100vh; overflow-x: hidden; padding-bottom: 90px; }
+button { font-family: inherit; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; background: none; border: none; color: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Header */
+.hdr { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid #f4f4f5; }
+.hdr-left { display: flex; align-items: center; gap: 10px; }
+.logo-mark { width: 30px; height: 30px; border-radius: 9px; background: #00b86b; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.brand-name { font-size: 15px; font-weight: 800; line-height: 1.1; }
+.brand-sub { font-size: 10px; color: #71717a; line-height: 1.1; margin-top: 1px; }
+.bankroll { padding: 7px 14px; border-radius: 999px; background: #fafafa; border: 1px solid #e4e4e7; font-size: 13px; font-weight: 700; }
+
+/* Chips */
+.chips { display: flex; gap: 8px; padding: 14px 20px 12px; overflow-x: auto; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; background: #f4f4f5; color: #52525b; flex-shrink: 0; }
+.chip.active { background: #0a0a0a; color: #fff; }
+
+/* Section header */
+.sec-hdr { padding: 4px 20px 10px; display: flex; align-items: center; gap: 8px; }
+.sec-hdr h2 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.sec-hdr.live h2 { color: #b91c1c; }
+.sec-hdr .ct { font-size: 11px; color: #a1a1aa; font-weight: 600; margin-left: auto; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.15); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+
+/* CREST BANNER CARD — team logos overlap, banner-style */
+.banner-card { margin: 0 16px 14px; background: #fff; border: 1px solid #e4e4e7; border-radius: 18px; overflow: hidden; }
+
+/* Banner: split background with both team colors */
+.banner { position: relative; height: 110px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+.banner::before, .banner::after { content: ""; position: absolute; top: 0; bottom: 0; width: 50%; opacity: 0.08; }
+.banner::before { left: 0; }
+.banner::after { right: 0; }
+/* Sub-classes set the colors */
+.banner .team-side { display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 2; flex: 0 0 100px; }
+.banner .crest-lg { width: 72px; height: 72px; filter: drop-shadow(0 4px 8px rgba(0,0,0,.12)); }
+.banner .nm { font-size: 13px; font-weight: 800; line-height: 1; }
+.banner .rec-mini { font-size: 10px; color: #71717a; font-weight: 600; font-family: ui-monospace, monospace; }
+.banner .center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; text-align: center; }
+.banner .at { font-size: 11px; color: #a1a1aa; font-weight: 800; letter-spacing: 0.1em; }
+.banner .score-big { display: flex; align-items: baseline; gap: 8px; font-family: ui-monospace, monospace; font-weight: 900; font-size: 22px; margin-top: 2px; }
+.banner .score-big .sp { color: #d4d4d8; font-size: 14px; }
+.banner .score-big .dim { color: #a1a1aa; }
+.banner .clock-pill { font-size: 10px; color: #b91c1c; font-weight: 900; background: #fef2f2; padding: 2px 7px; border-radius: 999px; border: 1px solid #fecaca; margin-top: 4px; display: inline-block; font-family: ui-monospace, monospace; }
+.banner .time-pill { font-size: 10px; color: #525252; font-weight: 700; background: #fafafa; padding: 2px 7px; border-radius: 999px; border: 1px solid #e4e4e7; margin-top: 4px; display: inline-block; }
+
+/* Meta strip below banner */
+.meta-strip { padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: #71717a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-top: 1px solid #f4f4f5; border-bottom: 1px solid #f4f4f5; background: #fafafa; }
+.meta-strip .lp { display: flex; align-items: center; gap: 6px; }
+.meta-strip .lp .bar { width: 2px; height: 10px; background: #10b981; border-radius: 1px; flex-shrink: 0; }
+
+/* Picks */
+.picks-area { padding: 12px; }
+.pick-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }
+.pick-row:last-child { margin-bottom: 0; }
+.pick { padding: 9px 6px; text-align: center; border-radius: 11px; background: #fafafa; border: 1px solid #e4e4e7; transition: transform .12s, background .12s; }
+.pick:active { transform: scale(0.96); background: #f4f4f5; }
+.pick.yes { background: #00b86b; border-color: #00b86b; color: #fff; }
+.pick .lbl { font-size: 10px; color: #71717a; line-height: 1.2; font-weight: 700; }
+.pick.yes .lbl { color: rgba(255,255,255,.9); }
+.pick .val { font-size: 14px; font-weight: 800; line-height: 1.2; margin-top: 2px; }
+.pick .odds { font-size: 10px; color: #71717a; line-height: 1.2; margin-top: 1px; font-weight: 600; }
+.pick.yes .odds { color: rgba(255,255,255,.9); }
+
+/* Nav */
+.nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e4e4e7; padding-bottom: max(18px, env(safe-area-inset-bottom, 18px)); z-index: 50; }
+.nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 8px 0; }
+.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px; color: #a1a1aa; position: relative; }
+.nav-btn.active { color: #0a0a0a; }
+.nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+.nav-btn.active svg { stroke-width: 2.5; }
+.nav-btn .lbl { font-size: 10px; font-weight: 700; }
+.nav-btn.active .lbl { font-weight: 800; }
+.nav-btn .badge { position: absolute; top: 2px; right: calc(50% - 16px); width: 16px; height: 16px; border-radius: 50%; background: #00b86b; color: #fff; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+
+@media (min-width: 500px) {
+  body { background: #f5f5f5; display: flex; justify-content: center; padding: 24px 0; }
+  .phone { width: 390px; min-height: 844px; background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.12); border-radius: 32px; overflow: hidden; position: relative; padding-bottom: 90px; }
+  .nav { max-width: 390px; margin: 0 auto; }
+}
+</style>
+</head>
+<body>
+<div class="phone">
+
+<header class="hdr">
+  <div class="hdr-left">
+    <div class="logo-mark">R</div>
+    <div>
+      <div class="brand-name">Real Sports</div>
+      <div class="brand-sub">Fake Slips</div>
+    </div>
+  </div>
+  <div class="bankroll num">$1,247</div>
+</header>
+
+<div class="chips">
+  <button class="chip active">Trending</button>
+  <button class="chip">NBA</button>
+  <button class="chip">MLB</button>
+  <button class="chip">NHL</button>
+  <button class="chip">NFL</button>
+</div>
+
+<div class="sec-hdr live"><span class="live-dot"></span><h2>Live</h2><span class="ct">1 game</span></div>
+
+<!-- LAL vs BOS LIVE -->
+<div class="banner-card">
+  <div class="banner" style="background:linear-gradient(90deg,#552583 0%,#552583 50%,#007A33 50%,#007A33 100%);">
+    <div class="team-side">
+      <svg class="crest-lg" viewBox="0 0 72 72">
+        <defs><radialGradient id="lal-b" cx="50%" cy="40%"><stop offset="0%" stop-color="#9D7BC9"/><stop offset="100%" stop-color="#552583"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="34" fill="url(#lal-b)" stroke="#FDB927" stroke-width="3"/>
+        <text x="36" y="42" text-anchor="middle" fill="#FDB927" font-weight="900" font-size="18" font-family="-apple-system" letter-spacing="-0.5">LAL</text>
+      </svg>
+      <div class="nm" style="color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)">Lakers</div>
+      <div class="rec-mini" style="color:rgba(255,255,255,.85)">14-8 W3</div>
+    </div>
+    <div class="center">
+      <div class="score-big"><span style="color:#FDB927;text-shadow:0 1px 3px rgba(0,0,0,.4)">72</span><span class="sp" style="color:rgba(255,255,255,.5)">·</span><span style="color:#fff;opacity:.7;text-shadow:0 1px 3px rgba(0,0,0,.4)">68</span></div>
+      <span class="clock-pill">Q3 · 8:42</span>
+    </div>
+    <div class="team-side">
+      <svg class="crest-lg" viewBox="0 0 72 72">
+        <defs><radialGradient id="bos-b" cx="50%" cy="40%"><stop offset="0%" stop-color="#22C266"/><stop offset="100%" stop-color="#007A33"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="34" fill="url(#bos-b)" stroke="#FFFFFF" stroke-width="3"/>
+        <text x="36" y="42" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="18" font-family="-apple-system" letter-spacing="-0.5">BOS</text>
+      </svg>
+      <div class="nm" style="color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)">Celtics</div>
+      <div class="rec-mini" style="color:rgba(255,255,255,.85)">17-5 W5</div>
+    </div>
+  </div>
+  <div class="meta-strip">
+    <span>NBA · Crypto.com Arena</span>
+    <span class="lp"><span class="bar"></span><span style="text-transform:none;font-weight:600;color:#3f3f46">L. James 3-PT · LAL on 8-2 run</span></span>
+  </div>
+  <div class="picks-area">
+    <div class="pick-row">
+      <button class="pick"><div class="lbl">LAL</div><div class="val num">-3.5</div><div class="odds num">-110</div></button>
+      <button class="pick"><div class="lbl">Over</div><div class="val num">224.5</div><div class="odds num">-108</div></button>
+      <button class="pick yes"><div class="lbl">LAL ML</div><div class="val num">-180</div><div class="odds">Bet</div></button>
+    </div>
+    <div class="pick-row">
+      <button class="pick"><div class="lbl">BOS</div><div class="val num">+3.5</div><div class="odds num">-110</div></button>
+      <button class="pick"><div class="lbl">Under</div><div class="val num">224.5</div><div class="odds num">-112</div></button>
+      <button class="pick"><div class="lbl">BOS ML</div><div class="val num">+155</div><div class="odds">·</div></button>
+    </div>
+  </div>
+</div>
+
+<div class="sec-hdr"><h2>Tonight</h2><span class="ct">2 games</span></div>
+
+<!-- GSW vs MIA -->
+<div class="banner-card">
+  <div class="banner" style="background:linear-gradient(90deg,#1D428A 0%,#1D428A 50%,#98002E 50%,#98002E 100%);">
+    <div class="team-side">
+      <svg class="crest-lg" viewBox="0 0 72 72">
+        <defs><radialGradient id="gsw-b" cx="50%" cy="40%"><stop offset="0%" stop-color="#4A78C8"/><stop offset="100%" stop-color="#1D428A"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="34" fill="url(#gsw-b)" stroke="#FFC72C" stroke-width="3"/>
+        <text x="36" y="42" text-anchor="middle" fill="#FFC72C" font-weight="900" font-size="16" font-family="-apple-system" letter-spacing="-0.5">GSW</text>
+      </svg>
+      <div class="nm" style="color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)">Warriors</div>
+      <div class="rec-mini" style="color:rgba(255,255,255,.85)">12-10 W2</div>
+    </div>
+    <div class="center">
+      <span class="at">@</span>
+      <div><span class="time-pill" style="background:rgba(255,255,255,.95)">10:00 PM ET</span></div>
+    </div>
+    <div class="team-side">
+      <svg class="crest-lg" viewBox="0 0 72 72">
+        <defs><radialGradient id="mia-b" cx="50%" cy="40%"><stop offset="0%" stop-color="#DA2858"/><stop offset="100%" stop-color="#98002E"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="34" fill="url(#mia-b)" stroke="#F9A01B" stroke-width="3"/>
+        <text x="36" y="42" text-anchor="middle" fill="#F9A01B" font-weight="900" font-size="16" font-family="-apple-system" letter-spacing="-0.5">MIA</text>
+      </svg>
+      <div class="nm" style="color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)">Heat</div>
+      <div class="rec-mini" style="color:rgba(255,255,255,.85)">11-11 L1</div>
+    </div>
+  </div>
+  <div class="meta-strip">
+    <span>NBA · Chase Center · in 3h 15m</span>
+  </div>
+  <div class="picks-area">
+    <div class="pick-row">
+      <button class="pick"><div class="lbl">GSW</div><div class="val num">-5.5</div><div class="odds num">-110</div></button>
+      <button class="pick"><div class="lbl">Over</div><div class="val num">221.5</div><div class="odds num">-110</div></button>
+      <button class="pick"><div class="lbl">GSW</div><div class="val num">-240</div><div class="odds">ML</div></button>
+    </div>
+    <div class="pick-row">
+      <button class="pick"><div class="lbl">MIA</div><div class="val num">+5.5</div><div class="odds num">-110</div></button>
+      <button class="pick"><div class="lbl">Under</div><div class="val num">221.5</div><div class="odds num">-110</div></button>
+      <button class="pick"><div class="lbl">MIA</div><div class="val num">+200</div><div class="odds">ML</div></button>
+    </div>
+  </div>
+</div>
+
+<div class="sec-hdr"><h2>Tomorrow</h2><span class="ct">2 games</span></div>
+
+<!-- NYY vs BOS MLB -->
+<div class="banner-card">
+  <div class="banner" style="background:linear-gradient(90deg,#003087 0%,#003087 50%,#BD3039 50%,#BD3039 100%);">
+    <div class="team-side">
+      <svg class="crest-lg" viewBox="0 0 72 72">
+        <defs><radialGradient id="nyy-b" cx="50%" cy="40%"><stop offset="0%" stop-color="#256AD0"/><stop offset="100%" stop-color="#003087"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="34" fill="url(#nyy-b)" stroke="#FFFFFF" stroke-width="3"/>
+        <text x="36" y="42" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="18" font-family="-apple-system" letter-spacing="-1">NY</text>
+      </svg>
+      <div class="nm" style="color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)">Yankees</div>
+      <div class="rec-mini" style="color:rgba(255,255,255,.85)">36-22 W4</div>
+    </div>
+    <div class="center">
+      <span class="at">@</span>
+      <div><span class="time-pill" style="background:rgba(255,255,255,.95)">Sun 7:05 PM</span></div>
+    </div>
+    <div class="team-side">
+      <svg class="crest-lg" viewBox="0 0 72 72">
+        <defs><radialGradient id="bosml-b" cx="50%" cy="40%"><stop offset="0%" stop-color="#E25865"/><stop offset="100%" stop-color="#BD3039"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="34" fill="url(#bosml-b)" stroke="#FFFFFF" stroke-width="3"/>
+        <text x="36" y="42" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="16" font-family="-apple-system" letter-spacing="-0.5">BOS</text>
+      </svg>
+      <div class="nm" style="color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)">Red Sox</div>
+      <div class="rec-mini" style="color:rgba(255,255,255,.85)">31-28 L2</div>
+    </div>
+  </div>
+  <div class="meta-strip"><span>MLB · Yankee Stadium</span></div>
+  <div class="picks-area">
+    <div class="pick-row">
+      <button class="pick"><div class="lbl">NYY</div><div class="val num">-1.5</div><div class="odds num">+135</div></button>
+      <button class="pick"><div class="lbl">Over</div><div class="val num">9.5</div><div class="odds num">-115</div></button>
+      <button class="pick"><div class="lbl">NYY</div><div class="val num">-150</div><div class="odds">ML</div></button>
+    </div>
+  </div>
+</div>
+
+<nav class="nav">
+  <div class="nav-grid">
+    <button class="nav-btn active"><svg viewBox="0 0 24 24"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg><span class="lbl">Markets</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="lbl">Parlay</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="lbl">Analyst</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg><span class="lbl">Slip</span><span class="badge">2</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span class="lbl">More</span></button>
+  </div>
+</nav>
+
+</div>
+</body>
+</html>

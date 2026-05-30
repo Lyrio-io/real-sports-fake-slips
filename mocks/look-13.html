@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#ffffff" />
+<title>Look 13 — Kalshi: Versus Hero · Real Sports Fake Slips</title>
+<style>
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: #ffffff; color: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
+body { min-height: 100vh; overflow-x: hidden; padding-bottom: 90px; }
+button { font-family: inherit; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; background: none; border: none; color: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Header */
+.hdr { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid #f4f4f5; }
+.hdr-left { display: flex; align-items: center; gap: 10px; }
+.logo-mark { width: 30px; height: 30px; border-radius: 9px; background: #00b86b; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.brand-name { font-size: 15px; font-weight: 800; line-height: 1.1; }
+.brand-sub { font-size: 10px; color: #71717a; line-height: 1.1; margin-top: 1px; }
+.bankroll { padding: 7px 14px; border-radius: 999px; background: #fafafa; border: 1px solid #e4e4e7; font-size: 13px; font-weight: 700; }
+
+/* Chips */
+.chips { display: flex; gap: 8px; padding: 14px 20px 14px; overflow-x: auto; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; background: #f4f4f5; color: #52525b; flex-shrink: 0; }
+.chip.active { background: #0a0a0a; color: #fff; }
+
+/* Section header */
+.sec-hdr { padding: 4px 20px 10px; display: flex; align-items: center; gap: 8px; }
+.sec-hdr.live h2 { color: #b91c1c; }
+.sec-hdr h2 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.sec-hdr .ct { font-size: 11px; color: #a1a1aa; font-weight: 600; margin-left: auto; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.15); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+
+/* MATCHUP CARD with VS-style hero */
+.matchup-card { margin: 0 16px 14px; background: #fff; border: 1px solid #e4e4e7; border-radius: 18px; overflow: hidden; }
+.matchup-card.live { border-color: #fecaca; }
+.matchup-card .meta-strip { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; border-bottom: 1px solid #f4f4f5; }
+.matchup-card .league { color: #71717a; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.matchup-card .when { color: #0a0a0a; font-weight: 700; }
+.matchup-card .when.live { color: #b91c1c; }
+
+/* VS HERO — two huge logos with VS between, team-tinted background */
+.vs-hero { display: grid; grid-template-columns: 1fr 50px 1fr; align-items: center; padding: 18px 14px 16px; position: relative; }
+.vs-hero .side { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.vs-hero .side.away { text-align: center; }
+.vs-hero .side.home { text-align: center; }
+.crest-xl { width: 72px; height: 72px; }
+.vs-hero .name { font-size: 14px; font-weight: 800; line-height: 1.1; text-align: center; }
+.vs-hero .rec { font-size: 11px; color: #71717a; font-weight: 600; }
+.vs-hero .vs { text-align: center; font-size: 13px; font-weight: 900; color: #a1a1aa; letter-spacing: -0.05em; }
+.vs-hero .vs .vsword { display: block; font-size: 11px; letter-spacing: 0.1em; }
+.vs-hero .score-pair { display: block; font-family: ui-monospace, monospace; font-size: 18px; color: #0a0a0a; font-weight: 900; margin-top: 4px; }
+.vs-hero .score-pair .dash { color: #d4d4d8; padding: 0 4px; }
+.vs-hero .score-pair .dim { color: #a1a1aa; }
+
+/* live game gets a quarter strip */
+.q-strip { padding: 6px 14px 10px; display: flex; gap: 4px; align-items: center; justify-content: center; font-family: ui-monospace, monospace; font-size: 10px; color: #71717a; }
+.q-strip .lab { font-weight: 700; color: #a1a1aa; }
+.q-strip .v { padding: 2px 6px; background: #fafafa; border-radius: 4px; font-weight: 700; }
+.q-strip .v.now { background: #fef2f2; color: #b91c1c; font-weight: 900; }
+.q-strip .sep { color: #d4d4d8; }
+
+/* Picks */
+.picks-area { padding: 4px 14px 14px; }
+.pick-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }
+.pick-row:last-child { margin-bottom: 0; }
+.pick { padding: 9px 6px; text-align: center; border-radius: 11px; background: #fafafa; border: 1px solid #e4e4e7; transition: transform .12s, background .12s; }
+.pick:active { transform: scale(0.96); background: #f4f4f5; }
+.pick.yes { background: #00b86b; border-color: #00b86b; color: #fff; }
+.pick .lbl { font-size: 10px; color: #71717a; line-height: 1.2; font-weight: 700; }
+.pick.yes .lbl { color: rgba(255,255,255,.9); }
+.pick .val { font-size: 14px; font-weight: 800; line-height: 1.2; margin-top: 2px; }
+.pick .odds { font-size: 10px; color: #71717a; line-height: 1.2; margin-top: 1px; font-weight: 600; }
+.pick.yes .odds { color: rgba(255,255,255,.9); }
+
+/* Last play strip for live */
+.lp { padding: 9px 14px; border-top: 1px solid #fee2e2; background: #fef9f9; display: flex; align-items: center; gap: 9px; font-size: 11.5px; color: #525252; }
+.lp .bar { width: 3px; height: 14px; background: #10b981; border-radius: 2px; flex-shrink: 0; }
+.lp b { color: #0a0a0a; font-weight: 800; }
+.lp .src { margin-left: auto; font-size: 9px; padding: 2px 5px; background: #fff; color: #71717a; border-radius: 4px; border: 1px solid #e4e4e7; font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
+
+/* Nav */
+.nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e4e4e7; padding-bottom: max(18px, env(safe-area-inset-bottom, 18px)); z-index: 50; }
+.nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 8px 0; }
+.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px; color: #a1a1aa; position: relative; }
+.nav-btn.active { color: #0a0a0a; }
+.nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+.nav-btn.active svg { stroke-width: 2.5; }
+.nav-btn .lbl { font-size: 10px; font-weight: 700; }
+.nav-btn.active .lbl { font-weight: 800; }
+.nav-btn .badge { position: absolute; top: 2px; right: calc(50% - 16px); width: 16px; height: 16px; border-radius: 50%; background: #00b86b; color: #fff; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+
+@media (min-width: 500px) {
+  body { background: #f5f5f5; display: flex; justify-content: center; padding: 24px 0; }
+  .phone { width: 390px; min-height: 844px; background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.12); border-radius: 32px; overflow: hidden; position: relative; padding-bottom: 90px; }
+  .nav { max-width: 390px; margin: 0 auto; }
+}
+</style>
+</head>
+<body>
+<div class="phone">
+
+<header class="hdr">
+  <div class="hdr-left">
+    <div class="logo-mark">R</div>
+    <div>
+      <div class="brand-name">Real Sports</div>
+      <div class="brand-sub">Fake Slips</div>
+    </div>
+  </div>
+  <div class="bankroll num">$1,247</div>
+</header>
+
+<div class="chips">
+  <button class="chip active">Trending</button>
+  <button class="chip">NBA</button>
+  <button class="chip">MLB</button>
+  <button class="chip">NHL</button>
+  <button class="chip">NFL</button>
+</div>
+
+<div class="sec-hdr live">
+  <span class="live-dot"></span>
+  <h2>Live</h2>
+  <span class="ct">1 game</span>
+</div>
+
+<!-- LAL vs BOS LIVE — VS Hero -->
+<div class="matchup-card live" style="background:linear-gradient(135deg,rgba(85,37,131,.04) 0%,#fff 30%,#fff 70%,rgba(0,122,51,.04) 100%);">
+  <div class="meta-strip">
+    <span class="league">NBA · Crypto.com</span>
+    <span class="when live">● Live · Q3 8:42</span>
+  </div>
+  <div class="vs-hero">
+    <div class="side away">
+      <svg class="crest-xl" viewBox="0 0 72 72">
+        <defs><radialGradient id="lal-xl" cx="50%" cy="40%"><stop offset="0%" stop-color="#7B5BAD"/><stop offset="100%" stop-color="#552583"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="34" fill="url(#lal-xl)" stroke="#FDB927" stroke-width="2.5"/>
+        <text x="36" y="42" text-anchor="middle" fill="#FDB927" font-weight="900" font-size="18" font-family="-apple-system" letter-spacing="-0.5">LAL</text>
+      </svg>
+      <div class="name">Lakers</div>
+      <div class="rec">14-8 · W3</div>
+    </div>
+    <div class="vs">
+      <span class="vsword">VS</span>
+      <span class="score-pair num">72<span class="dash">·</span><span class="dim">68</span></span>
+    </div>
+    <div class="side home">
+      <svg class="crest-xl" viewBox="0 0 72 72">
+        <defs><radialGradient id="bos-xl" cx="50%" cy="40%"><stop offset="0%" stop-color="#0DAA4F"/><stop offset="100%" stop-color="#007A33"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="34" fill="url(#bos-xl)" stroke="#FFFFFF" stroke-width="2.5"/>
+        <text x="36" y="42" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="18" font-family="-apple-system" letter-spacing="-0.5">BOS</text>
+      </svg>
+      <div class="name">Celtics</div>
+      <div class="rec">17-5 · W5</div>
+    </div>
+  </div>
+  <div class="q-strip">
+    <span class="lab">LAL</span>
+    <span class="v">22</span><span class="sep">·</span><span class="v">26</span><span class="sep">·</span><span class="v now">24</span><span class="sep">·</span><span class="v">—</span>
+    <span class="sep" style="margin:0 8px">/</span>
+    <span class="lab">BOS</span>
+    <span class="v">19</span><span class="sep">·</span><span class="v">22</span><span class="sep">·</span><span class="v now">27</span><span class="sep">·</span><span class="v">—</span>
+  </div>
+  <div class="picks-area">
+    <div class="pick-row">
+      <button class="pick"><div class="lbl">LAL</div><div class="val num">-3.5</div><div class="odds num">-110</div></button>
+      <button class="pick"><div class="lbl">Over</div><div class="val num">224.5</div><div class="odds num">-108</div></button>
+      <button class="pick yes"><div class="lbl">LAL ML</div><div class="val num">-180</div><div class="odds">Bet</div></button>
+    </div>
+    <div class="pick-row">
+      <button class="pick"><div class="lbl">BOS</div><div class="val num">+3.5</div><div class="odds num">-110</div></button>
+      <button class="pick"><div class="lbl">Under</div><div class="val num">224.5</div><div class="odds num">-112</div></button>
+      <button class="pick"><div class="lbl">BOS ML</div><div class="val num">+155</div><div class="odds">·</div></button>
+    </div>
+  </div>
+  <div class="lp"><div class="bar"></div><div><b>L. James</b> 3-PT made · LAL on <b>8-2 run</b></div><div class="src">ESPN</div></div>
+</div>
+
+<div class="sec-hdr">
+  <h2>Tonight</h2>
+  <span class="ct">2 games</span>
+</div>
+
+<!-- GSW vs MIA — VS Hero -->
+<div class="matchup-card" style="background:linear-gradient(135deg,rgba(29,66,138,.04) 0%,#fff 30%,#fff 70%,rgba(152,0,46,.04) 100%);">
+  <div class="meta-strip">
+    <span class="league">NBA · Chase Center</span>
+    <span class="when">10:00 PM ET · 3h</span>
+  </div>
+  <div class="vs-hero">
+    <div class="side away">
+      <svg class="crest-xl" viewBox="0 0 72 72">
+        <defs><radialGradient id="gsw-xl" cx="50%" cy="40%"><stop offset="0%" stop-color="#3A6BC0"/><stop offset="100%" stop-color="#1D428A"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="34" fill="url(#gsw-xl)" stroke="#FFC72C" stroke-width="2.5"/>
+        <text x="36" y="42" text-anchor="middle" fill="#FFC72C" font-weight="900" font-size="16" font-family="-apple-system" letter-spacing="-0.5">GSW</text>
+      </svg>
+      <div class="name">Warriors</div>
+      <div class="rec">12-10 · W2</div>
+    </div>
+    <div class="vs">
+      <span class="vsword">VS</span>
+    </div>
+    <div class="side home">
+      <svg class="crest-xl" viewBox="0 0 72 72">
+        <defs><radialGradient id="mia-xl" cx="50%" cy="40%"><stop offset="0%" stop-color="#C00040"/><stop offset="100%" stop-color="#98002E"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="34" fill="url(#mia-xl)" stroke="#F9A01B" stroke-width="2.5"/>
+        <text x="36" y="42" text-anchor="middle" fill="#F9A01B" font-weight="900" font-size="16" font-family="-apple-system" letter-spacing="-0.5">MIA</text>
+      </svg>
+      <div class="name">Heat</div>
+      <div class="rec">11-11 · L1</div>
+    </div>
+  </div>
+  <div class="picks-area">
+    <div class="pick-row">
+      <button class="pick"><div class="lbl">GSW</div><div class="val num">-5.5</div><div class="odds num">-110</div></button>
+      <button class="pick"><div class="lbl">Over</div><div class="val num">221.5</div><div class="odds num">-110</div></button>
+      <button class="pick"><div class="lbl">GSW</div><div class="val num">-240</div><div class="odds">ML</div></button>
+    </div>
+    <div class="pick-row">
+      <button class="pick"><div class="lbl">MIA</div><div class="val num">+5.5</div><div class="odds num">-110</div></button>
+      <button class="pick"><div class="lbl">Under</div><div class="val num">221.5</div><div class="odds num">-110</div></button>
+      <button class="pick"><div class="lbl">MIA</div><div class="val num">+200</div><div class="odds">ML</div></button>
+    </div>
+  </div>
+</div>
+
+<div class="sec-hdr">
+  <h2>Tomorrow</h2>
+  <span class="ct">2 games</span>
+</div>
+
+<!-- NYY vs BOS MLB — VS Hero -->
+<div class="matchup-card" style="background:linear-gradient(135deg,rgba(0,48,135,.04) 0%,#fff 30%,#fff 70%,rgba(189,48,57,.04) 100%);">
+  <div class="meta-strip">
+    <span class="league">MLB · Yankee Stadium</span>
+    <span class="when">Sun 7:05 PM ET</span>
+  </div>
+  <div class="vs-hero">
+    <div class="side away">
+      <svg class="crest-xl" viewBox="0 0 72 72">
+        <defs><radialGradient id="nyy-xl" cx="50%" cy="40%"><stop offset="0%" stop-color="#1956B6"/><stop offset="100%" stop-color="#003087"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="34" fill="url(#nyy-xl)" stroke="#FFFFFF" stroke-width="2.5"/>
+        <text x="36" y="42" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="18" font-family="-apple-system" letter-spacing="-1">NY</text>
+      </svg>
+      <div class="name">Yankees</div>
+      <div class="rec">36-22 · W4</div>
+    </div>
+    <div class="vs">
+      <span class="vsword">VS</span>
+    </div>
+    <div class="side home">
+      <svg class="crest-xl" viewBox="0 0 72 72">
+        <defs><radialGradient id="bosml-xl" cx="50%" cy="40%"><stop offset="0%" stop-color="#D44848"/><stop offset="100%" stop-color="#BD3039"/></radialGradient></defs>
+        <circle cx="36" cy="36" r="34" fill="url(#bosml-xl)" stroke="#FFFFFF" stroke-width="2.5"/>
+        <text x="36" y="42" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="16" font-family="-apple-system" letter-spacing="-0.5">BOS</text>
+      </svg>
+      <div class="name">Red Sox</div>
+      <div class="rec">31-28 · L2</div>
+    </div>
+  </div>
+  <div class="picks-area">
+    <div class="pick-row">
+      <button class="pick"><div class="lbl">NYY</div><div class="val num">-1.5</div><div class="odds num">+135</div></button>
+      <button class="pick"><div class="lbl">Over</div><div class="val num">9.5</div><div class="odds num">-115</div></button>
+      <button class="pick"><div class="lbl">NYY</div><div class="val num">-150</div><div class="odds">ML</div></button>
+    </div>
+  </div>
+</div>
+
+<nav class="nav">
+  <div class="nav-grid">
+    <button class="nav-btn active"><svg viewBox="0 0 24 24"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg><span class="lbl">Markets</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="lbl">Parlay</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="lbl">Analyst</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg><span class="lbl">Slip</span><span class="badge">2</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span class="lbl">More</span></button>
+  </div>
+</nav>
+
+</div>
+</body>
+</html>
