@@ -2252,22 +2252,19 @@ const MOCK_ANALYSIS = {
     { bet: "Live in-game bets", gameId: "mock_mlb_5", trap_type: "high_vig", reasoning: "Live bets typically take 7-10% house cut versus 3-4% before the game starts. Same outcome, more expensive. Stick to pre-game lines." },
   ],
   parlay_candidates: {
-    two_leg: { legs: [
+    two_leg_a: { legs: [
       { gameId: "mock_mlb_1", market: "h2h", outcome: "New York Yankees", point: null },
       { gameId: "mock_mlb_2", market: "spreads", outcome: "San Diego Padres", point: 1.5 },
-    ], reasoning: "Both bets are well-priced individually. Putting them together pays around 3.5 times your stake. Two-leg parlays still leak some money to the house, but the legs themselves are sharp." },
+    ], reasoning: "Both legs are well-priced individually. Two-leg parlays still leak some money to the house, but these legs themselves are sharp." },
+    two_leg_b: { legs: [
+      { gameId: "mock_nhl_2", market: "h2h", outcome: "Carolina Hurricanes", point: null },
+      { gameId: "mock_mlb_3", market: "totals", outcome: "Under", point: 9.0 },
+    ], reasoning: "Different sports so the legs don't move together. Hurricanes ML is line-shopping +EV, the Under has a small juice. Two-leg sweet spot for tracking." },
     three_leg: { legs: [
       { gameId: "mock_mlb_1", market: "h2h", outcome: "New York Yankees", point: null },
       { gameId: "mock_mlb_2", market: "spreads", outcome: "San Diego Padres", point: 1.5 },
       { gameId: "mock_nhl_2", market: "h2h", outcome: "Carolina Hurricanes", point: null },
-    ], reasoning: "Three solid bets, each paying better than the median price. Across different sports so they don't depend on each other. This is about as good as a 3-leg parlay gets — but all 3 still need to win, which is rare." },
-    five_leg: { legs: [
-      { gameId: "mock_mlb_1", market: "h2h", outcome: "New York Yankees", point: null },
-      { gameId: "mock_mlb_2", market: "spreads", outcome: "San Diego Padres", point: 1.5 },
-      { gameId: "mock_mlb_3", market: "totals", outcome: "Under", point: 9.0 },
-      { gameId: "mock_nhl_2", market: "h2h", outcome: "Carolina Hurricanes", point: null },
-      { gameId: "mock_nba_1", market: "h2h", outcome: "Boston Celtics", point: null },
-    ], reasoning: "Even with smart legs, you'll only hit a 5-leg parlay about 5% of the time. This is more like a lottery ticket than a smart bet. Fun if you have $5 to lose; not a way to make money over time." },
+    ], reasoning: "Three +EV legs across different sports. Even so, a 3-leg of fair-priced sides hits roughly 12-15% of the time. Track it as paper to see if the math holds up." },
   },
   warning: "Even when the math looks good, ONE bet is still a gamble. The math only matters if you make many bets like this over time.",
 };
@@ -4890,16 +4887,59 @@ async function autoSettle(silent = false) {
     else { const remDec = b.legs.filter(l => l.status === 'won').reduce((a, l) => a * l.decimal, 1); b.decimal = remDec; b.toWin = profit(b.stake, remDec); if (remDec === 1) finalizeBet(b, 'push'); else finalizeBet(b, 'won'); }
     changed++;
   }
+  // Also grade any paper-tracked AI parlays using the same scoresBySport map
+  const ledger = p.aiParlayLedger || [];
+  let aiGraded = 0;
+  for (const trk of ledger) {
+    if (trk.result) continue;
+    let anyLost = false, allDone = true, allPushOrWon = true;
+    let legStatuses = [];
+    for (const leg of trk.legs) {
+      const isFullGame = leg.market === 'h2h' || leg.market === 'spreads' || leg.market === 'totals' || leg.market === 'alternate_spreads' || leg.market === 'alternate_totals';
+      if (!isFullGame) { allDone = false; break; }
+      const list = scoresBySport[leg.sportKey] || [];
+      const game = list.find(g => g.id === leg.gameId);
+      if (!game || !game.completed) { allDone = false; break; }
+      const sc = {}; (game.scores || []).forEach(s => { sc[s.name] = parseFloat(s.score); });
+      const hs = sc[game.home_team], as = sc[game.away_team];
+      if (hs == null || as == null) { allDone = false; break; }
+      let st = 'pending';
+      if (leg.market === 'h2h') {
+        if (hs === as) st = 'push';
+        else st = ((leg.outcome === game.home_team) === (hs > as)) ? 'won' : 'lost';
+      } else if (leg.market === 'spreads' || leg.market === 'alternate_spreads') {
+        const margin = leg.outcome === game.home_team ? (hs + leg.point) - as : (as + leg.point) - hs;
+        st = margin > 0 ? 'won' : margin < 0 ? 'lost' : 'push';
+      } else if (leg.market === 'totals' || leg.market === 'alternate_totals') {
+        const total = hs + as;
+        if (total === leg.point) st = 'push';
+        else if (leg.outcome === 'Over') st = total > leg.point ? 'won' : 'lost';
+        else st = total < leg.point ? 'won' : 'lost';
+      }
+      legStatuses.push(st);
+      if (st === 'lost') anyLost = true;
+      if (st !== 'won' && st !== 'push') allPushOrWon = false;
+    }
+    if (allDone) {
+      trk.legStatuses = legStatuses;
+      trk.result = anyLost ? 'lost' : (legStatuses.every(s => s === 'push') ? 'push' : 'won');
+      trk.settledAt = nowISO();
+      aiGraded++;
+    }
+  }
+  if (aiGraded > 0) persistProfiles();
   // Build a clearer status message
-  if (!silent || changed > 0 || outsideWindow > 0) {
+  if (!silent || changed > 0 || outsideWindow > 0 || aiGraded > 0) {
     const parts = [`${changed} settled`];
+    if (aiGraded > 0) parts.push(`${aiGraded} AI parlay${aiGraded === 1 ? '' : 's'} graded`);
     if (stillRunning > 0) parts.push(`${stillRunning} in progress`);
     if (outsideWindow > 0) parts.push(`${outsideWindow} too old (>3d window)`);
     if (noScoreData > 0) parts.push(`${noScoreData} missing score data`);
     toast(`Auto-settle: ${parts.join(' · ')}`);
   }
-  // Re-render Open Bets so the stuck banner updates
+  // Re-render Open Bets so the stuck banner updates + analyst if AI parlays graded
   renderOpenBets(); renderHeader();
+  if (aiGraded > 0) renderAnalysis();
 }
 
 /* Bankroll Plan render — savings ledger + half-unit progress */
@@ -5282,9 +5322,9 @@ OUTPUT JSON (strict, no markdown wrapper):
     { "bet": "...", "gameId": "...", "trap_type": "high_vig|illiquid|favorite_parlay_drag|other", "reasoning": "2-3 simple sentences explaining why this bet stinks. Use a comparison if it helps." }
   ],
   "parlay_candidates": {
-    "two_leg":   { "legs": [...], "reasoning": "2-3 simple sentences on why these legs go together. Remind the user that parlays add up the books' cut." } or null,
-    "three_leg": { "legs": [...], "reasoning": "..." } or null,
-    "five_leg":  { "legs": [...], "reasoning": "Always say something like: 'This is more like a lottery ticket than a smart bet.'" } or null
+    "two_leg_a": { "legs": [...], "reasoning": "Why these two go together. Be specific." } or null,
+    "two_leg_b": { "legs": [...], "reasoning": "A second 2-leg option using DIFFERENT legs than two_leg_a." } or null,
+    "three_leg": { "legs": [...], "reasoning": "Why these three. Acknowledge: a 3-leg of fair-priced sides has roughly 12-15% hit rate even when each leg is +EV." } or null
   },
   "warning": "always include: 'Even when the math looks good, ONE bet is still a gamble. The math only matters if you make many bets like this over time. Sharp money / public betting % are not in this data.'"
 }
@@ -5293,8 +5333,8 @@ RULES:
 - ONLY analyze games present in the input JSON. NEVER invent, reference, or mention any team, league, or game that is not in the input. If a sport is not in the input, do not bring it up.
 - The input is filtered to today's slate only. Do NOT reference future-week games, offseason leagues, or hypothetical matchups.
 - Every gameId, team name, and outcome you cite must appear verbatim in the input.
-- Pick 3-5 edges, 3-5 traps. Give all 3 parlay candidates if you can.
-- Parlays use legs from DIFFERENT games.
+- Pick 3-5 edges, 3-5 traps.
+- Parlays: max THREE total (two_leg_a, two_leg_b, three_leg). These are tracked separately by the user as paper-trade picks, so be selective — only your highest-conviction combinations. Legs must come from DIFFERENT games. Do NOT generate a five_leg.
 - Output ONLY the JSON object. No markdown fences, no extra text.
 - gameId values must match input exactly.`;
 
@@ -5504,34 +5544,78 @@ function renderAnalysis() {
     </div>`;
   }
 
-  // Parlay candidates
-  function parlayBlock(label, obj) {
+  // AI Parlays — max 3, each with REAL hit rate math (no-vig combined prob)
+  function parlayCard(label, obj, key) {
     if (!obj || !obj.legs || !obj.legs.length) return '';
+    const resolvedLegs = obj.legs.map(legFromAnalysisItem).filter(Boolean);
+    if (resolvedLegs.length !== obj.legs.length) {
+      // Some legs not resolvable — still show but flag
+      return `<div class="bg-ink-800 border border-ink-700 rounded-xl p-3 opacity-60">
+        <div class="text-xs uppercase tracking-widest text-gold-500 font-bold">${label}</div>
+        <div class="text-[11px] text-warn-500 mt-1">Legs unavailable — refresh lines and re-run analysis</div>
+      </div>`;
+    }
+    // Combined decimal odds
+    const combinedDec = resolvedLegs.reduce((a, l) => a * americanToDecimal(l.american), 1);
+    const combinedAmer = decimalToAmerican(combinedDec);
+    // No-vig hit rate per leg: strip the market vig if we can find the opposing side; fallback to implied
+    const noVigLegProbs = resolvedLegs.map(l => {
+      const v = vigForLeg(l);
+      if (v != null) {
+        // implied (vigged) / (1 + vig%/100) → fair prob
+        return americanToImplied(l.american) / (1 + v / 100);
+      }
+      return americanToImplied(l.american);
+    });
+    const trueHitRate = noVigLegProbs.reduce((a, p) => a * p, 1);   // independent assumption
+    const impliedHitRate = resolvedLegs.reduce((a, l) => a * americanToImplied(l.american), 1);
+    const edgePct = ((trueHitRate * combinedDec) - 1) * 100; // EV per $1 staked
+    const legsJSON = JSON.stringify(obj.legs).replace(/'/g, '&#39;');
+    const trackJSON = JSON.stringify({ key, label, legs: resolvedLegs, combinedAmer, combinedDec, trueHitRate, edgePct, reasoning: obj.reasoning || '' }).replace(/'/g, '&#39;');
+    const hitCls = trueHitRate >= 0.35 ? 'text-neon-500' : trueHitRate >= 0.15 ? 'text-warn-500' : 'text-danger-500';
+    const edgeCls = edgePct > 0 ? 'text-neon-500' : edgePct < -3 ? 'text-danger-500' : 'text-warn-500';
     return `<div class="bg-ink-800 border border-ink-700 rounded-xl p-3">
       <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
         <div class="text-xs uppercase tracking-widest text-gold-500 font-bold">${label}</div>
-        <button class="add-parlay text-xs bg-gold-500 text-ink-950 font-bold px-3 py-1 rounded-lg hover:brightness-110" data-legs='${JSON.stringify(obj.legs).replace(/'/g, '&#39;')}'>Build this parlay</button>
+        <div class="num font-bold text-base">${fmtAmerican(combinedAmer)}</div>
       </div>
-      <ul class="text-xs space-y-1 mb-2">
-        ${obj.legs.map((l, i) => {
-          const leg = legFromAnalysisItem(l);
-          return `<li class="flex justify-between gap-2"><span class="text-ink-200">${i+1}. ${escapeHtml(leg ? legDescription(leg) : (l.outcome || 'leg'))}</span>${leg ? `<span class="num text-ink-300">${fmtAmerican(leg.american)}</span>` : '<span class="text-ink-500">—</span>'}</li>`;
-        }).join('')}
+      <ul class="text-xs space-y-1 mb-2.5">
+        ${resolvedLegs.map((leg, i) => `<li class="flex justify-between gap-2"><span class="text-ink-200">${i+1}. ${escapeHtml(legDescription(leg))} <span class="text-ink-400">· ${escapeHtml(leg.away)} @ ${escapeHtml(leg.home)}</span></span><span class="num text-ink-300 shrink-0">${fmtAmerican(leg.american)}</span></li>`).join('')}
       </ul>
-      <div class="text-[11px] text-ink-400">${escapeHtml(obj.reasoning || '')}</div>
+      <div class="bg-ink-900 rounded-lg p-2.5 mb-2 grid grid-cols-3 gap-2 text-center">
+        <div><div class="text-[9px] uppercase tracking-wider text-ink-400 font-bold">True hit rate</div><div class="num font-bold text-sm ${hitCls}">${(trueHitRate * 100).toFixed(1)}%</div></div>
+        <div><div class="text-[9px] uppercase tracking-wider text-ink-400 font-bold">Book implied</div><div class="num font-bold text-sm text-ink-200">${(impliedHitRate * 100).toFixed(1)}%</div></div>
+        <div><div class="text-[9px] uppercase tracking-wider text-ink-400 font-bold">Edge per $1</div><div class="num font-bold text-sm ${edgeCls}">${edgePct >= 0 ? '+' : ''}${edgePct.toFixed(1)}%</div></div>
+      </div>
+      <div class="text-[11px] text-ink-300 leading-snug mb-2.5">${escapeHtml(obj.reasoning || '')}</div>
+      <div class="flex gap-2 flex-wrap">
+        <button class="add-parlay text-xs bg-gold-500 text-ink-950 font-bold px-3 py-1.5 rounded-lg hover:brightness-110" data-legs='${legsJSON}'>Load into slip</button>
+        <button class="track-parlay text-xs bg-violet-500 hover:bg-violet-400 text-ink-950 font-bold px-3 py-1.5 rounded-lg" data-track='${trackJSON}'>📊 Paper-track</button>
+      </div>
     </div>`;
   }
   const parlayHtml = [
-    parlayBlock('2-Leg Candidate', pc.two_leg),
-    parlayBlock('3-Leg Candidate', pc.three_leg),
-    parlayBlock('5-Leg Candidate (high variance)', pc.five_leg),
+    parlayCard('2-Leg · Option A', pc.two_leg_a || pc.two_leg, 'two_leg_a'),
+    parlayCard('2-Leg · Option B', pc.two_leg_b, 'two_leg_b'),
+    parlayCard('3-Leg', pc.three_leg, 'three_leg'),
   ].filter(Boolean).join('');
   if (parlayHtml) {
+    // Show running paper-track record at top of the panel
+    const ledger = (P()?.aiParlayLedger) || [];
+    const settled = ledger.filter(x => x.result);
+    const wins = settled.filter(x => x.result === 'won').length;
+    const losses = settled.filter(x => x.result === 'lost').length;
+    const pushes = settled.filter(x => x.result === 'push').length;
+    const pl = settled.reduce((a, x) => a + (x.result === 'won' ? (x.payoutAt1$ - 1) : x.result === 'lost' ? -1 : 0), 0);
+    const trackChip = ledger.length ? `<span class="ml-auto text-[11px] num px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-500 font-bold">📊 Track: ${wins}-${losses}-${pushes} · ${pl >= 0 ? '+' : ''}${pl.toFixed(2)}u</span>` : '';
     html += `<div class="bg-ink-900 border border-ink-700 rounded-2xl p-4">
-      <div class="flex items-center gap-2 mb-3">
+      <div class="flex items-center gap-2 mb-3 flex-wrap">
         <span class="text-gold-500 text-lg">●</span>
-        <h3 class="display font-bold text-base">Parlay candidates</h3>
-        <span class="text-[11px] text-ink-400">structural picks · still -EV across many bets</span>
+        <h3 class="display font-bold text-base">AI parlays — pick of the day</h3>
+        ${trackChip}
+      </div>
+      <div class="text-[11px] text-ink-400 leading-snug mb-3 bg-ink-800/40 rounded-lg p-2 border border-ink-700">
+        Real hit-rate math shown. A 3-leg of three +EV legs still hits ~15% of the time. Paper-track these to prove (or disprove) that they're worth playing — without risking real bankroll on them. Tracked record sits on the left chip.
       </div>
       <div class="space-y-2">${parlayHtml}</div>
     </div>`;
@@ -5557,6 +5641,34 @@ function renderAnalysis() {
     document.querySelectorAll('.pick').forEach(syncPickSelection);
     switchTab('parlay');
     toast(`Loaded ${legs.length}-leg parlay into slip`);
+  }));
+  out.querySelectorAll('.track-parlay').forEach(b => b.addEventListener('click', () => {
+    const p = P(); if (!p) return;
+    const data = JSON.parse(b.dataset.track);
+    p.aiParlayLedger = p.aiParlayLedger || [];
+    // De-dupe by leg signature on the same day
+    const sig = data.legs.map(l => `${l.gameId}:${l.market}:${l.outcome}:${l.point ?? ''}`).sort().join('|');
+    const todayKey = new Date().toISOString().slice(0,10);
+    const existing = p.aiParlayLedger.find(x => x.sig === sig && x.day === todayKey);
+    if (existing) { toast('Already tracking this one today'); return; }
+    p.aiParlayLedger.push({
+      id: uid(), trackedAt: nowISO(), day: todayKey, sig,
+      label: data.label,
+      legs: data.legs.map(l => ({
+        gameId: l.gameId, sportKey: l.sportKey, sportTitle: l.sportTitle,
+        home: l.home, away: l.away, start: l.start,
+        market: l.market, outcome: l.outcome, point: l.point,
+        american: l.american, decimal: l.decimal,
+      })),
+      combinedAmer: data.combinedAmer, combinedDec: data.combinedDec,
+      trueHitRate: data.trueHitRate, edgePct: data.edgePct,
+      reasoning: data.reasoning,
+      payoutAt1$: data.combinedDec,  // payout multiplier on a $1 paper stake
+      result: null,                    // 'won' | 'lost' | 'push' once all legs settled
+    });
+    persistProfiles();
+    toast(`Paper-tracking ${data.label}. Settles when all legs grade.`);
+    renderAnalysis();
   }));
 }
 
