@@ -703,6 +703,16 @@
   .gc-live-slot { margin: 0 14px 10px; padding: 10px 12px; background: linear-gradient(180deg, #1a1f2e 0%, #131722 100%); border: 1px solid #2a3142; border-left: 3px solid #ef4444; border-radius: 12px; font-size: 12px; }
   .gc-live-loading { color: #6b7280; font-size: 11px; font-style: italic; }
 
+  /* Line-shopping + movement footer */
+  .shop-footer { padding: 8px 14px 12px; border-top: 1px dashed #1f2530; margin: 0 4px; }
+  .shop-footer-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; font-weight: 700; margin-bottom: 6px; }
+  .shop-row { font-size: 11px; padding: 3px 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .shop-row .shop-label { font-weight: 700; color: #cbd5e1; min-width: 90px; }
+  .shop-badge { background: rgba(163,255,18,0.12); color: #a3ff12; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-family: ui-monospace, monospace; }
+  .move-badge { padding: 1px 6px; border-radius: 4px; font-weight: 700; font-family: ui-monospace, monospace; }
+  .move-badge.up { background: rgba(163,255,18,0.12); color: #a3ff12; }
+  .move-badge.down { background: rgba(239,68,68,0.12); color: #ef4444; }
+
   /* Vig + fair-price footer (per-card "is this a sharp or juiced line?" callout) */
   .vig-footer { padding: 8px 14px 12px; border-top: 1px dashed #1f2530; margin: 0 4px; }
   .vig-footer-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; font-weight: 700; margin-bottom: 4px; }
@@ -2629,6 +2639,85 @@ function bestOddsForOutcome(game, marketKey, outcomeName, point) {
   }
   return best;
 }
+// All bookmaker prices for an outcome (used by line-shopping highlight to show median vs best gap)
+function allPricesForOutcome(game, marketKey, outcomeName, point) {
+  const prices = [];
+  for (const bm of game.bookmakers || []) {
+    const market = (bm.markets || []).find(m => m.key === marketKey); if (!market) continue;
+    for (const o of market.outcomes || []) {
+      if (o.name !== outcomeName) continue;
+      if (point != null && o.point !== point) continue;
+      prices.push({ american: o.price, decimal: americanToDecimal(o.price), book: bm.title });
+    }
+  }
+  return prices;
+}
+// Returns { gapCents } — how many cents better the best price is vs the median across books
+function bestVsMedianGapCents(game, marketKey, outcomeName, point) {
+  const prices = allPricesForOutcome(game, marketKey, outcomeName, point);
+  if (prices.length < 2) return null;
+  prices.sort((a, b) => a.decimal - b.decimal);
+  const med = prices[Math.floor(prices.length / 2)].decimal;
+  const best = prices[prices.length - 1].decimal;
+  return { gapCents: Math.round((best - med) * 100), nBooks: prices.length, bestBook: prices[prices.length - 1].book };
+}
+
+/* ===== Opening-line snapshots (for "line moved X since open") ===== */
+const LS_OPENING_LINES = 'psb.openingLines';
+let _openingLines = JSON.parse(localStorage.getItem(LS_OPENING_LINES) || '{}');
+function _openingKey(gameId, market, outcome, point) {
+  return `${gameId}|${market}|${outcome}|${point ?? ''}`;
+}
+// Snapshot opening prices the FIRST time we see this game in cache. Idempotent.
+function snapshotOpeningLines(games) {
+  let dirty = false;
+  for (const g of games || []) {
+    // For each main market, capture our snapshot only if not already there
+    for (const marketKey of ['h2h', 'spreads', 'totals']) {
+      // Get the consensus point (first bookmaker's point for spread/total)
+      let point = null;
+      for (const bm of g.bookmakers || []) {
+        const m = (bm.markets || []).find(m => m.key === marketKey);
+        if (m && m.outcomes && m.outcomes.length) {
+          if (marketKey === 'spreads') point = m.outcomes.find(o => o.name === g.home_team)?.point;
+          else if (marketKey === 'totals') point = m.outcomes[0]?.point;
+          break;
+        }
+      }
+      const outcomes = marketKey === 'totals' ? ['Over', 'Under'] : [g.away_team, g.home_team];
+      for (const outName of outcomes) {
+        const pt = marketKey === 'spreads' ? (outName === g.home_team ? point : (point != null ? -point : null)) : (marketKey === 'totals' ? point : null);
+        const best = bestOddsForOutcome(g, marketKey, outName, pt);
+        if (!best) continue;
+        const k = _openingKey(g.id, marketKey, outName, pt);
+        if (!_openingLines[k]) {
+          _openingLines[k] = { american: best.american, point: pt, capturedAt: nowISO() };
+          dirty = true;
+        }
+      }
+    }
+  }
+  if (dirty) {
+    // Cap stored entries to avoid runaway growth (LRU-ish: drop oldest if > 5000)
+    const keys = Object.keys(_openingLines);
+    if (keys.length > 5000) {
+      const sorted = keys.map(k => [k, _openingLines[k].capturedAt]).sort((a,b) => a[1].localeCompare(b[1]));
+      for (let i = 0; i < sorted.length - 5000; i++) delete _openingLines[sorted[i][0]];
+    }
+    localStorage.setItem(LS_OPENING_LINES, JSON.stringify(_openingLines));
+  }
+}
+// Returns { openAmerican, deltaCents } for a current price, or null
+function lineMoveSinceOpen(gameId, market, outcome, point, currentAmerican) {
+  const k = _openingKey(gameId, market, outcome, point);
+  const snap = _openingLines[k];
+  if (!snap || currentAmerican == null) return null;
+  const openDec = americanToDecimal(snap.american);
+  const curDec = americanToDecimal(currentAmerican);
+  const deltaCents = Math.round((curDec - openDec) * 100);
+  if (deltaCents === 0) return null;
+  return { openAmerican: snap.american, deltaCents };
+}
 
 /* refresh */
 async function refreshLines(force = false) {
@@ -2655,7 +2744,12 @@ async function refreshLines(force = false) {
   btn.innerHTML = '<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg> Refreshing'; btn.disabled = true;
   let ok=0, fail=0;
   for (const sport of state.sports) {
-    try { const games = await apiOdds(sport); state.cache[sport] = { games, fetchedAt: nowISO() }; ok++; }
+    try {
+      const games = await apiOdds(sport);
+      state.cache[sport] = { games, fetchedAt: nowISO() };
+      snapshotOpeningLines(games);   // capture opening lines on first sighting
+      ok++;
+    }
     catch (e) { console.error(e); fail++; }
   }
   save(LS.CACHE, state.cache);
@@ -3454,6 +3548,32 @@ function renderGameCard(g, sportKey, marketFilter) {
       </div>
     </div>` : '';
 
+  // Line-shopping + line-move footer per side
+  function shopRow(label, market, outcome, point, currentBest) {
+    if (!currentBest) return '';
+    const gap = bestVsMedianGapCents(g, market, outcome, point);
+    const mv = lineMoveSinceOpen(g.id, market, outcome, point, currentBest.american);
+    const shopBadge = gap && gap.gapCents > 0 ? `<span class="shop-badge">+${gap.gapCents}¢ at ${escapeHtml(gap.bestBook)} (${gap.nBooks} books)</span>` : '';
+    const moveBadge = mv ? `<span class="move-badge ${mv.deltaCents > 0 ? 'up' : 'down'}">${mv.deltaCents > 0 ? '▲' : '▼'} ${Math.abs(mv.deltaCents)}¢ since open (${fmtAmerican(mv.openAmerican)} → ${fmtAmerican(currentBest.american)})</span>` : '';
+    if (!shopBadge && !moveBadge) return '';
+    return `<div class="shop-row"><span class="shop-label">${label}</span> ${shopBadge} ${moveBadge}</div>`;
+  }
+  const shopFooter = (() => {
+    const rows = [
+      activeSpreadAway ? shopRow(`${_teamCode(away)} ${activeSpreadAway.point > 0 ? '+' : ''}${activeSpreadAway.point}`, 'spreads', away, activeSpreadAway.point, activeSpreadAway) : '',
+      activeSpreadHome ? shopRow(`${_teamCode(home)} ${activeSpreadHome.point > 0 ? '+' : ''}${activeSpreadHome.point}`, 'spreads', home, activeSpreadHome.point, activeSpreadHome) : '',
+      activeOver ? shopRow(`Over ${activeOver.point}`, 'totals', 'Over', activeOver.point, activeOver) : '',
+      activeUnder ? shopRow(`Under ${activeUnder.point}`, 'totals', 'Under', activeUnder.point, activeUnder) : '',
+      h2hAway ? shopRow(`${_teamCode(away)} ML`, 'h2h', away, null, h2hAway) : '',
+      h2hHome ? shopRow(`${_teamCode(home)} ML`, 'h2h', home, null, h2hHome) : '',
+    ].filter(Boolean);
+    if (!rows.length) return '';
+    return `<div class="shop-footer">
+      <div class="shop-footer-label">🛒 Line shop &amp; movement</div>
+      ${rows.join('')}
+    </div>`;
+  })();
+
   // Expanded view — chevron pinned to top-right corner of the card
   return `<article class="game-card gc expanded fade-in" data-game-id="${g.id}">
     <div class="gc-stripe left" style="background:${stripeColorAway}"></div>
@@ -3467,6 +3587,7 @@ function renderGameCard(g, sportKey, marketFilter) {
       ${rowFor(home, true)}
     </div>
     ${vigFooter}
+    ${shopFooter}
     ${extraButtons || extraSection ? `<div class="px-4 pb-4 -mt-1"><div class="flex gap-3 flex-wrap">${extraButtons}</div>${extraSection}</div>` : ''}
   </article>`;
 }
