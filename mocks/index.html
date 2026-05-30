@@ -5,208 +5,253 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#fafafa" />
 <title>5 Designs · Real Sports Fake Slips</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-  html, body { background:#fafafa; font-family:'Inter',ui-sans-serif,system-ui,sans-serif; color:#0a0a0a; -webkit-font-smoothing:antialiased; -webkit-overflow-scrolling:touch; }
-  * { -webkit-tap-highlight-color: transparent; }
-  a, button { touch-action: manipulation; }
-  .num { font-variant-numeric: tabular-nums; }
-  .card { background:#fff; border:1px solid #ececef; border-radius:18px; overflow:hidden; transition: transform .15s, box-shadow .15s; }
-  .card:active { transform: scale(.98); }
-  @media (hover:hover) { .card:hover { transform: translateY(-2px); box-shadow:0 12px 28px rgba(15,23,42,.08); } }
-  iframe { border:0; background:#fff; display:block; }
-  .frame-wrap { background:#f5f5f7; padding:10px; }
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: #fafafa; color: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; -webkit-overflow-scrolling: touch; }
+a, button { touch-action: manipulation; }
+a { color: inherit; text-decoration: none; }
+.num { font-variant-numeric: tabular-nums; }
 
-  /* Mobile (default): hide iframe previews, show tappable cards */
-  .desktop-preview { display:none; }
-  .mobile-preview { display:flex; align-items:center; justify-content:center; height:140px; }
+.container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
 
-  /* Desktop: show iframe previews */
-  @media (min-width: 720px) {
-    .desktop-preview { display:flex; }
-    .mobile-preview { display:none; }
-  }
+header { padding: 32px 0 18px; }
+header .eyebrow { font-size: 11px; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 6px; }
+header h1 { font-size: 26px; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; }
+header p { font-size: 14px; color: #525252; margin-top: 8px; line-height: 1.5; max-width: 600px; }
+header .tags { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+header .tag { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+header .tag.green { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+header .tag.blue { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+header .tag.gray { background: #f4f4f5; color: #3f3f46; border: 1px solid #e4e4e7; }
+header .tag.amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+
+@media (min-width: 700px) {
+  header h1 { font-size: 36px; }
+  header p { font-size: 15px; }
+}
+
+.grid { display: grid; gap: 14px; grid-template-columns: 1fr; padding-bottom: 60px; }
+@media (min-width: 700px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1000px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+.card { background: #fff; border: 1px solid #ececef; border-radius: 18px; overflow: hidden; transition: transform .15s, box-shadow .15s; display: block; }
+.card:active { transform: scale(0.98); }
+@media (hover: hover) { .card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(15,23,42,.08); } }
+
+.preview { height: 160px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #ececef; }
+
+/* Preview 1 — Kalshi Sport */
+.prev-1 { background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%); }
+.prev-1 .mark { width: 56px; height: 56px; border-radius: 16px; background: #00b86b; color: #fff; font-weight: 900; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(0,184,107,.3); }
+.prev-1 .label { text-align: center; margin-top: 8px; font-size: 13px; font-weight: 800; color: #047857; }
+
+/* Preview 2 — Paper */
+.prev-2 { background: #faf8f3; flex-direction: column; }
+.prev-2 .top { font-size: 9px; color: #8a857d; letter-spacing: 0.2em; text-transform: uppercase; font-family: ui-monospace, monospace; }
+.prev-2 h3 { font-family: "Iowan Old Style", Georgia, serif; font-weight: 700; font-size: 22px; line-height: 1; }
+.prev-2 .italic { font-family: "Iowan Old Style", Georgia, serif; font-style: italic; color: #4b4944; font-size: 16px; }
+
+/* Preview 3 — Sticker */
+.prev-3 { background: #f7f7f9; padding: 0 16px; }
+.prev-3 .pills { display: flex; gap: 8px; }
+.prev-3 .pill { padding: 8px 14px; border-radius: 16px; font-size: 12px; font-weight: 800; }
+.prev-3 .pill.mint { background: #d1f4e2; color: #0f7a45; }
+.prev-3 .pill.lemon { background: #fff4be; color: #7a5b00; }
+.prev-3 .pill.lav { background: #e2dbfa; color: #4f3aa3; }
+
+/* Preview 4 — Index */
+.prev-4 { background: #fcfcfc; font-family: ui-monospace, monospace; flex-direction: column; gap: 4px; }
+.prev-4 .heading { font-size: 10px; color: #6b6b6b; letter-spacing: 0.05em; text-transform: uppercase; }
+.prev-4 .row { font-size: 17px; font-weight: 700; }
+.prev-4 .change { font-size: 11px; color: #047a4d; }
+
+/* Preview 5 — Pocket */
+.prev-5 { background: #fff; }
+.prev-5 .bk { padding: 16px 20px; border-radius: 18px; background: linear-gradient(135deg,#0a0a0a 0%,#1f2937 100%); color: #fff; min-width: 200px; box-shadow: 0 10px 24px rgba(0,0,0,.15); }
+.prev-5 .bk .lbl { font-size: 10px; color: #a1a1aa; font-weight: 600; }
+.prev-5 .bk .amt { font-size: 22px; font-weight: 800; margin-top: 2px; }
+.prev-5 .bk .cents { font-size: 14px; color: #a1a1aa; }
+.prev-5 .bk .ch { font-size: 11px; color: #34d399; font-weight: 700; }
+
+.card-body { padding: 18px; }
+.eyebrow-line { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.eyebrow-line.green { color: #047857; }
+.eyebrow-line.amber { color: #b45309; }
+.eyebrow-line.pink { color: #be185d; }
+.eyebrow-line.zinc { color: #3f3f46; }
+.eyebrow-line.blue { color: #1e40af; }
+.card-body .ttl { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+.card-body .desc { font-size: 13px; color: #525252; margin-top: 4px; line-height: 1.4; }
+.swatch-row { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; }
+.swatches { display: flex; gap: 6px; }
+.swatch { width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgba(0,0,0,.08); }
+.arrow { font-size: 12px; font-weight: 800; }
+
+/* Help card */
+.help { background: linear-gradient(180deg, #fafafa, #fff); padding: 22px; border: 1px solid #ececef; border-radius: 18px; }
+.help .h { font-size: 11px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.help .t { font-size: 16px; font-weight: 800; margin-bottom: 10px; }
+.help ul { list-style: none; }
+.help li { font-size: 13px; color: #3f3f46; padding: 4px 0; line-height: 1.4; }
+.help li b { color: #0a0a0a; }
+.help .footer { margin-top: 14px; font-size: 12px; color: #71717a; }
+
+footer { padding: 30px 0; border-top: 1px solid #e4e4e7; text-align: center; font-size: 11px; color: #a1a1aa; margin-top: 20px; }
 </style>
 </head>
 <body>
 
-<header class="max-w-6xl mx-auto px-5 pt-8 pb-5">
-  <div class="text-[11px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-2">Design Studio</div>
-  <h1 class="text-[26px] md:text-[36px] font-extrabold tracking-tight leading-tight">Real Sports Fake Slips — pick a look</h1>
-  <p class="text-[14px] md:text-[15px] text-zinc-600 mt-2 max-w-2xl leading-relaxed">5 directions, all light + Kalshi-inspired. Tap any card to open the full preview on your phone.</p>
-  <div class="mt-3 flex flex-wrap gap-1.5 text-[11px] md:text-[12px] font-semibold">
-    <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">American odds</span>
-    <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Parlays preserved</span>
-    <span class="px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-700 border border-zinc-200">Light only</span>
-    <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Team logos hero</span>
-  </div>
-</header>
+<div class="container">
 
-<main class="max-w-6xl mx-auto px-5 pb-16">
+  <header>
+    <div class="eyebrow">Design Studio</div>
+    <h1>Real Sports Fake Slips — pick a look</h1>
+    <p>5 directions, all light + Kalshi-inspired. Tap any card to open the full preview on your phone.</p>
+    <div class="tags">
+      <span class="tag green">American odds</span>
+      <span class="tag blue">Parlays preserved</span>
+      <span class="tag gray">Light only</span>
+      <span class="tag amber">Team logos hero</span>
+    </div>
+  </header>
 
-  <div class="grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));">
+  <div class="grid">
 
-    <!-- LOOK 1 -->
-    <a href="look-1.html" class="card block">
-      <div class="frame-wrap desktop-preview" style="height:520px; align-items:flex-start; justify-content:center; overflow:hidden;">
-        <iframe src="look-1.html" style="width:390px; height:844px; transform:scale(0.6); transform-origin:top center;" loading="lazy"></iframe>
-      </div>
-      <div class="mobile-preview" style="background:linear-gradient(135deg,#ffffff 0%,#f0fdf4 100%); border-bottom:1px solid #ececef;">
-        <div class="text-center">
-          <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-500 flex items-center justify-center text-white font-extrabold text-2xl mb-2">R</div>
-          <div class="text-[13px] font-bold text-emerald-700">Kalshi Sport</div>
+    <a href="look-1.html" class="card">
+      <div class="preview prev-1">
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <div class="mark">R</div>
+          <div class="label">Kalshi Sport</div>
         </div>
       </div>
-      <div class="p-5">
-        <div class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Look 1 · Most familiar</div>
-        <div class="text-[18px] font-extrabold tracking-tight">Kalshi Sport</div>
-        <p class="text-[13px] text-zinc-600 mt-1 leading-snug">Direct Kalshi homage. White, Inter, emerald + coral, mini sparklines.</p>
-        <div class="mt-3 flex items-center justify-between">
-          <div class="flex gap-1.5">
-            <span class="w-4 h-4 rounded-full" style="background:#ffffff;border:1px solid #d4d4d4"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#00b86b"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#e54b6b"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#0a0a0a"></span>
+      <div class="card-body">
+        <div class="eyebrow-line green">Look 1 · Most familiar</div>
+        <div class="ttl">Kalshi Sport</div>
+        <div class="desc">Direct Kalshi homage. White, Inter, emerald + coral, mini sparklines.</div>
+        <div class="swatch-row">
+          <div class="swatches">
+            <span class="swatch" style="background:#fff"></span>
+            <span class="swatch" style="background:#00b86b"></span>
+            <span class="swatch" style="background:#e54b6b"></span>
+            <span class="swatch" style="background:#0a0a0a"></span>
           </div>
-          <span class="text-[12px] font-bold text-emerald-600">Open →</span>
+          <span class="arrow" style="color:#047857">Open →</span>
         </div>
       </div>
     </a>
 
-    <!-- LOOK 2 -->
-    <a href="look-2.html" class="card block">
-      <div class="frame-wrap desktop-preview" style="height:520px; align-items:flex-start; justify-content:center; overflow:hidden; background:#ebe7df;">
-        <iframe src="look-2.html" style="width:390px; height:844px; transform:scale(0.6); transform-origin:top center;" loading="lazy"></iframe>
-      </div>
-      <div class="mobile-preview" style="background:#faf8f3; border-bottom:1px solid #ececef;">
-        <div class="text-center">
-          <div class="text-[22px] font-extrabold text-zinc-900" style="font-family:Georgia,serif;">Real Sports.</div>
-          <div class="text-[15px] italic text-zinc-700 -mt-1" style="font-family:Georgia,serif;">Fake Slips.</div>
+    <a href="look-2.html" class="card">
+      <div class="preview prev-2">
+        <div style="text-align:center">
+          <div class="top">Edition · Sat 30 May</div>
+          <h3>Real Sports.</h3>
+          <div class="italic">Fake Slips.</div>
         </div>
       </div>
-      <div class="p-5">
-        <div class="text-[11px] font-bold text-amber-700 uppercase tracking-wider mb-1">Look 2 · Most editorial</div>
-        <div class="text-[18px] font-extrabold tracking-tight">Paper</div>
-        <p class="text-[13px] text-zinc-600 mt-1 leading-snug">Cream newsprint. Serif headlines, mono numbers, hairlines. Quietly serious.</p>
-        <div class="mt-3 flex items-center justify-between">
-          <div class="flex gap-1.5">
-            <span class="w-4 h-4 rounded-full" style="background:#faf8f3;border:1px solid #d4d4d4"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#1f5f3b"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#8a2a2a"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#0a0a0a"></span>
+      <div class="card-body">
+        <div class="eyebrow-line amber">Look 2 · Most editorial</div>
+        <div class="ttl">Paper</div>
+        <div class="desc">Cream newsprint. Serif headlines, mono numbers, hairlines. Quietly serious.</div>
+        <div class="swatch-row">
+          <div class="swatches">
+            <span class="swatch" style="background:#faf8f3"></span>
+            <span class="swatch" style="background:#1f5f3b"></span>
+            <span class="swatch" style="background:#8a2a2a"></span>
+            <span class="swatch" style="background:#0a0a0a"></span>
           </div>
-          <span class="text-[12px] font-bold text-amber-700">Open →</span>
+          <span class="arrow" style="color:#b45309">Open →</span>
         </div>
       </div>
     </a>
 
-    <!-- LOOK 3 -->
-    <a href="look-3.html" class="card block">
-      <div class="frame-wrap desktop-preview" style="height:520px; align-items:flex-start; justify-content:center; overflow:hidden; background:#e8e8ec;">
-        <iframe src="look-3.html" style="width:390px; height:844px; transform:scale(0.6); transform-origin:top center;" loading="lazy"></iframe>
-      </div>
-      <div class="mobile-preview" style="background:#f7f7f9; border-bottom:1px solid #ececef;">
-        <div class="flex gap-1.5">
-          <span class="px-3 py-1.5 rounded-2xl text-[12px] font-bold" style="background:#d1f4e2;color:#0f7a45">NBA</span>
-          <span class="px-3 py-1.5 rounded-2xl text-[12px] font-bold" style="background:#fff4be;color:#7a5b00">MLB</span>
-          <span class="px-3 py-1.5 rounded-2xl text-[12px] font-bold" style="background:#e2dbfa;color:#4f3aa3">NFL</span>
+    <a href="look-3.html" class="card">
+      <div class="preview prev-3">
+        <div class="pills">
+          <span class="pill mint">NBA</span>
+          <span class="pill lemon">MLB</span>
+          <span class="pill lav">NFL</span>
         </div>
       </div>
-      <div class="p-5">
-        <div class="text-[11px] font-bold text-pink-600 uppercase tracking-wider mb-1">Look 3 · Most playful</div>
-        <div class="text-[18px] font-extrabold tracking-tight">Sticker</div>
-        <p class="text-[13px] text-zinc-600 mt-1 leading-snug">Pastel chips, big logos, soft shadows. Linear × sticker book. Joyful but minimal.</p>
-        <div class="mt-3 flex items-center justify-between">
-          <div class="flex gap-1.5">
-            <span class="w-4 h-4 rounded-full" style="background:#d1f4e2"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#fcdcdc"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#fff4be"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#e2dbfa"></span>
+      <div class="card-body">
+        <div class="eyebrow-line pink">Look 3 · Most playful</div>
+        <div class="ttl">Sticker</div>
+        <div class="desc">Pastel chips, big logos, soft shadows. Linear × sticker book. Joyful but minimal.</div>
+        <div class="swatch-row">
+          <div class="swatches">
+            <span class="swatch" style="background:#d1f4e2"></span>
+            <span class="swatch" style="background:#fcdcdc"></span>
+            <span class="swatch" style="background:#fff4be"></span>
+            <span class="swatch" style="background:#e2dbfa"></span>
           </div>
-          <span class="text-[12px] font-bold text-pink-600">Open →</span>
+          <span class="arrow" style="color:#be185d">Open →</span>
         </div>
       </div>
     </a>
 
-    <!-- LOOK 4 -->
-    <a href="look-4.html" class="card block">
-      <div class="frame-wrap desktop-preview" style="height:520px; align-items:flex-start; justify-content:center; overflow:hidden; background:#ededed;">
-        <iframe src="look-4.html" style="width:390px; height:844px; transform:scale(0.6); transform-origin:top center;" loading="lazy"></iframe>
+    <a href="look-4.html" class="card">
+      <div class="preview prev-4">
+        <div class="heading">SPREAD · TOTAL · ML</div>
+        <div class="row num">-3.5 · o224.5 · −180</div>
+        <div class="change num">▲▲▲ +0.4%</div>
       </div>
-      <div class="mobile-preview" style="background:#fcfcfc; border-bottom:1px solid #ececef; font-family:'IBM Plex Mono',monospace;">
-        <div class="text-center">
-          <div class="text-[10px] uppercase tracking-wider text-zinc-500 num">SPREAD · TOTAL · ML</div>
-          <div class="text-[18px] font-bold text-zinc-900 num mt-1">-3.5 · o224.5 · −180</div>
-          <div class="text-[10px] text-emerald-700 num">▲▲▲ +0.4%</div>
-        </div>
-      </div>
-      <div class="p-5">
-        <div class="text-[11px] font-bold text-zinc-700 uppercase tracking-wider mb-1">Look 4 · Most dense</div>
-        <div class="text-[18px] font-extrabold tracking-tight">Index</div>
-        <p class="text-[13px] text-zinc-600 mt-1 leading-snug">Trader-style table, IBM Plex Mono, line-move micro-bars. Max info per screen.</p>
-        <div class="mt-3 flex items-center justify-between">
-          <div class="flex gap-1.5">
-            <span class="w-4 h-4 rounded-full" style="background:#fcfcfc;border:1px solid #d4d4d4"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#047a4d"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#a83838"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#111"></span>
+      <div class="card-body">
+        <div class="eyebrow-line zinc">Look 4 · Most dense</div>
+        <div class="ttl">Index</div>
+        <div class="desc">Trader-style table, monospace, line-move micro-bars. Max info per screen.</div>
+        <div class="swatch-row">
+          <div class="swatches">
+            <span class="swatch" style="background:#fcfcfc"></span>
+            <span class="swatch" style="background:#047a4d"></span>
+            <span class="swatch" style="background:#a83838"></span>
+            <span class="swatch" style="background:#111"></span>
           </div>
-          <span class="text-[12px] font-bold text-zinc-700">Open →</span>
+          <span class="arrow" style="color:#3f3f46">Open →</span>
         </div>
       </div>
     </a>
 
-    <!-- LOOK 5 -->
-    <a href="look-5.html" class="card block">
-      <div class="frame-wrap desktop-preview" style="height:520px; align-items:flex-start; justify-content:center; overflow:hidden; background:#f0f0f3;">
-        <iframe src="look-5.html" style="width:390px; height:844px; transform:scale(0.6); transform-origin:top center;" loading="lazy"></iframe>
-      </div>
-      <div class="mobile-preview" style="background:#ffffff; border-bottom:1px solid #ececef;">
-        <div class="p-4 rounded-2xl shadow-md" style="background:linear-gradient(135deg,#0a0a0a 0%,#1f2937 100%); min-width:200px;">
-          <div class="text-[10px] text-zinc-400 font-semibold mb-1">Bankroll</div>
-          <div class="text-[20px] text-white font-extrabold num">$1,247.<span class="text-[14px] text-zinc-400">00</span></div>
-          <div class="text-[10px] text-emerald-400 font-bold num">+$32.50 today</div>
+    <a href="look-5.html" class="card">
+      <div class="preview prev-5">
+        <div class="bk">
+          <div class="lbl">Bankroll</div>
+          <div class="amt num">$1,247.<span class="cents">00</span></div>
+          <div class="ch num">+$32.50 today</div>
         </div>
       </div>
-      <div class="p-5">
-        <div class="text-[11px] font-bold text-blue-600 uppercase tracking-wider mb-1">Look 5 · Most spacious</div>
-        <div class="text-[18px] font-extrabold tracking-tight">Pocket</div>
-        <p class="text-[13px] text-zinc-600 mt-1 leading-snug">iOS-native. Big tap targets, bold names, dark bankroll hero, floating slip bar.</p>
-        <div class="mt-3 flex items-center justify-between">
-          <div class="flex gap-1.5">
-            <span class="w-4 h-4 rounded-full" style="background:#ffffff;border:1px solid #d4d4d4"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#e6f7ee;border:1px solid #7dd3a4"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#0a0a0a"></span>
-            <span class="w-4 h-4 rounded-full" style="background:#f3f4f6"></span>
+      <div class="card-body">
+        <div class="eyebrow-line blue">Look 5 · Most spacious</div>
+        <div class="ttl">Pocket</div>
+        <div class="desc">iOS-native. Big tap targets, bold names, dark bankroll hero, floating slip bar.</div>
+        <div class="swatch-row">
+          <div class="swatches">
+            <span class="swatch" style="background:#fff"></span>
+            <span class="swatch" style="background:#e6f7ee"></span>
+            <span class="swatch" style="background:#0a0a0a"></span>
+            <span class="swatch" style="background:#f3f4f6"></span>
           </div>
-          <span class="text-[12px] font-bold text-blue-600">Open →</span>
+          <span class="arrow" style="color:#1e40af">Open →</span>
         </div>
       </div>
     </a>
 
-    <!-- HELP -->
-    <div class="card block p-5 flex flex-col justify-center" style="background:linear-gradient(180deg,#fafafa,#fff);">
-      <div class="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Quick guide</div>
-      <ul class="text-[13px] text-zinc-700 space-y-1.5 leading-snug">
+    <div class="help">
+      <div class="h">Quick guide</div>
+      <div class="t">How to choose</div>
+      <ul>
         <li><b>Want what works?</b> → Look 1 (Kalshi Sport)</li>
         <li><b>Premium / serious?</b> → Look 2 (Paper) or Look 5 (Pocket)</li>
         <li><b>Fun but minimal?</b> → Look 3 (Sticker)</li>
         <li><b>Max data, trader vibes?</b> → Look 4 (Index)</li>
         <li><b>One-thumb iPhone feel?</b> → Look 5 (Pocket)</li>
       </ul>
-      <div class="mt-4 text-[12px] text-zinc-500">Reply with your pick (1–5) and I'll rebuild the full app.</div>
+      <div class="footer">Reply with your pick (1–5) and I'll rebuild the full app.</div>
     </div>
 
   </div>
 
-  <footer class="mt-8 pt-6 border-t border-zinc-200 text-center text-[11px] text-zinc-400">
-    Same 5 sample games shown in each: Lakers/Celtics live · Warriors/Heat · Yankees/Red Sox · Dodgers/Padres · Chiefs/Bills
-  </footer>
+  <footer>Same 5 sample games shown in each: Lakers/Celtics live · Warriors/Heat · Yankees/Red Sox · Dodgers/Padres · Chiefs/Bills</footer>
 
-</main>
+</div>
 
 </body>
 </html>

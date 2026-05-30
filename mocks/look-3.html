@@ -5,283 +5,281 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#f7f7f9" />
 <title>Look 3 — Sticker · Real Sports Fake Slips</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  html, body { background: #f7f7f9; color: #18181b; font-family: 'Onest', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
-  body { min-height: 100vh; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
-  * { -webkit-tap-highlight-color: transparent; }
-  button { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
-  .mobile-nav { padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)); }
-  @media (min-width: 500px) { .mobile-nav { max-width: 390px; margin: 0 auto; left: 0; right: 0; } }
-  .num { font-variant-numeric: tabular-nums; }
-  .card { background:#fff; border-radius:24px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 14px rgba(15,23,42,.05); }
-  .pill-mint   { background:#d1f4e2; color:#0f7a45; }
-  .pill-blush  { background:#fcdcdc; color:#9b2a2a; }
-  .pill-lemon  { background:#fff4be; color:#7a5b00; }
-  .pill-lav    { background:#e2dbfa; color:#4f3aa3; }
-  .pill-sky    { background:#d6ecff; color:#0c4a8a; }
-  .pill-default{ background:#ececef; color:#52525b; }
-  .pick { background:#fafafa; border:1.5px solid #ececef; border-radius:14px; transition: all .15s; }
-  .pick:active { transform: scale(.97); }
-  .pick-yes { background:#d1f4e2; border-color:#a4e5c4; color:#0f6b3d; }
-  .pick-no  { background:#fcdcdc; border-color:#f3b8b8; color:#8b2424; }
-  .sticker { background:#fff7cc; border:1.5px solid #ffe066; border-radius:10px; transform: rotate(-2deg); box-shadow:0 2px 0 rgba(0,0,0,.05); }
-  .live-dot { background:#ef4444; box-shadow:0 0 0 4px rgba(239,68,68,.18); }
-  @keyframes pulse { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:.6; transform:scale(1.15)} }
-  .pulse { animation: pulse 1.6s infinite; }
-  @media (min-width: 500px) {
-    body { background:#e8e8ec; display:flex; justify-content:center; padding:24px 0; }
-    .phone { width:390px; min-height:844px; background:#f7f7f9; box-shadow:0 20px 60px rgba(0,0,0,.15); border-radius:36px; overflow:hidden; position:relative; }
-  }
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: #f7f7f9; color: #18181b; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
+body { min-height: 100vh; overflow-x: hidden; padding-bottom: 90px; }
+button { font-family: inherit; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; background: none; border: none; color: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Header */
+.hdr { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 12px; }
+.hdr-left { display: flex; align-items: center; gap: 10px; }
+.logo-mark { width: 38px; height: 38px; border-radius: 14px; background: linear-gradient(135deg, #34d399 0%, #059669 100%); color: #fff; font-weight: 900; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 12px rgba(16,185,129,.3); }
+.brand-name { font-size: 17px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+.brand-sub { font-size: 11px; color: #71717a; font-weight: 500; line-height: 1.1; margin-top: 2px; }
+.bankroll { padding: 9px 14px; border-radius: 16px; background: #fff; border: 1px solid #e4e4e7; font-size: 14px; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+
+/* Pastel chips */
+.chips { display: flex; gap: 8px; padding: 12px 20px 16px; overflow-x: auto; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { padding: 9px 16px; border-radius: 16px; font-size: 13px; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+.chip.mint { background: #d1f4e2; color: #0f7a45; }
+.chip.blush { background: #fcdcdc; color: #9b2a2a; }
+.chip.lemon { background: #fff4be; color: #7a5b00; }
+.chip.lav { background: #e2dbfa; color: #4f3aa3; }
+.chip.sky { background: #d6ecff; color: #0c4a8a; }
+.chip.gray { background: #ececef; color: #52525b; }
+
+/* Section header */
+.sec { padding: 4px 20px 12px; }
+.sec-title { font-size: 15px; font-weight: 800; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
+.sec-title.live { gap: 10px; }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 0 4px rgba(239,68,68,.18); animation: pulse 1.6s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .6; transform: scale(1.15); } }
+.sec-meta { font-size: 12px; color: #a1a1aa; font-weight: 500; }
+
+/* Card */
+.card { margin: 0 20px 14px; background: #fff; border-radius: 22px; padding: 18px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 14px rgba(15,23,42,.05); position: relative; }
+.card.hot { }
+.card.feature { background: linear-gradient(180deg, #fff7e0 0%, #ffffff 60%); }
+.sticker { position: absolute; top: -8px; right: 20px; background: #fff7cc; border: 1.5px solid #ffe066; border-radius: 10px; padding: 4px 10px; font-size: 10px; font-weight: 900; transform: rotate(-2deg); box-shadow: 0 2px 0 rgba(0,0,0,.05); }
+
+.card-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.card-meta .pill { padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; background: #f4f4f5; color: #52525b; }
+.card-meta .pill.blush { background: #fcdcdc; color: #9b2a2a; }
+.card-meta .pill.lemon { background: #fff4be; color: #7a5b00; }
+.card-meta .pill.lav { background: #e2dbfa; color: #4f3aa3; }
+.card-meta .when { font-size: 11px; color: #a1a1aa; font-weight: 500; }
+.team-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.team-row:last-of-type { margin-bottom: 18px; }
+.team { display: flex; align-items: center; gap: 12px; }
+.team-name { font-weight: 900; font-size: 17px; letter-spacing: -0.015em; line-height: 1.1; }
+.team-sub { font-size: 11px; color: #71717a; font-weight: 600; margin-top: 2px; }
+.score { font-size: 28px; font-weight: 900; }
+.score.dim { color: #a1a1aa; }
+.team-rec { font-size: 11px; color: #a1a1aa; font-weight: 600; }
+
+.logo { width: 48px; height: 48px; flex-shrink: 0; }
+.logo.md { width: 44px; height: 44px; }
+
+/* Pick grid */
+.pick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.pick-grid:last-child { margin-bottom: 0; }
+.pick { padding: 10px 6px; text-align: center; border-radius: 14px; background: #fafafa; border: 1.5px solid #ececef; transition: transform .12s; }
+.pick:active { transform: scale(0.96); }
+.pick.yes { background: #d1f4e2; border-color: #a4e5c4; color: #0f6b3d; }
+.pick .lbl { font-size: 10px; font-weight: 800; color: #71717a; }
+.pick.yes .lbl { color: #0f6b3d; }
+.pick .val { font-size: 14px; font-weight: 900; margin-top: 2px; }
+.pick .odds { font-size: 10px; color: #71717a; font-weight: 700; margin-top: 1px; }
+.pick.yes .odds { color: #0f6b3d; }
+.pick .odds.gp { color: #059669; font-weight: 800; }
+
+/* Bottom nav */
+.nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-top: 1px solid #e4e4e7; padding-bottom: max(18px, env(safe-area-inset-bottom, 18px)); z-index: 50; }
+.nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 8px 0; }
+.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 4px; color: #a1a1aa; position: relative; }
+.nav-btn.active { color: #059669; }
+.nav-btn .icn-wrap { width: 40px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 14px; }
+.nav-btn.active .icn-wrap { background: #d1f4e2; }
+.nav-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+.nav-btn.active svg { stroke-width: 2.5; }
+.nav-btn .lbl { font-size: 10px; font-weight: 800; }
+.nav-btn .badge { position: absolute; top: 0; right: calc(50% - 18px); width: 16px; height: 16px; border-radius: 50%; background: #10b981; color: #fff; font-size: 9px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+
+@media (min-width: 500px) {
+  body { background: #e8e8ec; display: flex; justify-content: center; padding: 24px 0 24px; }
+  .phone { width: 390px; min-height: 844px; background: #f7f7f9; box-shadow: 0 20px 60px rgba(0,0,0,.15); border-radius: 36px; overflow: hidden; position: relative; padding-bottom: 90px; }
+  .nav { max-width: 390px; margin: 0 auto; }
+}
 </style>
 </head>
 <body>
 <div class="phone">
 
-<!-- Top header -->
-<header class="px-5 pt-5 pb-3 flex items-center justify-between">
-  <div class="flex items-center gap-2.5">
-    <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-extrabold text-lg shadow-md">R</div>
+<header class="hdr">
+  <div class="hdr-left">
+    <div class="logo-mark">R</div>
     <div>
-      <div class="text-[17px] font-extrabold leading-tight tracking-tight">Real Sports</div>
-      <div class="text-[11px] text-zinc-500 leading-tight font-medium">Fake Slips · Hi Jorge</div>
+      <div class="brand-name">Real Sports</div>
+      <div class="brand-sub">Fake Slips · Hi Jorge</div>
     </div>
   </div>
-  <div class="flex items-center gap-2">
-    <div class="px-3.5 py-2 rounded-2xl bg-white border border-zinc-200 text-[14px] font-bold num shadow-sm">$1,247</div>
-  </div>
+  <div class="bankroll num">$1,247</div>
 </header>
 
-<!-- Pastel category pills -->
-<div class="px-5 pt-3 pb-4 flex gap-2 overflow-x-auto" style="scrollbar-width:none;">
-  <button class="pill-mint px-4 py-2 rounded-2xl text-[13px] font-bold whitespace-nowrap">⚡ Trending</button>
-  <button class="pill-blush px-4 py-2 rounded-2xl text-[13px] font-bold whitespace-nowrap">🏀 NBA</button>
-  <button class="pill-lemon px-4 py-2 rounded-2xl text-[13px] font-bold whitespace-nowrap">⚾ MLB</button>
-  <button class="pill-lav px-4 py-2 rounded-2xl text-[13px] font-bold whitespace-nowrap">🏈 NFL</button>
-  <button class="pill-sky px-4 py-2 rounded-2xl text-[13px] font-bold whitespace-nowrap">🏒 NHL</button>
-  <button class="pill-default px-4 py-2 rounded-2xl text-[13px] font-bold whitespace-nowrap">⚽ Soccer</button>
+<div class="chips">
+  <button class="chip mint">⚡ Trending</button>
+  <button class="chip blush">🏀 NBA</button>
+  <button class="chip lemon">⚾ MLB</button>
+  <button class="chip lav">🏈 NFL</button>
+  <button class="chip sky">🏒 NHL</button>
+  <button class="chip gray">⚽ Soccer</button>
 </div>
 
-<!-- LIVE section header -->
-<div class="px-5 mt-1 mb-3 flex items-center gap-2">
-  <span class="live-dot pulse w-2.5 h-2.5 rounded-full"></span>
-  <span class="text-[14px] font-extrabold tracking-tight">Live now</span>
-  <span class="text-[12px] text-zinc-400 font-medium">· 1 game</span>
+<div class="sec">
+  <div class="sec-title live"><span class="live-dot"></span>Live now <span class="sec-meta">· 1 game</span></div>
 </div>
 
-<!-- Game: Lakers vs Celtics LIVE -->
-<div class="mx-5 mb-4 card p-5 relative">
-  <div class="absolute -top-2 right-5 sticker px-2.5 py-1 text-[10px] font-extrabold">🔥 HOT</div>
-  <div class="flex items-center justify-between mb-4">
-    <div class="px-2.5 py-1 rounded-lg bg-zinc-100 text-[10px] font-bold text-zinc-600 uppercase tracking-wider">NBA · Q3 8:42</div>
-    <div class="text-[11px] text-zinc-400 font-medium">Crypto.com Arena</div>
+<!-- LAL vs BOS LIVE -->
+<div class="card hot">
+  <div class="sticker">🔥 HOT</div>
+  <div class="card-meta">
+    <div class="pill">NBA · Q3 8:42</div>
+    <div class="when">Crypto.com Arena</div>
   </div>
-  <div class="flex items-center justify-between mb-3">
-    <div class="flex items-center gap-3">
-      <img src="https://a.espncdn.com/i/teamlogos/nba/500/lal.png" class="w-12 h-12" alt="LAL">
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#552583"/><text x="20" y="25" text-anchor="middle" fill="#FDB927" font-weight="900" font-size="13" font-family="-apple-system">LAL</text></svg>
       <div>
-        <div class="text-[17px] font-extrabold leading-tight">Lakers</div>
-        <div class="text-[11px] text-zinc-500 font-semibold">14-8 · 🏠</div>
+        <div class="team-name">Lakers</div>
+        <div class="team-sub">14-8 · 🏠</div>
       </div>
     </div>
-    <div class="num text-[28px] font-extrabold">72</div>
+    <div class="score num">72</div>
   </div>
-  <div class="flex items-center justify-between mb-5">
-    <div class="flex items-center gap-3">
-      <img src="https://a.espncdn.com/i/teamlogos/nba/500/bos.png" class="w-12 h-12" alt="BOS">
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#007A33"/><text x="20" y="25" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="13" font-family="-apple-system">BOS</text></svg>
       <div>
-        <div class="text-[17px] font-extrabold leading-tight">Celtics</div>
-        <div class="text-[11px] text-zinc-500 font-semibold">17-5 · ✈️</div>
+        <div class="team-name">Celtics</div>
+        <div class="team-sub">17-5 · ✈️</div>
       </div>
     </div>
-    <div class="num text-[28px] font-extrabold text-zinc-400">68</div>
+    <div class="score num dim">68</div>
   </div>
-  <div class="grid grid-cols-3 gap-2 mb-2">
-    <button class="pick px-3 py-2.5 text-center">
-      <div class="text-[10px] font-bold text-zinc-500 mb-0.5">LAL</div>
-      <div class="text-[14px] font-extrabold num">-3.5</div>
-      <div class="text-[10px] text-zinc-500 num font-semibold">-110</div>
-    </button>
-    <button class="pick px-3 py-2.5 text-center">
-      <div class="text-[10px] font-bold text-zinc-500 mb-0.5">OVER</div>
-      <div class="text-[14px] font-extrabold num">224.5</div>
-      <div class="text-[10px] text-zinc-500 num font-semibold">-108</div>
-    </button>
-    <button class="pick pick-yes px-3 py-2.5 text-center">
-      <div class="text-[10px] font-bold mb-0.5">LAL ML</div>
-      <div class="text-[14px] font-extrabold num">-180</div>
-      <div class="text-[10px] num font-semibold">PICKED ✓</div>
-    </button>
+  <div class="pick-grid">
+    <button class="pick"><div class="lbl">LAL</div><div class="val num">-3.5</div><div class="odds num">-110</div></button>
+    <button class="pick"><div class="lbl">OVER</div><div class="val num">224.5</div><div class="odds num">-108</div></button>
+    <button class="pick yes"><div class="lbl">LAL ML</div><div class="val num">-180</div><div class="odds">PICKED ✓</div></button>
   </div>
-  <div class="grid grid-cols-3 gap-2">
-    <button class="pick px-3 py-2.5 text-center">
-      <div class="text-[10px] font-bold text-zinc-500 mb-0.5">BOS</div>
-      <div class="text-[14px] font-extrabold num">+3.5</div>
-      <div class="text-[10px] text-zinc-500 num font-semibold">-110</div>
-    </button>
-    <button class="pick px-3 py-2.5 text-center">
-      <div class="text-[10px] font-bold text-zinc-500 mb-0.5">UNDER</div>
-      <div class="text-[14px] font-extrabold num">224.5</div>
-      <div class="text-[10px] text-zinc-500 num font-semibold">-112</div>
-    </button>
-    <button class="pick px-3 py-2.5 text-center">
-      <div class="text-[10px] font-bold text-zinc-500 mb-0.5">BOS ML</div>
-      <div class="text-[14px] font-extrabold num">+155</div>
-      <div class="text-[10px] text-zinc-500 num font-semibold">+1.55x</div>
-    </button>
+  <div class="pick-grid">
+    <button class="pick"><div class="lbl">BOS</div><div class="val num">+3.5</div><div class="odds num">-110</div></button>
+    <button class="pick"><div class="lbl">UNDER</div><div class="val num">224.5</div><div class="odds num">-112</div></button>
+    <button class="pick"><div class="lbl">BOS ML</div><div class="val num">+155</div><div class="odds num">+1.55x</div></button>
   </div>
 </div>
 
-<!-- TONIGHT section -->
-<div class="px-5 mt-1 mb-3">
-  <div class="text-[14px] font-extrabold tracking-tight">Tonight 🌙</div>
+<div class="sec">
+  <div class="sec-title">Tonight 🌙</div>
 </div>
 
-<!-- Game: Warriors vs Heat -->
-<div class="mx-5 mb-3 card p-5">
-  <div class="flex items-center justify-between mb-3">
-    <div class="px-2.5 py-1 rounded-lg pill-blush text-[10px] font-bold uppercase tracking-wider">NBA</div>
-    <div class="text-[11px] text-zinc-400 font-medium">10:00 PM ET</div>
+<!-- GSW vs MIA -->
+<div class="card">
+  <div class="card-meta">
+    <div class="pill blush">NBA</div>
+    <div class="when">10:00 PM ET</div>
   </div>
-  <div class="flex items-center justify-between mb-3">
-    <div class="flex items-center gap-3">
-      <img src="https://a.espncdn.com/i/teamlogos/nba/500/gs.png" class="w-11 h-11" alt="GSW">
-      <div class="text-[16px] font-extrabold">Warriors</div>
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo md" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#1D428A"/><text x="20" y="25" text-anchor="middle" fill="#FFC72C" font-weight="900" font-size="13" font-family="-apple-system">GSW</text></svg>
+      <div class="team-name">Warriors</div>
     </div>
-    <div class="text-[11px] text-zinc-400 font-semibold num">12-10</div>
+    <div class="team-rec num">12-10</div>
   </div>
-  <div class="flex items-center justify-between mb-4">
-    <div class="flex items-center gap-3">
-      <img src="https://a.espncdn.com/i/teamlogos/nba/500/mia.png" class="w-11 h-11" alt="MIA">
-      <div class="text-[16px] font-extrabold">Heat</div>
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo md" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#98002E"/><text x="20" y="25" text-anchor="middle" fill="#F9A01B" font-weight="900" font-size="13" font-family="-apple-system">MIA</text></svg>
+      <div class="team-name">Heat</div>
     </div>
-    <div class="text-[11px] text-zinc-400 font-semibold num">11-11</div>
+    <div class="team-rec num">11-11</div>
   </div>
-  <div class="grid grid-cols-3 gap-2 mb-2">
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">GSW</div><div class="text-[14px] font-extrabold num">-5.5</div><div class="text-[10px] text-zinc-500 num">-110</div></button>
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">OVER</div><div class="text-[14px] font-extrabold num">221.5</div><div class="text-[10px] text-zinc-500 num">-110</div></button>
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">GSW ML</div><div class="text-[14px] font-extrabold num">-240</div><div class="text-[10px] text-zinc-500 num">+0.42x</div></button>
+  <div class="pick-grid">
+    <button class="pick"><div class="lbl">GSW</div><div class="val num">-5.5</div><div class="odds num">-110</div></button>
+    <button class="pick"><div class="lbl">OVER</div><div class="val num">221.5</div><div class="odds num">-110</div></button>
+    <button class="pick"><div class="lbl">GSW ML</div><div class="val num">-240</div><div class="odds num">+0.42x</div></button>
   </div>
-  <div class="grid grid-cols-3 gap-2">
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">MIA</div><div class="text-[14px] font-extrabold num">+5.5</div><div class="text-[10px] text-zinc-500 num">-110</div></button>
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">UNDER</div><div class="text-[14px] font-extrabold num">221.5</div><div class="text-[10px] text-zinc-500 num">-110</div></button>
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">MIA ML</div><div class="text-[14px] font-extrabold num">+200</div><div class="text-[10px] text-zinc-500 num">+2.00x</div></button>
+  <div class="pick-grid">
+    <button class="pick"><div class="lbl">MIA</div><div class="val num">+5.5</div><div class="odds num">-110</div></button>
+    <button class="pick"><div class="lbl">UNDER</div><div class="val num">221.5</div><div class="odds num">-110</div></button>
+    <button class="pick"><div class="lbl">MIA ML</div><div class="val num">+200</div><div class="odds num">+2.00x</div></button>
   </div>
 </div>
 
-<!-- TOMORROW section -->
-<div class="px-5 mt-3 mb-3">
-  <div class="text-[14px] font-extrabold tracking-tight">Tomorrow ☀️</div>
+<div class="sec">
+  <div class="sec-title">Tomorrow ☀️</div>
 </div>
 
-<!-- Game: Yankees vs Red Sox -->
-<div class="mx-5 mb-3 card p-5">
-  <div class="flex items-center justify-between mb-3">
-    <div class="px-2.5 py-1 rounded-lg pill-lemon text-[10px] font-bold uppercase tracking-wider">MLB</div>
-    <div class="text-[11px] text-zinc-400 font-medium">7:05 PM ET</div>
+<!-- NYY vs BOS MLB -->
+<div class="card">
+  <div class="card-meta">
+    <div class="pill lemon">MLB</div>
+    <div class="when">7:05 PM ET</div>
   </div>
-  <div class="flex items-center justify-between mb-3">
-    <div class="flex items-center gap-3">
-      <img src="https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png" class="w-11 h-11" alt="NYY">
-      <div class="text-[16px] font-extrabold">Yankees</div>
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo md" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#003087"/><text x="20" y="25" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="13" font-family="-apple-system">NYY</text></svg>
+      <div class="team-name">Yankees</div>
     </div>
-    <div class="text-[11px] text-zinc-400 font-semibold num">36-22</div>
+    <div class="team-rec num">36-22</div>
   </div>
-  <div class="flex items-center justify-between mb-4">
-    <div class="flex items-center gap-3">
-      <img src="https://a.espncdn.com/i/teamlogos/mlb/500/bos.png" class="w-11 h-11" alt="BOS">
-      <div class="text-[16px] font-extrabold">Red Sox</div>
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo md" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#BD3039"/><text x="20" y="25" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="13" font-family="-apple-system">BOS</text></svg>
+      <div class="team-name">Red Sox</div>
     </div>
-    <div class="text-[11px] text-zinc-400 font-semibold num">31-28</div>
+    <div class="team-rec num">31-28</div>
   </div>
-  <div class="grid grid-cols-3 gap-2 mb-2">
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">NYY</div><div class="text-[14px] font-extrabold num">-1.5</div><div class="text-[10px] text-emerald-600 num font-bold">+135</div></button>
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">OVER</div><div class="text-[14px] font-extrabold num">9.5</div><div class="text-[10px] text-zinc-500 num">-115</div></button>
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">NYY ML</div><div class="text-[14px] font-extrabold num">-150</div><div class="text-[10px] text-zinc-500 num">+0.67x</div></button>
+  <div class="pick-grid">
+    <button class="pick"><div class="lbl">NYY</div><div class="val num">-1.5</div><div class="odds gp num">+135</div></button>
+    <button class="pick"><div class="lbl">OVER</div><div class="val num">9.5</div><div class="odds num">-115</div></button>
+    <button class="pick"><div class="lbl">NYY ML</div><div class="val num">-150</div><div class="odds num">+0.67x</div></button>
   </div>
-  <div class="grid grid-cols-3 gap-2">
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">BOS</div><div class="text-[14px] font-extrabold num">+1.5</div><div class="text-[10px] text-zinc-500 num">-160</div></button>
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">UNDER</div><div class="text-[14px] font-extrabold num">9.5</div><div class="text-[10px] text-zinc-500 num">-105</div></button>
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">BOS ML</div><div class="text-[14px] font-extrabold num">+130</div><div class="text-[10px] text-emerald-600 num font-bold">+1.30x</div></button>
+  <div class="pick-grid">
+    <button class="pick"><div class="lbl">BOS</div><div class="val num">+1.5</div><div class="odds num">-160</div></button>
+    <button class="pick"><div class="lbl">UNDER</div><div class="val num">9.5</div><div class="odds num">-105</div></button>
+    <button class="pick"><div class="lbl">BOS ML</div><div class="val num">+130</div><div class="odds gp num">+1.30x</div></button>
   </div>
 </div>
 
-<!-- THIS WEEK featured -->
-<div class="px-5 mt-3 mb-3">
-  <div class="text-[14px] font-extrabold tracking-tight">This Week ⭐</div>
+<div class="sec">
+  <div class="sec-title">This Week ⭐</div>
 </div>
-<div class="mx-5 mb-24 card p-5 relative" style="background:linear-gradient(180deg,#fff7e0 0%,#ffffff 60%);">
-  <div class="absolute -top-2 right-5 sticker px-2.5 py-1 text-[10px] font-extrabold">⭐ FEATURE</div>
-  <div class="flex items-center justify-between mb-3">
-    <div class="px-2.5 py-1 rounded-lg pill-lav text-[10px] font-bold uppercase tracking-wider">NFL · Sunday 4:25 PM</div>
+
+<!-- KC vs BUF Feature -->
+<div class="card feature">
+  <div class="sticker">⭐ FEATURE</div>
+  <div class="card-meta">
+    <div class="pill lav">NFL · Sunday 4:25 PM</div>
   </div>
-  <div class="flex items-center justify-between mb-3">
-    <div class="flex items-center gap-3">
-      <img src="https://a.espncdn.com/i/teamlogos/nfl/500/kc.png" class="w-12 h-12" alt="KC">
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#E31837"/><text x="20" y="25" text-anchor="middle" fill="#FFB81C" font-weight="900" font-size="14" font-family="-apple-system">KC</text></svg>
       <div>
-        <div class="text-[17px] font-extrabold leading-tight">Chiefs</div>
-        <div class="text-[11px] text-zinc-500 font-semibold">10-2</div>
+        <div class="team-name">Chiefs</div>
+        <div class="team-sub num">10-2</div>
       </div>
     </div>
   </div>
-  <div class="flex items-center justify-between mb-4">
-    <div class="flex items-center gap-3">
-      <img src="https://a.espncdn.com/i/teamlogos/nfl/500/buf.png" class="w-12 h-12" alt="BUF">
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#00338D"/><text x="20" y="25" text-anchor="middle" fill="#C60C30" font-weight="900" font-size="13" font-family="-apple-system">BUF</text></svg>
       <div>
-        <div class="text-[17px] font-extrabold leading-tight">Bills</div>
-        <div class="text-[11px] text-zinc-500 font-semibold">9-3</div>
+        <div class="team-name">Bills</div>
+        <div class="team-sub num">9-3</div>
       </div>
     </div>
   </div>
-  <div class="grid grid-cols-3 gap-2 mb-2">
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">KC</div><div class="text-[14px] font-extrabold num">+2.5</div><div class="text-[10px] text-zinc-500 num">-110</div></button>
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">OVER</div><div class="text-[14px] font-extrabold num">51.5</div><div class="text-[10px] text-zinc-500 num">-110</div></button>
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">KC ML</div><div class="text-[14px] font-extrabold num">+118</div><div class="text-[10px] text-emerald-600 num font-bold">+1.18x</div></button>
+  <div class="pick-grid">
+    <button class="pick"><div class="lbl">KC</div><div class="val num">+2.5</div><div class="odds num">-110</div></button>
+    <button class="pick"><div class="lbl">OVER</div><div class="val num">51.5</div><div class="odds num">-110</div></button>
+    <button class="pick"><div class="lbl">KC ML</div><div class="val num">+118</div><div class="odds gp num">+1.18x</div></button>
   </div>
-  <div class="grid grid-cols-3 gap-2">
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">BUF</div><div class="text-[14px] font-extrabold num">-2.5</div><div class="text-[10px] text-zinc-500 num">-110</div></button>
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">UNDER</div><div class="text-[14px] font-extrabold num">51.5</div><div class="text-[10px] text-zinc-500 num">-110</div></button>
-    <button class="pick px-3 py-2.5 text-center"><div class="text-[10px] font-bold text-zinc-500">BUF ML</div><div class="text-[14px] font-extrabold num">-140</div><div class="text-[10px] text-zinc-500 num">+0.71x</div></button>
+  <div class="pick-grid">
+    <button class="pick"><div class="lbl">BUF</div><div class="val num">-2.5</div><div class="odds num">-110</div></button>
+    <button class="pick"><div class="lbl">UNDER</div><div class="val num">51.5</div><div class="odds num">-110</div></button>
+    <button class="pick"><div class="lbl">BUF ML</div><div class="val num">-140</div><div class="odds num">+0.71x</div></button>
   </div>
 </div>
 
-<!-- Bottom nav -->
-<nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-zinc-200 mobile-nav">
-  <div class="grid grid-cols-5 px-2 pt-2">
-    <button class="flex flex-col items-center gap-0.5 text-emerald-600">
-      <div class="w-10 h-7 rounded-2xl pill-mint flex items-center justify-center">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg>
-      </div>
-      <span class="text-[10px] font-extrabold">Lines</span>
-    </button>
-    <button class="flex flex-col items-center gap-0.5 text-zinc-400">
-      <div class="w-10 h-7 flex items-center justify-center">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-      </div>
-      <span class="text-[10px] font-bold">Parlay</span>
-    </button>
-    <button class="flex flex-col items-center gap-0.5 text-zinc-400">
-      <div class="w-10 h-7 flex items-center justify-center">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-      </div>
-      <span class="text-[10px] font-bold">Analyst</span>
-    </button>
-    <button class="flex flex-col items-center gap-0.5 text-zinc-400 relative">
-      <div class="w-10 h-7 flex items-center justify-center">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>
-      </div>
-      <span class="text-[10px] font-bold">Slip</span>
-      <span class="absolute top-0 right-2 w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center font-extrabold">2</span>
-    </button>
-    <button class="flex flex-col items-center gap-0.5 text-zinc-400">
-      <div class="w-10 h-7 flex items-center justify-center">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
-      </div>
-      <span class="text-[10px] font-bold">More</span>
-    </button>
+<nav class="nav">
+  <div class="nav-grid">
+    <button class="nav-btn active"><div class="icn-wrap"><svg viewBox="0 0 24 24"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg></div><span class="lbl">Lines</span></button>
+    <button class="nav-btn"><div class="icn-wrap"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div><span class="lbl">Parlay</span></button>
+    <button class="nav-btn"><div class="icn-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><span class="lbl">Analyst</span></button>
+    <button class="nav-btn"><div class="icn-wrap"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg></div><span class="lbl">Slip</span><span class="badge">2</span></button>
+    <button class="nav-btn"><div class="icn-wrap"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></div><span class="lbl">More</span></button>
   </div>
 </nav>
 

@@ -5,263 +5,268 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#fcfcfc" />
 <title>Look 4 — Index · Real Sports Fake Slips</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  html, body { background: #fcfcfc; color: #111; font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.005em; }
-  body { min-height: 100vh; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
-  * { -webkit-tap-highlight-color: transparent; }
-  button { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
-  .mobile-nav { padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)); }
-  @media (min-width: 500px) { .mobile-nav { max-width: 390px; margin: 0 auto; left: 0; right: 0; } }
-  .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-  .hair { border-color: #e8e8e8; }
-  .hair-strong { border-color: #d4d4d4; }
-  .row { transition: background .12s; }
-  .row:hover { background: #f7f7f7; }
-  .row:active { background: #efefef; }
-  .yes { color: #047a4d; }
-  .no { color: #a83838; }
-  .micro-up { background:#d6f0e0; color:#047a4d; }
-  .micro-down { background:#f5d6d6; color:#a83838; }
-  .live-dot { background:#cf3a3a; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-  .pulse { animation: pulse 1.6s infinite; }
-  .bar { display:inline-block; width:3px; margin-right:1px; vertical-align: middle; background:#cbcbcb; }
-  .bar-up { background:#0a9a5c; }
-  .bar-down { background:#cf3a3a; }
-  @media (min-width: 500px) {
-    body { background:#ededed; display:flex; justify-content:center; padding:24px 0; }
-    .phone { width:390px; min-height:844px; background:#fcfcfc; box-shadow:0 20px 60px rgba(0,0,0,.15); border-radius:28px; overflow:hidden; position:relative; }
-  }
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: #fcfcfc; color: #111; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+body { min-height: 100vh; overflow-x: hidden; padding-bottom: 72px; }
+button { font-family: inherit; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; background: none; border: none; color: inherit; }
+.mono { font-family: ui-monospace, "SF Mono", "Menlo", "Consolas", "Courier New", monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.yes { color: #047a4d; }
+.no { color: #a83838; }
+
+/* Header */
+.hdr { padding: 12px 16px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e8e8e8; }
+.hdr-left { display: flex; align-items: center; gap: 10px; }
+.logo-mark { width: 24px; height: 24px; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; font-family: ui-monospace, monospace; }
+.brand { font-size: 12px; font-weight: 700; letter-spacing: -0.02em; font-family: ui-monospace, monospace; }
+.brand .slash { color: #a1a1aa; }
+.hdr-right { display: flex; align-items: center; gap: 12px; }
+.bk-label { font-size: 9px; color: #6b6b6b; text-transform: uppercase; letter-spacing: 0.05em; font-family: ui-monospace, monospace; }
+.bk-val { font-size: 14px; font-weight: 700; font-family: ui-monospace, monospace; line-height: 1.1; }
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: #f4f4f5; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #525252; }
+
+/* Filter bar */
+.filter { padding: 8px 16px; display: flex; align-items: center; gap: 12px; font-size: 11px; border-bottom: 1px solid #e8e8e8; }
+.filter-buttons { display: flex; gap: 4px; }
+.filter button { padding: 2px 8px; font-family: ui-monospace, monospace; color: #6b6b6b; }
+.filter button.active { background: #111; color: #fff; }
+.filter .count { margin-left: auto; color: #a1a1aa; font-family: ui-monospace, monospace; }
+
+/* Column headers */
+.cols { padding: 6px 16px; display: grid; grid-template-columns: 5fr 2fr 2fr 2fr 1fr; gap: 8px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b6b6b; border-bottom: 1px solid #d4d4d4; font-family: ui-monospace, monospace; }
+.cols div:not(:first-child) { text-align: right; }
+
+/* Section divider */
+.sec-bar { padding: 6px 16px; display: flex; align-items: center; gap: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e8e8e8; background: #fafafa; font-family: ui-monospace, monospace; color: #6b6b6b; }
+.sec-bar.live { background: #fafafa; }
+.sec-bar .badge { color: #b91c1c; font-weight: 700; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #cf3a3a; animation: pulse 1.6s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+
+/* Game row */
+.game-row { width: 100%; padding: 8px 16px; display: grid; grid-template-columns: 5fr 2fr 2fr 2fr 1fr; gap: 8px; align-items: center; border-bottom: 1px solid #e8e8e8; text-align: left; transition: background .12s; }
+.game-row:active { background: #efefef; }
+.matchup { display: flex; align-items: center; gap: 8px; }
+.logo { width: 18px; height: 18px; flex-shrink: 0; }
+.code { font-size: 12px; font-weight: 600; font-family: ui-monospace, monospace; }
+.rec { font-size: 10px; color: #a1a1aa; font-family: ui-monospace, monospace; }
+.score { margin-left: auto; font-size: 13px; font-weight: 700; font-family: ui-monospace, monospace; }
+.score.dim { color: #a1a1aa; }
+.cell { text-align: right; font-size: 12px; font-family: ui-monospace, monospace; }
+.cell .v { font-weight: 700; }
+.cell .o { color: #a1a1aa; font-size: 10px; margin-left: 2px; }
+.cell.b { font-weight: 700; }
+.move { text-align: right; }
+.bar { display: inline-block; width: 3px; margin-right: 1px; vertical-align: middle; background: #cbcbcb; }
+.bar.up { background: #0a9a5c; }
+.bar.down { background: #cf3a3a; }
+
+.meta-row { padding: 4px 16px; display: flex; justify-content: space-between; font-size: 10px; color: #6b6b6b; border-bottom: 1px solid #e8e8e8; font-family: ui-monospace, monospace; }
+.meta-row .live { color: #b91c1c; font-weight: 700; }
+
+/* Bottom nav */
+.nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #d4d4d4; padding-bottom: max(18px, env(safe-area-inset-bottom, 18px)); z-index: 50; }
+.nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px 4px 0; }
+.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; color: #a1a1aa; position: relative; }
+.nav-btn.active { color: #111; }
+.nav-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+.nav-btn .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; font-family: ui-monospace, monospace; }
+.nav-btn .badge { position: absolute; top: 0; right: calc(50% - 16px); width: 14px; height: 14px; background: #111; color: #fff; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: ui-monospace, monospace; }
+
+@media (min-width: 500px) {
+  body { background: #ededed; display: flex; justify-content: center; padding: 24px 0; }
+  .phone { width: 390px; min-height: 844px; background: #fcfcfc; box-shadow: 0 20px 60px rgba(0,0,0,.15); border-radius: 28px; overflow: hidden; position: relative; padding-bottom: 72px; }
+  .nav { max-width: 390px; margin: 0 auto; }
+}
 </style>
 </head>
 <body>
 <div class="phone">
 
-<!-- Header -->
-<header class="px-4 pt-4 pb-2 flex items-center justify-between border-b hair">
-  <div class="flex items-center gap-2">
-    <div class="w-6 h-6 bg-zinc-900 text-white flex items-center justify-center font-bold mono text-[11px]">R</div>
-    <div class="mono text-[12px] font-bold tracking-tight">RSFS<span class="text-zinc-400">/INDEX</span></div>
+<header class="hdr">
+  <div class="hdr-left">
+    <div class="logo-mark">R</div>
+    <div class="brand">RSFS<span class="slash">/INDEX</span></div>
   </div>
-  <div class="flex items-center gap-3">
-    <div class="text-right">
-      <div class="mono text-[9px] text-zinc-500 uppercase tracking-wider">BANKROLL</div>
-      <div class="mono text-[14px] font-bold leading-tight">$1,247.00</div>
+  <div class="hdr-right">
+    <div style="text-align:right">
+      <div class="bk-label">BANKROLL</div>
+      <div class="bk-val">$1,247.00</div>
     </div>
-    <div class="w-7 h-7 rounded-full bg-zinc-100 flex items-center justify-center text-[10px] font-bold text-zinc-700">JS</div>
+    <div class="avatar">JS</div>
   </div>
 </header>
 
-<!-- Filter bar -->
-<div class="px-4 py-2 flex items-center gap-3 text-[11px] mono border-b hair">
-  <div class="flex gap-1">
-    <button class="px-2 py-0.5 bg-zinc-900 text-white">ALL</button>
-    <button class="px-2 py-0.5 text-zinc-500 hover:text-zinc-900">NBA</button>
-    <button class="px-2 py-0.5 text-zinc-500 hover:text-zinc-900">NFL</button>
-    <button class="px-2 py-0.5 text-zinc-500 hover:text-zinc-900">MLB</button>
-    <button class="px-2 py-0.5 text-zinc-500 hover:text-zinc-900">NHL</button>
+<div class="filter">
+  <div class="filter-buttons">
+    <button class="active">ALL</button>
+    <button>NBA</button>
+    <button>NFL</button>
+    <button>MLB</button>
+    <button>NHL</button>
   </div>
-  <div class="ml-auto text-zinc-400">5 games</div>
+  <div class="count">5 games</div>
 </div>
 
-<!-- Column headers -->
-<div class="px-4 py-1.5 grid grid-cols-12 gap-2 text-[9px] mono uppercase tracking-wider text-zinc-500 border-b hair-strong">
-  <div class="col-span-5">Matchup</div>
-  <div class="col-span-2 text-right">Spread</div>
-  <div class="col-span-2 text-right">Total</div>
-  <div class="col-span-2 text-right">ML</div>
-  <div class="col-span-1 text-right">Δ</div>
+<div class="cols">
+  <div>Matchup</div>
+  <div>Spread</div>
+  <div>Total</div>
+  <div>ML</div>
+  <div>Δ</div>
 </div>
 
 <!-- LIVE section -->
-<div class="px-4 py-1 flex items-center gap-2 text-[10px] mono uppercase tracking-wider border-b hair bg-zinc-50">
-  <span class="live-dot pulse w-1.5 h-1.5 rounded-full"></span>
-  <span class="text-red-700 font-bold">LIVE</span>
-  <span class="text-zinc-400">·</span>
-  <span class="text-zinc-600">In progress</span>
+<div class="sec-bar live">
+  <span class="live-dot"></span>
+  <span class="badge">LIVE</span>
+  <span>·</span>
+  <span>In progress</span>
 </div>
 
-<!-- Row: Lakers @ Celtics LIVE (two rows per matchup) -->
-<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
-  <div class="col-span-5 flex items-center gap-2">
-    <img src="https://a.espncdn.com/i/teamlogos/nba/500/lal.png" class="w-4 h-4" alt="LAL">
-    <span class="mono text-[12px] font-semibold">LAL</span>
-    <span class="mono text-[10px] text-zinc-400">14-8</span>
-    <span class="mono text-[13px] font-bold ml-auto">72</span>
+<!-- LAL row -->
+<button class="game-row">
+  <div class="matchup">
+    <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#552583"/><text x="20" y="26" text-anchor="middle" fill="#FDB927" font-weight="900" font-size="14" font-family="-apple-system">L</text></svg>
+    <span class="code">LAL</span>
+    <span class="rec">14-8</span>
+    <span class="score">72</span>
   </div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">-3.5</span> <span class="text-zinc-400 text-[10px]">-110</span></div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">o224.5</span></div>
-  <div class="col-span-2 text-right mono text-[12px] no font-bold">−180</div>
-  <div class="col-span-1 text-right"><span class="bar bar-up" style="height:6px"></span><span class="bar bar-up" style="height:8px"></span><span class="bar bar-up" style="height:5px"></span></div>
+  <div class="cell"><span class="v">-3.5</span><span class="o">-110</span></div>
+  <div class="cell"><span class="v">o224.5</span></div>
+  <div class="cell b no">−180</div>
+  <div class="move"><span class="bar up" style="height:6px"></span><span class="bar up" style="height:8px"></span><span class="bar up" style="height:5px"></span></div>
 </button>
-<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
-  <div class="col-span-5 flex items-center gap-2">
-    <img src="https://a.espncdn.com/i/teamlogos/nba/500/bos.png" class="w-4 h-4" alt="BOS">
-    <span class="mono text-[12px] font-semibold">BOS</span>
-    <span class="mono text-[10px] text-zinc-400">17-5</span>
-    <span class="mono text-[13px] font-bold text-zinc-400 ml-auto">68</span>
+<button class="game-row">
+  <div class="matchup">
+    <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#007A33"/><text x="20" y="26" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="14" font-family="-apple-system">B</text></svg>
+    <span class="code">BOS</span>
+    <span class="rec">17-5</span>
+    <span class="score dim">68</span>
   </div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">+3.5</span> <span class="text-zinc-400 text-[10px]">-110</span></div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">u224.5</span></div>
-  <div class="col-span-2 text-right mono text-[12px] yes font-bold">+155</div>
-  <div class="col-span-1 text-right"><span class="bar bar-down" style="height:5px"></span><span class="bar bar-down" style="height:7px"></span><span class="bar bar-down" style="height:4px"></span></div>
+  <div class="cell"><span class="v">+3.5</span><span class="o">-110</span></div>
+  <div class="cell"><span class="v">u224.5</span></div>
+  <div class="cell b yes">+155</div>
+  <div class="move"><span class="bar down" style="height:5px"></span><span class="bar down" style="height:7px"></span><span class="bar down" style="height:4px"></span></div>
 </button>
+<div class="meta-row"><span>NBA · Q3 8:42 · LAL@HOME</span><span class="live">LIVE</span></div>
 
-<!-- Meta row LIVE -->
-<div class="px-4 py-1 flex items-center justify-between text-[10px] mono text-zinc-500 border-b hair">
-  <span>NBA · Q3 8:42 · LAL@HOME</span>
-  <span class="text-red-700 font-bold">LIVE</span>
-</div>
+<!-- TONIGHT -->
+<div class="sec-bar">Tonight · 3 games</div>
 
-<!-- TONIGHT header -->
-<div class="px-4 py-1.5 text-[10px] mono uppercase tracking-wider text-zinc-500 border-b hair-strong bg-zinc-50">Tonight · 3 games</div>
+<!-- GSW -->
+<button class="game-row">
+  <div class="matchup">
+    <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#1D428A"/><text x="20" y="26" text-anchor="middle" fill="#FFC72C" font-weight="900" font-size="14" font-family="-apple-system">G</text></svg>
+    <span class="code">GSW</span>
+    <span class="rec">12-10</span>
+  </div>
+  <div class="cell"><span class="v">-5.5</span><span class="o">-110</span></div>
+  <div class="cell"><span class="v">o221.5</span></div>
+  <div class="cell b no">−240</div>
+  <div class="move"><span class="bar down" style="height:4px"></span><span class="bar down" style="height:6px"></span><span class="bar up" style="height:5px"></span></div>
+</button>
+<button class="game-row">
+  <div class="matchup">
+    <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#98002E"/><text x="20" y="26" text-anchor="middle" fill="#F9A01B" font-weight="900" font-size="14" font-family="-apple-system">M</text></svg>
+    <span class="code">MIA</span>
+    <span class="rec">11-11</span>
+  </div>
+  <div class="cell"><span class="v">+5.5</span><span class="o">-110</span></div>
+  <div class="cell"><span class="v">u221.5</span></div>
+  <div class="cell b yes">+200</div>
+  <div class="move"><span class="bar up" style="height:5px"></span><span class="bar up" style="height:7px"></span><span class="bar down" style="height:4px"></span></div>
+</button>
+<div class="meta-row"><span>NBA · 10:00 PM ET · Chase</span><span>Vol 1.2M</span></div>
 
-<!-- Row: Warriors @ Heat -->
-<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
-  <div class="col-span-5 flex items-center gap-2">
-    <img src="https://a.espncdn.com/i/teamlogos/nba/500/gs.png" class="w-4 h-4" alt="GSW">
-    <span class="mono text-[12px] font-semibold">GSW</span>
-    <span class="mono text-[10px] text-zinc-400">12-10</span>
-  </div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">-5.5</span> <span class="text-zinc-400 text-[10px]">-110</span></div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">o221.5</span></div>
-  <div class="col-span-2 text-right mono text-[12px] no font-bold">−240</div>
-  <div class="col-span-1 text-right"><span class="bar bar-down" style="height:4px"></span><span class="bar bar-down" style="height:6px"></span><span class="bar bar-up" style="height:5px"></span></div>
-</button>
-<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
-  <div class="col-span-5 flex items-center gap-2">
-    <img src="https://a.espncdn.com/i/teamlogos/nba/500/mia.png" class="w-4 h-4" alt="MIA">
-    <span class="mono text-[12px] font-semibold">MIA</span>
-    <span class="mono text-[10px] text-zinc-400">11-11</span>
-  </div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">+5.5</span> <span class="text-zinc-400 text-[10px]">-110</span></div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">u221.5</span></div>
-  <div class="col-span-2 text-right mono text-[12px] yes font-bold">+200</div>
-  <div class="col-span-1 text-right"><span class="bar bar-up" style="height:5px"></span><span class="bar bar-up" style="height:7px"></span><span class="bar bar-down" style="height:4px"></span></div>
-</button>
-<div class="px-4 py-1 flex items-center justify-between text-[10px] mono text-zinc-500 border-b hair">
-  <span>NBA · 10:00 PM ET · Chase</span>
-  <span class="text-zinc-400">Vol 1.2M</span>
-</div>
+<!-- TOMORROW -->
+<div class="sec-bar">Tomorrow · 2 games</div>
 
-<!-- TOMORROW header -->
-<div class="px-4 py-1.5 text-[10px] mono uppercase tracking-wider text-zinc-500 border-b hair-strong bg-zinc-50">Tomorrow · 2 games</div>
+<!-- NYY -->
+<button class="game-row">
+  <div class="matchup">
+    <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#003087"/><text x="20" y="26" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="14" font-family="-apple-system">N</text></svg>
+    <span class="code">NYY</span>
+    <span class="rec">36-22</span>
+  </div>
+  <div class="cell"><span class="v">-1.5</span> <span class="yes" style="font-size:10px">+135</span></div>
+  <div class="cell"><span class="v">o9.5</span></div>
+  <div class="cell b no">−150</div>
+  <div class="move"><span class="bar up" style="height:6px"></span><span class="bar up" style="height:5px"></span><span class="bar up" style="height:8px"></span></div>
+</button>
+<button class="game-row">
+  <div class="matchup">
+    <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#BD3039"/><text x="20" y="26" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="14" font-family="-apple-system">B</text></svg>
+    <span class="code">BOS</span>
+    <span class="rec">31-28</span>
+  </div>
+  <div class="cell"><span class="v">+1.5</span> <span class="no" style="font-size:10px">−160</span></div>
+  <div class="cell"><span class="v">u9.5</span></div>
+  <div class="cell b yes">+130</div>
+  <div class="move"><span class="bar down" style="height:5px"></span><span class="bar down" style="height:6px"></span><span class="bar down" style="height:3px"></span></div>
+</button>
+<div class="meta-row"><span>MLB · 7:05 PM · Yankee Stadium</span><span>Vol 880K</span></div>
 
-<!-- Row: Yankees @ Red Sox -->
-<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
-  <div class="col-span-5 flex items-center gap-2">
-    <img src="https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png" class="w-4 h-4" alt="NYY">
-    <span class="mono text-[12px] font-semibold">NYY</span>
-    <span class="mono text-[10px] text-zinc-400">36-22</span>
+<!-- LAD -->
+<button class="game-row">
+  <div class="matchup">
+    <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#005A9C"/><text x="20" y="26" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="14" font-family="-apple-system">L</text></svg>
+    <span class="code">LAD</span>
+    <span class="rec">35-23</span>
   </div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">-1.5</span> <span class="yes text-[10px]">+135</span></div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">o9.5</span></div>
-  <div class="col-span-2 text-right mono text-[12px] no font-bold">−150</div>
-  <div class="col-span-1 text-right"><span class="bar bar-up" style="height:6px"></span><span class="bar bar-up" style="height:5px"></span><span class="bar bar-up" style="height:8px"></span></div>
+  <div class="cell"><span class="v">-1.5</span> <span class="yes" style="font-size:10px">+120</span></div>
+  <div class="cell"><span class="v">o8.5</span></div>
+  <div class="cell b no">−165</div>
+  <div class="move"><span class="bar up" style="height:5px"></span><span class="bar up" style="height:4px"></span><span class="bar up" style="height:7px"></span></div>
 </button>
-<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
-  <div class="col-span-5 flex items-center gap-2">
-    <img src="https://a.espncdn.com/i/teamlogos/mlb/500/bos.png" class="w-4 h-4" alt="BOS">
-    <span class="mono text-[12px] font-semibold">BOS</span>
-    <span class="mono text-[10px] text-zinc-400">31-28</span>
+<button class="game-row">
+  <div class="matchup">
+    <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#2F241D"/><text x="20" y="26" text-anchor="middle" fill="#FFC425" font-weight="900" font-size="14" font-family="-apple-system">S</text></svg>
+    <span class="code">SD</span>
+    <span class="rec">29-30</span>
   </div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">+1.5</span> <span class="no text-[10px]">−160</span></div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">u9.5</span></div>
-  <div class="col-span-2 text-right mono text-[12px] yes font-bold">+130</div>
-  <div class="col-span-1 text-right"><span class="bar bar-down" style="height:5px"></span><span class="bar bar-down" style="height:6px"></span><span class="bar bar-down" style="height:3px"></span></div>
+  <div class="cell"><span class="v">+1.5</span> <span class="no" style="font-size:10px">−145</span></div>
+  <div class="cell"><span class="v">u8.5</span></div>
+  <div class="cell b yes">+140</div>
+  <div class="move"><span class="bar down" style="height:4px"></span><span class="bar down" style="height:5px"></span><span class="bar down" style="height:6px"></span></div>
 </button>
-<div class="px-4 py-1 flex items-center justify-between text-[10px] mono text-zinc-500 border-b hair">
-  <span>MLB · 7:05 PM · Yankee Stadium</span>
-  <span class="text-zinc-400">Vol 880K</span>
-</div>
+<div class="meta-row"><span>MLB · 10:10 PM · Petco Park</span><span>Vol 540K</span></div>
 
-<!-- Row: Dodgers @ Padres -->
-<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
-  <div class="col-span-5 flex items-center gap-2">
-    <img src="https://a.espncdn.com/i/teamlogos/mlb/500/lad.png" class="w-4 h-4" alt="LAD">
-    <span class="mono text-[12px] font-semibold">LAD</span>
-    <span class="mono text-[10px] text-zinc-400">35-23</span>
-  </div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">-1.5</span> <span class="yes text-[10px]">+120</span></div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">o8.5</span></div>
-  <div class="col-span-2 text-right mono text-[12px] no font-bold">−165</div>
-  <div class="col-span-1 text-right"><span class="bar bar-up" style="height:5px"></span><span class="bar bar-up" style="height:4px"></span><span class="bar bar-up" style="height:7px"></span></div>
-</button>
-<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
-  <div class="col-span-5 flex items-center gap-2">
-    <img src="https://a.espncdn.com/i/teamlogos/mlb/500/sd.png" class="w-4 h-4" alt="SD">
-    <span class="mono text-[12px] font-semibold">SD</span>
-    <span class="mono text-[10px] text-zinc-400">29-30</span>
-  </div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">+1.5</span> <span class="no text-[10px]">−145</span></div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">u8.5</span></div>
-  <div class="col-span-2 text-right mono text-[12px] yes font-bold">+140</div>
-  <div class="col-span-1 text-right"><span class="bar bar-down" style="height:4px"></span><span class="bar bar-down" style="height:5px"></span><span class="bar bar-down" style="height:6px"></span></div>
-</button>
-<div class="px-4 py-1 flex items-center justify-between text-[10px] mono text-zinc-500 border-b hair">
-  <span>MLB · 10:10 PM · Petco Park</span>
-  <span class="text-zinc-400">Vol 540K</span>
-</div>
+<!-- THIS WEEK -->
+<div class="sec-bar">This Week</div>
 
-<!-- THIS WEEK header -->
-<div class="px-4 py-1.5 text-[10px] mono uppercase tracking-wider text-zinc-500 border-b hair-strong bg-zinc-50">This Week</div>
-
-<!-- Row: Chiefs @ Bills -->
-<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
-  <div class="col-span-5 flex items-center gap-2">
-    <img src="https://a.espncdn.com/i/teamlogos/nfl/500/kc.png" class="w-4 h-4" alt="KC">
-    <span class="mono text-[12px] font-semibold">KC</span>
-    <span class="mono text-[10px] text-zinc-400">10-2</span>
+<!-- KC -->
+<button class="game-row">
+  <div class="matchup">
+    <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#E31837"/><text x="20" y="26" text-anchor="middle" fill="#FFB81C" font-weight="900" font-size="14" font-family="-apple-system">K</text></svg>
+    <span class="code">KC</span>
+    <span class="rec">10-2</span>
   </div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">+2.5</span> <span class="text-zinc-400 text-[10px]">-110</span></div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">o51.5</span></div>
-  <div class="col-span-2 text-right mono text-[12px] yes font-bold">+118</div>
-  <div class="col-span-1 text-right"><span class="bar bar-up" style="height:5px"></span><span class="bar bar-up" style="height:6px"></span><span class="bar bar-up" style="height:7px"></span></div>
+  <div class="cell"><span class="v">+2.5</span><span class="o">-110</span></div>
+  <div class="cell"><span class="v">o51.5</span></div>
+  <div class="cell b yes">+118</div>
+  <div class="move"><span class="bar up" style="height:5px"></span><span class="bar up" style="height:6px"></span><span class="bar up" style="height:7px"></span></div>
 </button>
-<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
-  <div class="col-span-5 flex items-center gap-2">
-    <img src="https://a.espncdn.com/i/teamlogos/nfl/500/buf.png" class="w-4 h-4" alt="BUF">
-    <span class="mono text-[12px] font-semibold">BUF</span>
-    <span class="mono text-[10px] text-zinc-400">9-3</span>
+<button class="game-row">
+  <div class="matchup">
+    <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#00338D"/><text x="20" y="26" text-anchor="middle" fill="#C60C30" font-weight="900" font-size="14" font-family="-apple-system">B</text></svg>
+    <span class="code">BUF</span>
+    <span class="rec">9-3</span>
   </div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">-2.5</span> <span class="text-zinc-400 text-[10px]">-110</span></div>
-  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">u51.5</span></div>
-  <div class="col-span-2 text-right mono text-[12px] no font-bold">−140</div>
-  <div class="col-span-1 text-right"><span class="bar bar-down" style="height:5px"></span><span class="bar bar-down" style="height:6px"></span><span class="bar bar-down" style="height:4px"></span></div>
+  <div class="cell"><span class="v">-2.5</span><span class="o">-110</span></div>
+  <div class="cell"><span class="v">u51.5</span></div>
+  <div class="cell b no">−140</div>
+  <div class="move"><span class="bar down" style="height:5px"></span><span class="bar down" style="height:6px"></span><span class="bar down" style="height:4px"></span></div>
 </button>
-<div class="px-4 py-1 mb-24 flex items-center justify-between text-[10px] mono text-zinc-500 border-b hair">
-  <span>NFL · Sun 4:25 PM · Highmark</span>
-  <span class="text-zinc-400">Vol 4.2M</span>
-</div>
+<div class="meta-row"><span>NFL · Sun 4:25 PM · Highmark</span><span>Vol 4.2M</span></div>
 
-<!-- Bottom nav -->
-<nav class="fixed bottom-0 left-0 right-0 bg-white border-t hair-strong mobile-nav">
-  <div class="grid grid-cols-5 px-1 pt-1.5">
-    <button class="flex flex-col items-center gap-0.5 text-zinc-900 mono">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg>
-      <span class="text-[9px] uppercase tracking-wider font-bold">LINES</span>
-    </button>
-    <button class="flex flex-col items-center gap-0.5 text-zinc-400 mono">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-      <span class="text-[9px] uppercase tracking-wider font-bold">PARLAY</span>
-    </button>
-    <button class="flex flex-col items-center gap-0.5 text-zinc-400 mono">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-      <span class="text-[9px] uppercase tracking-wider font-bold">AI</span>
-    </button>
-    <button class="flex flex-col items-center gap-0.5 text-zinc-400 mono relative">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>
-      <span class="text-[9px] uppercase tracking-wider font-bold">SLIP</span>
-      <span class="absolute top-0 right-2 w-3.5 h-3.5 bg-zinc-900 text-white text-[8px] flex items-center justify-center font-bold">2</span>
-    </button>
-    <button class="flex flex-col items-center gap-0.5 text-zinc-400 mono">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
-      <span class="text-[9px] uppercase tracking-wider font-bold">MORE</span>
-    </button>
+<nav class="nav">
+  <div class="nav-grid">
+    <button class="nav-btn active"><svg viewBox="0 0 24 24"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg><span class="lbl">LINES</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="lbl">PARLAY</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="lbl">AI</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg><span class="lbl">SLIP</span><span class="badge">2</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span class="lbl">MORE</span></button>
   </div>
 </nav>
 
