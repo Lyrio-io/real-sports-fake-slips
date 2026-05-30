@@ -1371,6 +1371,23 @@
       <div class="tab-content" data-tab-content="stats" data-active="false">
         <div class="px-4 lg:px-8 pt-4 lg:pt-8 max-w-5xl mx-auto">
           <h2 class="display text-2xl font-bold mb-4">Performance</h2>
+
+          <!-- Bankroll Plan: weekly reset + savings ledger + half-unit target -->
+          <div id="bankroll-plan" class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-sm flex items-center gap-2">
+                <span class="text-neon-500">●</span> Bankroll Plan
+                <span class="text-[10px] text-ink-400 font-normal uppercase tracking-wider">Mandatory weekly reset</span>
+              </h3>
+              <span id="bp-week" class="text-[11px] text-ink-300 num"></span>
+            </div>
+            <div id="bp-body" class="space-y-3 text-sm"></div>
+            <details class="mt-3">
+              <summary class="text-[11px] text-ink-300 cursor-pointer hover:text-white">Reset history</summary>
+              <div id="bp-history" class="mt-2 text-[11px] overflow-x-auto"></div>
+            </details>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4">
               <h3 class="font-semibold mb-2 text-sm text-ink-200">P&amp;L Over Time</h3>
@@ -1583,6 +1600,24 @@
               </div>
 
               <button id="save-guardrails" class="w-full bg-neon-500 text-ink-950 font-bold py-2.5 rounded-xl hover:bg-neon-400">Save Guardrails</button>
+            </div>
+          </div>
+
+          <!-- Bankroll Plan settings: cap + manual reset -->
+          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
+            <h3 class="font-semibold mb-1">Bankroll Plan</h3>
+            <p class="text-xs text-ink-300 mb-3">Your bankroll <strong>auto-resets every Monday</strong>. Profits sweep to <strong>Savings</strong> (locked, can't bet). Losing weeks top up from Savings if available. Goal: $2,500 = half unit.</p>
+            <label class="block mb-3">
+              <span class="text-xs text-ink-300 block mb-1">Bankroll cap (resets to this every Monday)</span>
+              <div class="flex items-center gap-2">
+                <span class="text-ink-300 text-sm">$</span>
+                <input id="bankroll-cap-input" type="number" inputmode="decimal" placeholder="1000" class="flex-1 max-w-[160px] bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm num focus:outline-none focus:border-neon-500" />
+                <button id="save-bankroll-cap" class="bg-neon-500 text-ink-950 font-bold px-4 py-2 rounded-xl text-sm hover:bg-neon-400">Save</button>
+              </div>
+            </label>
+            <div class="flex gap-2 flex-wrap">
+              <button id="manual-reset-now" class="bg-ink-700 hover:bg-ink-600 text-white text-sm font-bold px-4 py-2 rounded-xl">Force reset now</button>
+              <button id="deposit-to-savings" class="bg-ink-700 hover:bg-ink-600 text-white text-sm font-bold px-4 py-2 rounded-xl">+ Add to Savings</button>
             </div>
           </div>
 
@@ -2375,17 +2410,78 @@ const persistProfiles = () => save(LS.PROFILES, state.profiles);
 function ensureProfile(name) {
   if (!state.profiles[name]) {
     state.profiles[name] = { bankroll: 1000, starting: 1000, bets: [], settings: { ...DEFAULT_PROFILE_SETTINGS } };
-    persistProfiles();
   } else if (!state.profiles[name].settings) {
     state.profiles[name].settings = { ...DEFAULT_PROFILE_SETTINGS };
-    persistProfiles();
   } else {
     // Merge any new defaults that didn't exist before
     state.profiles[name].settings = { ...DEFAULT_PROFILE_SETTINGS, ...state.profiles[name].settings };
-    persistProfiles();
   }
+  // Backfill weekly bankroll-plan fields for older profiles
+  const p = state.profiles[name];
+  if (typeof p.bankrollCap !== 'number') p.bankrollCap = p.starting || p.bankroll || 1000;
+  if (typeof p.savings !== 'number') p.savings = 0;
+  if (!p.weeklyResetWeek) p.weeklyResetWeek = currentWeekKey();
+  if (!Array.isArray(p.weeklyHistory)) p.weeklyHistory = [];
+  persistProfiles();
 }
 function S() { const p = P(); return p ? p.settings : DEFAULT_PROFILE_SETTINGS; }
+
+/* ===== Weekly bankroll reset (mandatory) ===== */
+const HALF_UNIT_TARGET = 2500;     // savings needed for $2,500 = half unit
+const FULL_UNIT_TARGET = 5000;     // full unit = $5,000
+function currentWeekKey(d) {
+  // ISO 8601 week, formatted "YYYY-Www" (Monday-based)
+  d = d ? new Date(d) : new Date();
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - dayNum + 3);
+  const firstThursday = date.getTime();
+  date.setUTCMonth(0, 1);
+  if (date.getUTCDay() !== 4) date.setUTCMonth(0, 1 + ((4 - date.getUTCDay()) + 7) % 7);
+  const weekNum = 1 + Math.ceil((firstThursday - date) / 604800000);
+  const year = new Date(firstThursday).getUTCFullYear();
+  return `${year}-W${String(weekNum).padStart(2, '0')}`;
+}
+function weeklyResetIfDue(profileName) {
+  const p = state.profiles[profileName]; if (!p || typeof p.bankrollCap !== 'number') return false;
+  const nowWeek = currentWeekKey();
+  if (p.weeklyResetWeek === nowWeek) return false;
+  const before = { bankroll: p.bankroll, savings: p.savings || 0, cap: p.bankrollCap, week: p.weeklyResetWeek };
+  let savingsDelta = 0, toppedUp = 0, shortfall = 0;
+  if (p.bankroll > p.bankrollCap) {
+    const overage = p.bankroll - p.bankrollCap;
+    p.savings = (p.savings || 0) + overage;
+    savingsDelta = +overage;
+    p.bankroll = p.bankrollCap;
+  } else if (p.bankroll < p.bankrollCap) {
+    const needed = p.bankrollCap - p.bankroll;
+    toppedUp = Math.min(needed, p.savings || 0);
+    p.bankroll += toppedUp;
+    p.savings = (p.savings || 0) - toppedUp;
+    savingsDelta = -toppedUp;
+    shortfall = Math.max(0, needed - toppedUp);
+  }
+  p.weeklyHistory = p.weeklyHistory || [];
+  p.weeklyHistory.push({
+    weekFrom: before.week, weekTo: nowWeek, at: nowISO(),
+    bankrollBefore: before.bankroll, bankrollAfter: p.bankroll,
+    savingsBefore: before.savings, savingsAfter: p.savings,
+    cap: before.cap, weekPL: before.bankroll - before.cap,
+    savingsDelta, toppedUp, shortfall,
+  });
+  if (p.weeklyHistory.length > 26) p.weeklyHistory = p.weeklyHistory.slice(-26);
+  p.weeklyResetWeek = nowWeek;
+  persistProfiles();
+  return { savingsDelta, toppedUp, shortfall, weekPL: before.bankroll - before.cap };
+}
+function lifetimeProfit(p) {
+  if (!p) return 0;
+  return (p.savings || 0) + (p.bankroll - (p.bankrollCap || p.starting || 0));
+}
+function currentWeekPL(p) {
+  if (!p) return 0;
+  return p.bankroll - (p.bankrollCap || 0);
+}
 function deleteProfile(name) { delete state.profiles[name]; persistProfiles(); if (state.currentProfile === name) { const r = Object.keys(state.profiles); state.currentProfile = r[0] || ''; save(LS.CURRENT, state.currentProfile); } }
 
 /* API */
@@ -4623,10 +4719,81 @@ async function autoSettle(silent = false) {
   if (!silent || changed > 0) toast(`Auto-settle: ${changed} bet(s) updated.${changed === 0 ? ' (no scores yet)' : ''}`);
 }
 
+/* Bankroll Plan render — savings ledger + half-unit progress */
+function renderBankrollPlan() {
+  const p = P(); if (!p) return;
+  const wkEl = document.getElementById('bp-week');
+  const bodyEl = document.getElementById('bp-body');
+  const histEl = document.getElementById('bp-history');
+  if (!wkEl || !bodyEl) return;
+  const cap = p.bankrollCap || 0;
+  const sav = p.savings || 0;
+  const wkPL = currentWeekPL(p);
+  const lifetime = lifetimeProfit(p);
+  const pctOfCap = cap > 0 ? Math.max(0, Math.min(100, (p.bankroll / cap) * 100)) : 0;
+  const halfUnit = HALF_UNIT_TARGET;
+  const targetPct = Math.max(0, Math.min(100, (lifetime / halfUnit) * 100));
+  const colorWk = wkPL > 0 ? 'text-neon-500' : wkPL < 0 ? 'text-danger-500' : 'text-ink-300';
+  const colorLT = lifetime > 0 ? 'text-neon-500' : lifetime < 0 ? 'text-danger-500' : 'text-ink-300';
+  wkEl.textContent = currentWeekKey() + ' · resets Mon';
+  bodyEl.innerHTML = `
+    <div>
+      <div class="flex items-end justify-between mb-1">
+        <span class="text-[11px] uppercase tracking-wider text-ink-400 font-semibold">Bankroll this week</span>
+        <span class="num text-[11px] text-ink-300">cap ${fmt$(cap)}</span>
+      </div>
+      <div class="flex items-baseline gap-2">
+        <span class="num text-2xl font-bold">${fmt$(p.bankroll)}</span>
+        <span class="num text-sm ${colorWk}">${wkPL >= 0 ? '+' : ''}${fmt$(wkPL)} this week</span>
+      </div>
+      <div class="w-full h-2 bg-ink-800 rounded-full mt-2 overflow-hidden">
+        <div class="h-full ${wkPL >= 0 ? 'bg-neon-500' : 'bg-danger-500'}" style="width:${pctOfCap}%"></div>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="bg-ink-800/60 rounded-xl p-3">
+        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-semibold">Savings (locked)</div>
+        <div class="num text-xl font-bold text-violet-500 mt-1">${fmt$(sav)}</div>
+        <div class="text-[10px] text-ink-300 mt-0.5">Can't bet from this</div>
+      </div>
+      <div class="bg-ink-800/60 rounded-xl p-3">
+        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-semibold">Lifetime profit</div>
+        <div class="num text-xl font-bold ${colorLT} mt-1">${lifetime >= 0 ? '+' : ''}${fmt$(lifetime)}</div>
+        <div class="text-[10px] text-ink-300 mt-0.5">Savings + (BR − cap)</div>
+      </div>
+    </div>
+    <div>
+      <div class="flex items-end justify-between mb-1">
+        <span class="text-[11px] uppercase tracking-wider text-ink-400 font-semibold">Path to $2,500 half-unit</span>
+        <span class="num text-[11px] text-ink-300">${targetPct.toFixed(0)}%</span>
+      </div>
+      <div class="w-full h-2 bg-ink-800 rounded-full overflow-hidden">
+        <div class="h-full bg-gradient-to-r from-violet-500 to-neon-500" style="width:${targetPct}%"></div>
+      </div>
+      <div class="text-[10px] text-ink-400 mt-1">${fmt$(Math.max(0, lifetime))} of ${fmt$(halfUnit)} · full unit at ${fmt$(FULL_UNIT_TARGET)}</div>
+    </div>`;
+  // History table
+  const hist = (p.weeklyHistory || []).slice().reverse();
+  if (!hist.length) {
+    histEl.innerHTML = '<div class="text-ink-400">No resets yet. First Monday will log here.</div>';
+  } else {
+    histEl.innerHTML = `<table class="w-full text-[10px]">
+      <thead><tr class="text-ink-400 text-left"><th class="py-1 pr-2">Week</th><th class="text-right pr-2">P&amp;L</th><th class="text-right pr-2">Savings Δ</th><th class="text-right">Savings after</th></tr></thead>
+      <tbody>${hist.map(h => {
+        const cls = h.weekPL > 0 ? 'text-neon-500' : h.weekPL < 0 ? 'text-danger-500' : 'text-ink-300';
+        const dcls = h.savingsDelta > 0 ? 'text-neon-500' : h.savingsDelta < 0 ? 'text-warn-500' : 'text-ink-300';
+        const tag = h.shortfall > 0 ? `<span class="text-danger-500" title="Savings empty, short ${fmt$(h.shortfall)}">⚠</span>` : '';
+        return `<tr class="border-t border-ink-800"><td class="py-1 num">${h.weekFrom || '—'} → ${h.weekTo} ${tag}</td><td class="text-right num pr-2 ${cls}">${h.weekPL >= 0 ? '+' : ''}${fmt$(h.weekPL)}</td><td class="text-right num pr-2 ${dcls}">${h.savingsDelta >= 0 ? '+' : ''}${fmt$(h.savingsDelta)}</td><td class="text-right num">${fmt$(h.savingsAfter)}</td></tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+}
+
 /* stats */
 let charts = {};
 function renderStats() {
   const p = P(); if (!p) return;
+  renderBankrollPlan();
   const settled = p.bets.filter(b => b.status !== 'pending');
   const sorted = settled.slice().sort((a,b) => new Date(a.settledAt) - new Date(b.settledAt));
   let cum = 0;
@@ -4747,6 +4914,8 @@ function renderSettings() {
   const ai = document.getElementById('anthropic-key-input');
   if (ai) ai.value = state.anthropicKey;
   const p = P(); document.getElementById('starting-bankroll').value = p ? p.starting : 1000;
+  const bcap = document.getElementById('bankroll-cap-input');
+  if (bcap && p) bcap.value = (p.bankrollCap != null ? p.bankrollCap : (p.starting || 1000));
   document.querySelectorAll('input[name=tier]').forEach(r => r.checked = r.value === state.tier);
   renderQuota();
   renderCreditCounter();
@@ -5378,17 +5547,37 @@ async function importAllData(file) {
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-    if (data.version !== 1) throw new Error('Unsupported backup version');
-    state.profiles = data.profiles || {};
-    state.currentProfile = data.currentProfile || Object.keys(state.profiles)[0] || '';
-    state.sports = data.sports || DEFAULT_SPORTS;
-    state.sportsList = data.sportsList || [];
-    state.apiKey = data.apiKey || '';
-    state.anthropicKey = data.anthropicKey || '';
-    state.tier = data.tier || 'free';
-    state.stakeMode = data.stakeMode || 'wager';
-    state.analystModel = data.analystModel || 'claude-haiku-4-5-20251001';
-    state.analysis = data.analysis || null;
+    // Support both legacy `{version, profiles, ...}` and newer `{v, ts, profile, data:{psb.*}}` formats
+    if (data.version === 1) {
+      state.profiles = data.profiles || {};
+      state.currentProfile = data.currentProfile || Object.keys(state.profiles)[0] || '';
+      state.sports = data.sports || DEFAULT_SPORTS;
+      state.sportsList = data.sportsList || [];
+      state.apiKey = data.apiKey || '';
+      state.anthropicKey = data.anthropicKey || '';
+      state.tier = data.tier || 'free';
+      state.stakeMode = data.stakeMode || 'wager';
+      state.analystModel = data.analystModel || 'claude-haiku-4-5-20251001';
+      state.analysis = data.analysis || null;
+    } else if (data.v === 1 && data.data && typeof data.data === 'object') {
+      // Newer format: write raw psb.* keys back to localStorage, then re-read into state
+      for (const [k, v] of Object.entries(data.data)) {
+        if (typeof v === 'string') localStorage.setItem(k, v);
+      }
+      // Re-hydrate state from localStorage
+      state.profiles = JSON.parse(localStorage.getItem(LS.PROFILES) || '{}');
+      state.currentProfile = data.profile || localStorage.getItem(LS.CURRENT) || Object.keys(state.profiles)[0] || '';
+      state.sports = JSON.parse(localStorage.getItem(LS.SPORTS) || JSON.stringify(DEFAULT_SPORTS));
+      state.sportsList = JSON.parse(localStorage.getItem(LS.SPORTSLIST) || '[]');
+      state.apiKey = localStorage.getItem(LS.KEY) || '';
+      state.anthropicKey = localStorage.getItem(LS.ANTHROPIC_KEY) || '';
+      state.tier = localStorage.getItem(LS.TIER) || 'free';
+      state.stakeMode = localStorage.getItem('psb.stakeMode') || 'wager';
+      state.analystModel = localStorage.getItem(LS.ANALYST_MODEL) || 'claude-haiku-4-5-20251001';
+      state.analysis = JSON.parse(localStorage.getItem(LS.ANALYSIS) || 'null');
+    } else {
+      throw new Error('Unsupported backup version');
+    }
     save(LS.PROFILES, state.profiles);
     save(LS.CURRENT, state.currentProfile);
     save(LS.SPORTS, state.sports);
@@ -5399,6 +5588,8 @@ async function importAllData(file) {
     save('psb.stakeMode', state.stakeMode);
     save(LS.ANALYST_MODEL, state.analystModel);
     if (state.analysis) save(LS.ANALYSIS, state.analysis);
+    // Ensure new bankroll-plan fields exist on imported profiles
+    for (const n of Object.keys(state.profiles)) ensureProfile(n);
     toast('Backup restored — refreshing');
     renderHeader(); renderSportChips(); renderLines(); renderOpenBets(); renderHistory(); renderStats(); renderSettings();
   } catch (e) {
@@ -5801,10 +5992,19 @@ function renderProfilePicker() {
 }
 function activateProfile(name) {
   if (!state.profiles[name]) return;
+  ensureProfile(name);
+  const reset = weeklyResetIfDue(name);
   state.currentProfile = name; save(LS.CURRENT, name);
   document.getElementById('profile-picker').classList.add('hidden');
   document.getElementById('profile-menu').classList.add('hidden');
   renderHeader(); renderLines(); renderOpenBets(); renderHistory(); renderStats(); renderParlay();
+  if (reset) {
+    const swept = reset.savingsDelta > 0 ? `swept ${fmt$(reset.savingsDelta)} to savings` :
+                  reset.toppedUp > 0    ? `topped up ${fmt$(reset.toppedUp)} from savings` :
+                  reset.shortfall > 0   ? `bankroll short ${fmt$(reset.shortfall)} — savings empty` :
+                                           'no change';
+    toast(`${name}: weekly reset · ${swept}`);
+  }
 }
 function showProfilePicker() { document.getElementById('profile-picker').classList.remove('hidden'); renderProfilePicker(); }
 function renderProfileMenu(anchorEl) {
@@ -5868,8 +6068,26 @@ function init() {
   const names = Object.keys(state.profiles);
   if (!names.length) showProfilePicker();
   else if (!state.currentProfile || !state.profiles[state.currentProfile]) { state.currentProfile = names[0]; save(LS.CURRENT, state.currentProfile); }
+  // Backfill bankroll-plan fields on any pre-existing profile (idempotent)
+  for (const n of Object.keys(state.profiles)) ensureProfile(n);
+  // Mandatory weekly bankroll reset for every profile (runs once per ISO week)
+  const resetNotes = [];
+  for (const n of Object.keys(state.profiles)) {
+    const r = weeklyResetIfDue(n);
+    if (r) resetNotes.push({ name: n, ...r });
+  }
   // No cloud sync — data stays in this browser via localStorage
   refreshAdminVisibility();
+  // After all renders are wired, surface a one-time notification per reset
+  setTimeout(() => {
+    for (const note of resetNotes) {
+      const swept = note.savingsDelta > 0 ? `swept ${fmt$(note.savingsDelta)} to savings` :
+                    note.toppedUp > 0    ? `topped up ${fmt$(note.toppedUp)} from savings` :
+                    note.shortfall > 0   ? `bankroll short ${fmt$(note.shortfall)} — savings empty` :
+                                            'no change';
+      toast(`${note.name}: weekly reset · ${swept}`);
+    }
+  }, 800);
 
   // Demo mode: ALWAYS reload mocks at boot when in demo mode (idempotent — refreshes timestamps)
   // This guarantees mocks survive page refreshes and stale state from prior versions.
@@ -6009,6 +6227,42 @@ function init() {
   });
   document.getElementById('reload-sports').addEventListener('click', reloadSports);
   document.getElementById('starting-bankroll').addEventListener('change', (e) => { const p = P(); if (!p) return; p.starting = parseFloat(e.target.value) || 1000; persistProfiles(); renderHeader(); });
+
+  // Bankroll Plan controls
+  const sbc = document.getElementById('save-bankroll-cap');
+  if (sbc) sbc.addEventListener('click', () => {
+    const p = P(); if (!p) return;
+    const v = parseFloat(document.getElementById('bankroll-cap-input').value);
+    if (!(v > 0)) return toast('Cap must be a positive number');
+    p.bankrollCap = v;
+    persistProfiles();
+    toast(`Cap set to ${fmt$(v)}. Resets to this every Monday.`);
+    renderBankrollPlan(); renderHeader();
+  });
+  const mrn = document.getElementById('manual-reset-now');
+  if (mrn) mrn.addEventListener('click', () => {
+    const p = P(); if (!p) return;
+    if (!confirm(`Force a reset now? Bankroll ${fmt$(p.bankroll)} → ${fmt$(p.bankrollCap)}. ${p.bankroll > p.bankrollCap ? `Sweeps ${fmt$(p.bankroll - p.bankrollCap)} to Savings.` : p.bankroll < p.bankrollCap ? `Tops up from Savings (${fmt$(p.savings || 0)} available).` : 'No change.'}`)) return;
+    // force by clearing this week's marker
+    p.weeklyResetWeek = 'forced-' + Date.now();
+    const r = weeklyResetIfDue(state.currentProfile);
+    if (r) {
+      const swept = r.savingsDelta > 0 ? `swept ${fmt$(r.savingsDelta)} to savings` : r.toppedUp > 0 ? `topped up ${fmt$(r.toppedUp)}` : r.shortfall > 0 ? `short ${fmt$(r.shortfall)}` : 'no change';
+      toast(`Manual reset · ${swept}`);
+    }
+    renderBankrollPlan(); renderHeader();
+  });
+  const dts = document.getElementById('deposit-to-savings');
+  if (dts) dts.addEventListener('click', () => {
+    const p = P(); if (!p) return;
+    const v = parseFloat(prompt(`Add to Savings? (current: ${fmt$(p.savings || 0)})\nEnter positive amount to add, negative to withdraw:`));
+    if (!Number.isFinite(v) || v === 0) return;
+    p.savings = (p.savings || 0) + v;
+    if (p.savings < 0) p.savings = 0;
+    persistProfiles();
+    toast(`Savings ${v > 0 ? '+' : ''}${fmt$(v)} → ${fmt$(p.savings)}`);
+    renderBankrollPlan(); renderHeader();
+  });
   document.getElementById('reset-bankroll').addEventListener('click', () => { const p = P(); if (!p) return; if (!confirm(`Reset ${state.currentProfile}'s bankroll and DELETE all their bets?`)) return; p.bankroll = p.starting; p.bets = []; state.slip = []; persistProfiles(); renderHeader(); renderOpenBets(); renderHistory(); renderStats(); renderParlay(); toast('Reset'); });
   document.querySelectorAll('input[name=tier]').forEach(r => r.addEventListener('change', () => { state.tier = r.value; save(LS.TIER, state.tier); toast(`Tier: ${state.tier}`); renderLines(); }));
   document.getElementById('manage-add').addEventListener('click', () => {
