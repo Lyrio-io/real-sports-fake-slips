@@ -1420,6 +1420,13 @@
           </div>
           <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mt-4">
             <h3 class="font-semibold text-sm mb-3 flex items-center gap-2">
+              <span class="text-violet-500">●</span> Parlay performance by leg count
+              <span class="text-[11px] text-ink-300 font-normal">(does 3-leg crush 7-leg?)</span>
+            </h3>
+            <div id="parlay-breakdown" class="text-sm overflow-x-auto"></div>
+          </div>
+          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mt-4">
+            <h3 class="font-semibold text-sm mb-3 flex items-center gap-2">
               <span class="text-cyan-500">●</span> Performance by Sport
               <span class="text-[11px] text-ink-300 font-normal">(JuiceReel-style breakdown)</span>
             </h3>
@@ -1762,7 +1769,8 @@
           <!-- Source attribution -->
           <div>
             <label class="text-[11px] uppercase tracking-wider text-ink-200 font-bold block mb-1">Where did this come from? <span class="text-ink-400 font-normal normal-case">(optional)</span></label>
-            <input id="slip-source" list="source-list" type="text" placeholder="Source name (e.g. @CapperBob)" class="w-full bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-neon-500" />
+            <div id="source-chips" class="flex flex-wrap gap-1.5 mb-2"></div>
+            <input id="slip-source" list="source-list" type="text" placeholder="Source name (or pick a chip above)" class="w-full bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-neon-500" />
             <datalist id="source-list"></datalist>
           </div>
           <div class="bg-ink-800 rounded-xl p-3 space-y-1.5">
@@ -2316,7 +2324,20 @@ function reEnterDemoMode() {
   renderHeader(); renderSportChips(); renderLines(); renderAnalysis();
   toast('Demo data reloaded');
 }
-const DEFAULT_SPORTS = ['americanfootball_nfl','basketball_nba','baseball_mlb','icehockey_nhl'];
+const DEFAULT_SPORTS = ['americanfootball_nfl','basketball_nba','basketball_wnba','baseball_mlb','icehockey_nhl','soccer_usa_mls','soccer_epl','soccer_uefa_champs_league'];
+// Jorge's regular tipsters / sources — pre-seeded as quick-tap chips on the slip
+const PRESET_SOURCES = ['TMS','Cody','AFS','Your Daily Cappers','Sean Perry','Myself'];
+// Normalize source aliases so "Mine" and "Myself" don't create two separate buckets in ROI stats
+function normalizeSource(name) {
+  if (!name) return '';
+  const t = String(name).trim();
+  if (!t) return '';
+  const lc = t.toLowerCase();
+  if (lc === 'mine' || lc === 'me' || lc === 'self') return 'Myself';
+  // Match presets case-insensitively
+  const preset = PRESET_SOURCES.find(p => p.toLowerCase() === lc);
+  return preset || t;
+}
 const PROFILE_COLORS = ['#a3ff12','#facc15','#a78bfa','#22d3ee','#f472b6','#fb923c'];
 
 // Per-profile guardrail/preferences defaults
@@ -3941,9 +3962,25 @@ function renderSlip() {
     }
   }
 
-  // Source datalist
+  // Source datalist + quick-tap preset chips (Jorge's regular tipsters always available)
+  const userSources = (S().sources || []).map(s => s.name);
+  const mergedNames = Array.from(new Set([...PRESET_SOURCES, ...userSources.map(normalizeSource)]));
   const sl = document.getElementById('source-list');
-  if (sl) sl.innerHTML = (S().sources || []).map(s => `<option value="${escapeHtml(s.name)}">`).join('');
+  if (sl) sl.innerHTML = mergedNames.map(n => `<option value="${escapeHtml(n)}">`).join('');
+  const chipsEl = document.getElementById('source-chips');
+  if (chipsEl) {
+    const input = document.getElementById('slip-source');
+    const current = (input?.value || '').trim().toLowerCase();
+    chipsEl.innerHTML = mergedNames.map(n => {
+      const active = n.toLowerCase() === current;
+      return `<button type="button" data-source-chip="${escapeHtml(n)}" class="text-[11px] px-2 py-1 rounded-full border ${active ? 'bg-neon-500 text-ink-950 border-neon-500 font-bold' : 'bg-ink-800 text-ink-200 border-ink-700 hover:border-ink-500'}">${escapeHtml(n)}</button>`;
+    }).join('');
+    chipsEl.querySelectorAll('[data-source-chip]').forEach(b => b.addEventListener('click', () => {
+      const v = b.dataset.sourceChip;
+      if (input) input.value = (input.value.trim().toLowerCase() === v.toLowerCase()) ? '' : v;
+      renderSlip();
+    }));
+  }
 
   document.getElementById('slip-mode').textContent = isSGP && sgpAllowed ? `${state.slip.length}-Leg Same-Game Parlay (high vig)` : (state.slip.length === 1 ? 'Single Bet' : (isParlay ? `${state.slip.length}-Leg Parlay · ${combinedDec.toFixed(2)}x` : 'Invalid: same-game legs'));
   document.getElementById('slip-odds').textContent = state.slip.length === 1 ? fmtAmerican(state.slip[0].american) : decimalToAmerican(combinedDec);
@@ -4081,7 +4118,7 @@ function placeBet() {
 function actuallyPlace(stake) {
   const p = P(); if (!p) return;
   const combinedDec = state.slip.reduce((a,l) => a*l.decimal, 1);
-  const sourceName = (document.getElementById('slip-source')?.value || '').trim();
+  const sourceName = normalizeSource((document.getElementById('slip-source')?.value || ''));
   const bet = {
     id: uid(), placedAt: nowISO(),
     type: state.slip.length === 1 ? 'single' : 'parlay',
@@ -5953,6 +5990,55 @@ function renderVsCard() {
 }
 
 /* ===== Performance by Sport (JuiceReel-style) ===== */
+/* Parlay performance bucketed by leg count — answers "is my 3-leg better than my 7-leg?" */
+function renderParlayBreakdown() {
+  const el = document.getElementById('parlay-breakdown');
+  if (!el) return;
+  const p = P(); if (!p) { el.innerHTML = ''; return; }
+  const settled = p.bets.filter(b => b.status === 'won' || b.status === 'lost' || b.status === 'push');
+  // Bucket by leg count, with "single" as 1, then 2,3,4,5,6,7,8+
+  const buckets = {};
+  for (const b of settled) {
+    const n = (b.legs || []).length || 1;
+    const key = n >= 8 ? '8+' : String(n);
+    buckets[key] = buckets[key] || { n: 0, wins: 0, losses: 0, pushes: 0, wagered: 0, pl: 0 };
+    buckets[key].n++; buckets[key].wagered += b.stake;
+    if (b.status === 'won') { buckets[key].wins++; buckets[key].pl += (b.payout - b.stake); }
+    else if (b.status === 'lost') { buckets[key].losses++; buckets[key].pl -= b.stake; }
+    else buckets[key].pushes++;
+  }
+  const order = ['1','2','3','4','5','6','7','8+'].filter(k => buckets[k]);
+  if (!order.length) {
+    el.innerHTML = '<div class="text-ink-400 text-xs">No settled parlays yet. Once bets grade, you\'ll see which leg counts you actually win at.</div>';
+    return;
+  }
+  // Find the best ROI bucket to highlight
+  const withROI = order.map(k => { const r = buckets[k]; return { k, ...r, roi: r.wagered ? (r.pl / r.wagered) * 100 : 0, wr: (r.wins + r.losses) ? (r.wins / (r.wins + r.losses)) * 100 : 0 }; });
+  const bestRoi = Math.max(...withROI.map(x => x.roi));
+  el.innerHTML = `<table class="w-full text-xs">
+    <thead><tr class="text-ink-300 text-left">
+      <th class="py-1">Legs</th><th class="text-right">Bets</th><th class="text-right">W-L-P</th><th class="text-right">Win %</th><th class="text-right">Wagered</th><th class="text-right">P&amp;L</th><th class="text-right">ROI</th>
+    </tr></thead>
+    <tbody>${withROI.map(r => {
+      const cls = r.roi >= 0 ? 'text-neon-500' : 'text-danger-500';
+      const star = (r.roi === bestRoi && r.n >= 3) ? ' <span class="text-warn-500" title="best ROI">★</span>' : '';
+      const label = r.k === '1' ? 'Single' : `${r.k}-leg`;
+      return `<tr class="border-t border-ink-800">
+        <td class="py-1.5 font-semibold">${label}${star}</td>
+        <td class="text-right num">${r.n}</td>
+        <td class="text-right num">${r.wins}-${r.losses}-${r.pushes}</td>
+        <td class="text-right num">${r.wr.toFixed(1)}%</td>
+        <td class="text-right num">${fmt$(r.wagered)}</td>
+        <td class="text-right num ${cls}">${r.pl >= 0 ? '+' : ''}${fmt$(r.pl)}</td>
+        <td class="text-right num ${cls}">${r.roi >= 0 ? '+' : ''}${r.roi.toFixed(1)}%</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>
+  <div class="text-[11px] text-ink-400 mt-3 leading-snug">
+    <strong class="text-ink-200">How to read it:</strong> a 3-leg parlay at +600 needs to win 14.3% of the time to break even. A 7-leg at +5000 needs 2%. Most amateurs lose worst on 4-6 leg parlays — sweet spot for the books. If your sample is &lt;20 bets per bucket, treat the numbers as noise.
+  </div>`;
+}
+
 function renderSportPerf() {
   const el = document.getElementById('sport-perf-table');
   if (!el) return;
@@ -6073,7 +6159,7 @@ function switchTab(name) {
   if (name === 'lines') renderLedger();
   if (name === 'open') renderOpenBets();
   if (name === 'history') renderHistory();
-  if (name === 'stats') { renderStats(); renderGoals(); renderSportPerf(); renderVsCard(); }
+  if (name === 'stats') { renderStats(); renderGoals(); renderSportPerf(); renderParlayBreakdown(); renderVsCard(); }
   if (name === 'settings') renderSettings();
   if (name === 'parlay') renderParlay();
   if (name === 'analyst') renderAnalysis();
