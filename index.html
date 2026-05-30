@@ -4466,7 +4466,7 @@ function _renderDateGroupHeader(label, count, totalStake, totalPL) {
   const isLive = label === 'Live / Started';
   const accentColor = isLive ? '#ef4444' : isToday ? '#a3ff12' : '#8b95a5';
   const liveDot = isLive ? '<span class="pulse-dot" style="background:#ef4444"></span> ' : '';
-  return `<div class="date-group-header" style="--accent:${accentColor}">
+  return `<div class="date-group-header" data-bucket-header="${label}" style="--accent:${accentColor}">
     <div class="flex items-center gap-2">
       ${liveDot}<span class="date-group-label">${label}</span>
       <span class="date-group-count">${count} bet${count===1?'':'s'}</span>
@@ -4502,15 +4502,55 @@ function renderOpenBets() {
   const p = P(); if (!p) return c.innerHTML = '';
   const open = p.bets.filter(b => b.status === 'pending');
   if (!open.length) { c.innerHTML = '<div class="bg-ink-900 border border-ink-700 rounded-2xl p-8 text-center text-ink-400 text-sm">No open bets.</div>'; return; }
+  // Stuck bets = pending + earliest leg started > 3 days ago (outside Odds API free-tier scores window)
+  const STUCK_AFTER_MS = 3 * 24 * 3600 * 1000;
+  const now = Date.now();
+  const stuckBanner = (() => {
+    const stuck = open.filter(b => {
+      const earliest = Math.min(...(b.legs || []).map(l => l.start ? new Date(l.start).getTime() : Infinity));
+      return Number.isFinite(earliest) && (now - earliest) > STUCK_AFTER_MS;
+    });
+    if (!stuck.length) return '';
+    return `<div class="bg-warn-500/15 border border-warn-500/40 text-warn-500 rounded-2xl p-3 mb-3 text-sm">
+      <div class="flex items-start gap-2">
+        <span class="text-lg leading-none">⚠</span>
+        <div class="flex-1">
+          <div class="font-bold">${stuck.length} bet${stuck.length === 1 ? '' : 's'} stuck</div>
+          <div class="text-xs text-warn-500/90 mt-0.5">Games started 3+ days ago — Odds API free tier only returns scores for the last 3 days, so these can't auto-settle. Use the per-bet Won/Lost/Push/Void buttons, or bulk-clean below.</div>
+          <div class="flex flex-wrap gap-2 mt-2">
+            <button id="bulk-void-stuck" class="text-xs bg-ink-800 hover:bg-ink-700 text-warn-500 border border-warn-500/40 font-bold px-3 py-1.5 rounded">Void all ${stuck.length} stuck (returns stakes to bankroll)</button>
+            <button id="scroll-to-stuck" class="text-xs bg-ink-800 hover:bg-ink-700 text-ink-200 font-bold px-3 py-1.5 rounded">Jump to oldest</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  })();
   // Sort within each group by earliest leg start time (soonest first)
   const sortByEarliestStart = (a, b) => {
     const aStart = Math.min(...(a.legs || []).map(l => l.start ? new Date(l.start).getTime() : Infinity));
     const bStart = Math.min(...(b.legs || []).map(l => l.start ? new Date(l.start).getTime() : Infinity));
     return aStart - bStart;
   };
-  c.innerHTML = _groupAndRenderBets(open, _bucketForOpenBet, sortByEarliestStart);
+  c.innerHTML = stuckBanner + _groupAndRenderBets(open, _bucketForOpenBet, sortByEarliestStart);
   c.querySelectorAll('[data-manual-settle]').forEach(b => b.addEventListener('click', () => manualSettle(b.dataset.manualSettle, b.dataset.result)));
   c.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => cancelBet(b.dataset.cancel)));
+  const bv = document.getElementById('bulk-void-stuck');
+  if (bv) bv.addEventListener('click', () => {
+    const stuckIds = open.filter(b => {
+      const earliest = Math.min(...(b.legs || []).map(l => l.start ? new Date(l.start).getTime() : Infinity));
+      return Number.isFinite(earliest) && (Date.now() - earliest) > STUCK_AFTER_MS;
+    }).map(b => b.id);
+    if (!stuckIds.length) return;
+    if (!confirm(`Void ${stuckIds.length} stuck bet${stuckIds.length === 1 ? '' : 's'}? Each stake returns to your bankroll. This is the right move if you can't recall the result — better than leaving them open forever.`)) return;
+    for (const id of stuckIds) cancelBet(id);
+    toast(`Voided ${stuckIds.length} stuck bet${stuckIds.length === 1 ? '' : 's'}`);
+  });
+  const stb = document.getElementById('scroll-to-stuck');
+  if (stb) stb.addEventListener('click', () => {
+    // Jump to the last bucket header (oldest games are bottom in current grouping)
+    const headers = c.querySelectorAll('[data-bucket-header]');
+    if (headers.length) headers[headers.length - 1].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   // Async: enrich with ESPN live state where available
   populateLiveStates();
   startLiveRefreshLoop();
@@ -4681,6 +4721,9 @@ async function autoSettle(silent = false) {
     for (const s of sports) { try { scoresBySport[s] = await apiScores(s); } catch (e) { console.error(e); if (!silent) toast('Score fetch failed for '+s); } }
   }
   let changed = 0;
+  let outsideWindow = 0;   // game started > 3 days ago, not in scores response
+  let stillRunning = 0;    // game found but not completed
+  let noScoreData = 0;     // game found, completed, but scores missing
   for (const b of open) {
     let anyMissing = false;
     for (const leg of b.legs) {
@@ -4689,10 +4732,16 @@ async function autoSettle(silent = false) {
       if (!isFullGame) { anyMissing = true; continue; }
       const list = scoresBySport[leg.sportKey] || [];
       const game = list.find(g => g.id === leg.gameId);
-      if (!game || !game.completed) { anyMissing = true; continue; }
+      if (!game) {
+        // Game ID not in scores window — likely too old for free-tier 3-day window
+        const startMs = leg.start ? new Date(leg.start).getTime() : 0;
+        if (startMs && (Date.now() - startMs) > 3 * 24 * 3600 * 1000) outsideWindow++;
+        anyMissing = true; continue;
+      }
+      if (!game.completed) { stillRunning++; anyMissing = true; continue; }
       const sc = {}; (game.scores || []).forEach(s => { sc[s.name] = parseFloat(s.score); });
       const hs = sc[game.home_team], as = sc[game.away_team];
-      if (hs == null || as == null) { anyMissing = true; continue; }
+      if (hs == null || as == null) { noScoreData++; anyMissing = true; continue; }
       const home = game.home_team, away = game.away_team;
       // Store score on leg so we can render it
       leg.finalScore = { home: hs, away: as, homeName: home, awayName: away };
@@ -4716,7 +4765,16 @@ async function autoSettle(silent = false) {
     else { const remDec = b.legs.filter(l => l.status === 'won').reduce((a, l) => a * l.decimal, 1); b.decimal = remDec; b.toWin = profit(b.stake, remDec); if (remDec === 1) finalizeBet(b, 'push'); else finalizeBet(b, 'won'); }
     changed++;
   }
-  if (!silent || changed > 0) toast(`Auto-settle: ${changed} bet(s) updated.${changed === 0 ? ' (no scores yet)' : ''}`);
+  // Build a clearer status message
+  if (!silent || changed > 0 || outsideWindow > 0) {
+    const parts = [`${changed} settled`];
+    if (stillRunning > 0) parts.push(`${stillRunning} in progress`);
+    if (outsideWindow > 0) parts.push(`${outsideWindow} too old (>3d window)`);
+    if (noScoreData > 0) parts.push(`${noScoreData} missing score data`);
+    toast(`Auto-settle: ${parts.join(' · ')}`);
+  }
+  // Re-render Open Bets so the stuck banner updates
+  renderOpenBets(); renderHeader();
 }
 
 /* Bankroll Plan render — savings ledger + half-unit progress */
