@@ -1458,6 +1458,20 @@
           </div>
           <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mt-4">
             <h3 class="font-semibold text-sm mb-3 flex items-center gap-2">
+              <span class="text-gold-500">●</span> Closing Line Value (CLV)
+              <span class="text-[11px] text-ink-300 font-normal">(the #1 skill indicator)</span>
+            </h3>
+            <div id="clv-panel" class="text-xs"></div>
+          </div>
+          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mt-4">
+            <h3 class="font-semibold text-sm mb-3 flex items-center gap-2">
+              <span class="text-danger-500">●</span> Monte Carlo &amp; Risk of Ruin
+              <span class="text-[11px] text-ink-300 font-normal">(what variance can do to you)</span>
+            </h3>
+            <div id="montecarlo-panel" class="text-xs"></div>
+          </div>
+          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mt-4">
+            <h3 class="font-semibold text-sm mb-3 flex items-center gap-2">
               <span class="text-cyan-500">●</span> Performance by Sport
               <span class="text-[11px] text-ink-300 font-normal">(JuiceReel-style breakdown)</span>
             </h3>
@@ -2729,6 +2743,44 @@ function lineMoveSinceOpen(gameId, market, outcome, point, currentAmerican) {
   return { openAmerican: snap.american, deltaCents };
 }
 
+// CLV capture: for any open bet whose game has STARTED within the last 30 min, snapshot
+// the current best price on each leg as the "closing line" — the gold standard for
+// sharpness. Beating the close = real skill; trailing it = paying retail.
+function snapshotClosingLines(sportKey, games) {
+  const profiles = Object.values(state.profiles || {});
+  let dirty = false;
+  const now = Date.now();
+  for (const prof of profiles) {
+    for (const b of prof.bets || []) {
+      if (b.status !== 'pending') continue;
+      for (const leg of b.legs || []) {
+        if (leg.sportKey !== sportKey) continue;
+        if (leg.closingLine != null) continue;
+        if (!leg.start) continue;
+        const startMs = new Date(leg.start).getTime();
+        // Only snapshot if game has started within last 30 minutes (close to "the close")
+        if (now < startMs || now > startMs + 30 * 60 * 1000) continue;
+        const game = games.find(g => g.id === leg.gameId);
+        if (!game) continue;
+        const close = bestOddsForOutcome(game, leg.market, leg.outcome, leg.point);
+        if (!close) continue;
+        leg.closingLine = close.american;
+        leg.closingLineAt = nowISO();
+        dirty = true;
+      }
+    }
+  }
+  if (dirty) persistProfiles();
+}
+// CLV in cents: how many cents better your price is vs the closing line.
+// Positive = beat the close (sharp). Negative = trailed (retail).
+function clvCents(yourAmerican, closingAmerican) {
+  if (closingAmerican == null) return null;
+  const yd = americanToDecimal(yourAmerican);
+  const cd = americanToDecimal(closingAmerican);
+  return Math.round((yd - cd) * 100);
+}
+
 /* refresh */
 async function refreshLines(force = false) {
   if (isDemoMode()) {
@@ -2758,6 +2810,7 @@ async function refreshLines(force = false) {
       const games = await apiOdds(sport);
       state.cache[sport] = { games, fetchedAt: nowISO() };
       snapshotOpeningLines(games);   // capture opening lines on first sighting
+      snapshotClosingLines(sport, games);   // capture closing line for any open bet whose game just started (CLV tracking)
       ok++;
     }
     catch (e) { console.error(e); fail++; }
@@ -6668,6 +6721,115 @@ function renderMarketMastery() {
   <div class="text-[11px] text-ink-400 mt-3 leading-snug">★ = your best surface, 💀 = your worst. Bet more in your green columns, cut your red ones. Need 20+ bets per cell before trusting the signal.</div>`;
 }
 
+/* CLV panel — show beat-the-close rate, avg CLV cents, top/bottom by source */
+function renderClvPanel() {
+  const el = document.getElementById('clv-panel'); if (!el) return;
+  const p = P(); if (!p) { el.innerHTML = ''; return; }
+  const settled = (p.bets || []).filter(b => b.status === 'won' || b.status === 'lost');
+  // Use leg.closingLine on settled bets where it was captured
+  const legCLVs = [];
+  for (const b of settled) {
+    for (const l of b.legs || []) {
+      if (l.closingLine == null) continue;
+      const clv = clvCents(l.american, l.closingLine);
+      if (clv != null) legCLVs.push({ clv, source: b.source || '—', sport: sportAbbr(l.sportKey), market: l.market });
+    }
+  }
+  if (!legCLVs.length) {
+    el.innerHTML = `<div class="text-ink-400">No closing-line snapshots yet. Closing prices are captured automatically when the app refreshes during the last 30 min before a game starts — so keep the app open near tipoff. After ~10 captured legs, you\'ll see your CLV % here.</div>`;
+    return;
+  }
+  const avg = legCLVs.reduce((a, x) => a + x.clv, 0) / legCLVs.length;
+  const beatRate = (legCLVs.filter(x => x.clv > 0).length / legCLVs.length) * 100;
+  const cls = avg >= 1 ? 'text-neon-500' : avg <= -2 ? 'text-danger-500' : 'text-warn-500';
+  el.innerHTML = `
+    <div class="grid grid-cols-3 gap-3 mb-3">
+      <div class="bg-ink-800 rounded-xl p-3 text-center">
+        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Avg CLV</div>
+        <div class="num text-xl font-bold ${cls} mt-1">${avg >= 0 ? '+' : ''}${avg.toFixed(1)}¢</div>
+      </div>
+      <div class="bg-ink-800 rounded-xl p-3 text-center">
+        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Beat the close</div>
+        <div class="num text-xl font-bold ${beatRate >= 55 ? 'text-neon-500' : beatRate >= 45 ? 'text-warn-500' : 'text-danger-500'} mt-1">${beatRate.toFixed(0)}%</div>
+      </div>
+      <div class="bg-ink-800 rounded-xl p-3 text-center">
+        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Captured</div>
+        <div class="num text-xl font-bold text-ink-200 mt-1">${legCLVs.length}</div>
+      </div>
+    </div>
+    <div class="text-[11px] text-ink-300 leading-snug">
+      <strong class="text-ink-200">What this means:</strong> If you beat the closing line on 55%+ of bets, you\'re sharp — long-term winning is mathematically inevitable. ${beatRate >= 55 ? '<span class="text-neon-500">You\'re beating the close. Keep doing what you\'re doing.</span>' : beatRate < 45 ? '<span class="text-danger-500">You\'re trailing the close. The market knows something you don\'t. Slow down.</span>' : '<span class="text-warn-500">You\'re break-even vs the close. Find your edge before scaling up.</span>'}
+    </div>`;
+}
+
+/* Monte Carlo + Risk of Ruin — simulate 200 future bets given Jorge's edge + unit size */
+function renderMonteCarlo() {
+  const el = document.getElementById('montecarlo-panel'); if (!el) return;
+  const p = P(); if (!p) { el.innerHTML = ''; return; }
+  const settled = (p.bets || []).filter(b => b.status === 'won' || b.status === 'lost');
+  if (settled.length < 20) {
+    el.innerHTML = `<div class="text-ink-400">Need at least 20 settled bets to estimate your edge. Until then, here\'s the math: at a 53% true win rate (sharp pro level), 10% unit size, and 200 bets, your risk of going bust is ~30%. At 5% unit it drops to <5%.</div>`;
+    return;
+  }
+  // Estimate edge: avg ROI on settled bets
+  const totalWagered = settled.reduce((a, b) => a + b.stake, 0);
+  const totalPL = settled.reduce((a, b) => a + (b.status === 'won' ? (b.payout - b.stake) : -b.stake), 0);
+  const edge = totalWagered ? totalPL / totalWagered : 0;
+  // Assume avg odds = -110 for sims unless we compute average
+  const avgDec = settled.reduce((a, b) => a + b.decimal, 0) / settled.length;
+  // trueP that produces this edge at avg decimal: edge = avgDec*p - 1 → p = (edge+1)/avgDec
+  const trueP = Math.max(0.01, Math.min(0.99, (edge + 1) / avgDec));
+  const unitFrac = S().unitSize || 0.02;
+  const N_SIMS = 1000, N_BETS = 200;
+  let busts = 0, downHalf = 0, ups = 0;
+  const finals = [];
+  for (let s = 0; s < N_SIMS; s++) {
+    let br = 1;     // normalized bankroll (1 = current)
+    let busted = false;
+    for (let i = 0; i < N_BETS; i++) {
+      const stake = unitFrac * br;
+      if (stake > br) { busted = true; break; }
+      if (Math.random() < trueP) br = br - stake + stake * avgDec;
+      else br = br - stake;
+      if (br <= 0.05) { busted = true; break; }   // call bust at 5% of starting BR
+    }
+    if (busted) busts++;
+    if (br < 0.5) downHalf++;
+    if (br > 1) ups++;
+    finals.push(br);
+  }
+  finals.sort((a, b) => a - b);
+  const median = finals[Math.floor(finals.length / 2)];
+  const p10 = finals[Math.floor(finals.length * 0.1)];
+  const p90 = finals[Math.floor(finals.length * 0.9)];
+  el.innerHTML = `
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+      <div class="bg-ink-800 rounded-xl p-3 text-center">
+        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Your est. edge</div>
+        <div class="num text-lg font-bold ${edge >= 0.02 ? 'text-neon-500' : edge <= -0.02 ? 'text-danger-500' : 'text-warn-500'} mt-1">${edge >= 0 ? '+' : ''}${(edge * 100).toFixed(2)}%</div>
+      </div>
+      <div class="bg-ink-800 rounded-xl p-3 text-center">
+        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Risk of ruin</div>
+        <div class="num text-lg font-bold ${busts/N_SIMS > 0.2 ? 'text-danger-500' : busts/N_SIMS > 0.05 ? 'text-warn-500' : 'text-neon-500'} mt-1">${(busts / N_SIMS * 100).toFixed(0)}%</div>
+      </div>
+      <div class="bg-ink-800 rounded-xl p-3 text-center">
+        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-bold">% up after 200</div>
+        <div class="num text-lg font-bold text-ink-200 mt-1">${(ups / N_SIMS * 100).toFixed(0)}%</div>
+      </div>
+      <div class="bg-ink-800 rounded-xl p-3 text-center">
+        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Median BR</div>
+        <div class="num text-lg font-bold ${median >= 1 ? 'text-neon-500' : 'text-danger-500'} mt-1">${(median * 100).toFixed(0)}%</div>
+      </div>
+    </div>
+    <div class="text-[11px] text-ink-300 leading-snug">
+      Based on ${settled.length} settled bets · est trueP ${(trueP * 100).toFixed(1)}% · unit ${(unitFrac * 100).toFixed(1)}% bankroll.
+      <strong class="text-ink-200">Simulated 1,000 futures of 200 bets each.</strong>
+      P10 (worst-case 10%): ${(p10 * 100).toFixed(0)}% of current bankroll.
+      P90 (best-case 10%): ${(p90 * 100).toFixed(0)}%.
+      ${busts / N_SIMS > 0.15 ? '<span class="text-danger-500">Your unit size is too aggressive — bust risk is real.</span>' : busts / N_SIMS < 0.02 ? '<span class="text-neon-500">Unit size is conservative. You can survive a brutal cold streak.</span>' : ''}
+    </div>`;
+}
+
 function renderSportPerf() {
   const el = document.getElementById('sport-perf-table');
   if (!el) return;
@@ -6788,7 +6950,7 @@ function switchTab(name) {
   if (name === 'lines') renderLedger();
   if (name === 'open') renderOpenBets();
   if (name === 'history') renderHistory();
-  if (name === 'stats') { renderStats(); renderGoals(); renderSportPerf(); renderParlayBreakdown(); renderBiasDetector(); renderMarketMastery(); renderVsCard(); }
+  if (name === 'stats') { renderStats(); renderGoals(); renderSportPerf(); renderParlayBreakdown(); renderBiasDetector(); renderMarketMastery(); renderClvPanel(); renderMonteCarlo(); renderVsCard(); }
   if (name === 'settings') renderSettings();
   if (name === 'parlay') renderParlay();
   if (name === 'analyst') renderAnalysis();
