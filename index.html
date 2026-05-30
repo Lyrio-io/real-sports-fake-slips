@@ -4115,17 +4115,114 @@ function placeBet() {
   // Run guardrail checks
   const block = checkGuardrails(stake);
   if (block) {
-    if (block.allowOverride) showGuardrailModal(block, () => actuallyPlace(stake));
+    if (block.allowOverride) showGuardrailModal(block, () => maybeGutCheckThenPlace(stake));
     else { showGuardrailModal(block, null); }
     return;
   }
 
   // Pre-place cooling timer
   if (S().preplaceTimerSec > 0) {
-    startCoolingTimer(stake, () => actuallyPlace(stake));
+    startCoolingTimer(stake, () => maybeGutCheckThenPlace(stake));
     return;
   }
-  actuallyPlace(stake);
+  maybeGutCheckThenPlace(stake);
+}
+
+// Gut check: when Anthropic key is configured, ask AI to evaluate the bet before placing.
+async function maybeGutCheckThenPlace(stake) {
+  if (!state.anthropicKey || state.slip.length === 0) { actuallyPlace(stake); return; }
+  if (S().gutCheckDisabled) { actuallyPlace(stake); return; }
+  await runGutCheck(stake);
+}
+
+async function runGutCheck(stake) {
+  const p = P(); if (!p) return;
+  // Compile a tiny slate just for these legs
+  const legs = state.slip.map(l => ({
+    sport: sportAbbr(l.sportKey), away: l.away, home: l.home, start: l.start,
+    market: l.market, outcome: l.outcome, point: l.point,
+    yourPrice: l.american,
+    vig: vigForLeg(l)?.toFixed(2),
+  }));
+  const isParlay = legs.length > 1;
+  const combinedDec = state.slip.reduce((a,l) => a * americanToDecimal(l.american), 1);
+  const trueHitRate = state.slip.reduce((a, l) => {
+    const v = vigForLeg(l);
+    const fair = v != null ? americanToImplied(l.american) / (1 + v/100) : americanToImplied(l.american);
+    return a * fair;
+  }, 1);
+  const userMsg = `Quick gut check on a bet I'm about to place. Return JSON only:\n${JSON.stringify({ stake, isParlay, combinedDec: combinedDec.toFixed(3), trueHitRate: (trueHitRate*100).toFixed(1)+'%', legs }, null, 2)}`;
+  showGutCheckModal({ loading: true });
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': state.anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: state.analystModel,
+        max_tokens: 400,
+        system: `You are a sportsbook mentor. Given a bet about to be placed, return JSON only: {"verdict":"bet"|"skip"|"wait","reasoning":"2-3 short plain-English sentences. Mention vig if high, hit rate if low for a parlay, or just say it's a fair bet at fair price.","biggest_concern":"one sentence"}. Be honest. If the bet has fair pricing and the user has a reason, say bet. If vig is >6% or trueHitRate is below 15% for a parlay, lean skip or wait.`,
+        messages: [{ role: 'user', content: userMsg }],
+      }),
+    });
+    if (!r.ok) throw new Error('AI HTTP ' + r.status);
+    const data = await r.json();
+    const text = (data.content?.[0]?.text || '').trim();
+    let result;
+    try { result = JSON.parse(text); } catch { result = { verdict: 'bet', reasoning: text.slice(0, 300), biggest_concern: '' }; }
+    showGutCheckModal({ loading: false, result, stake });
+  } catch (e) {
+    console.error(e);
+    showGutCheckModal({ loading: false, error: e.message, stake });
+  }
+}
+
+function showGutCheckModal({ loading, result, error, stake }) {
+  let modal = document.getElementById('gutcheck-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'gutcheck-modal';
+    modal.className = 'fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4';
+    modal.innerHTML = `<div class="bg-ink-900 border border-ink-700 rounded-2xl w-full max-w-md p-5 shadow-2xl"><div id="gutcheck-body"></div></div>`;
+    document.body.appendChild(modal);
+  }
+  modal.classList.remove('hidden');
+  const body = document.getElementById('gutcheck-body');
+  if (loading) {
+    body.innerHTML = `<div class="flex items-center gap-3"><svg class="w-5 h-5 animate-spin text-neon-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg><div class="text-sm font-semibold">AI gut-checking your bet…</div></div><button id="gc-cancel" class="mt-4 w-full bg-ink-700 hover:bg-ink-600 text-white text-sm font-bold py-2.5 rounded-xl">Cancel</button>`;
+    document.getElementById('gc-cancel').onclick = () => modal.classList.add('hidden');
+    return;
+  }
+  if (error) {
+    body.innerHTML = `<div class="text-warn-500 text-sm mb-3">⚠ AI gut-check failed (${escapeHtml(error)}). Placing anyway?</div>
+      <div class="flex gap-2"><button id="gc-place" class="flex-1 bg-neon-500 text-ink-950 font-bold py-2.5 rounded-xl">Place bet</button><button id="gc-skip" class="flex-1 bg-ink-700 text-white font-bold py-2.5 rounded-xl">Cancel</button></div>`;
+    document.getElementById('gc-place').onclick = () => { modal.classList.add('hidden'); actuallyPlace(stake); };
+    document.getElementById('gc-skip').onclick = () => modal.classList.add('hidden');
+    return;
+  }
+  const verdict = (result.verdict || 'bet').toLowerCase();
+  const vCfg = verdict === 'bet' ? { lbl: '✓ Place it', cls: 'text-neon-500', bg: 'bg-neon-500/15 border-neon-500/40' }
+              : verdict === 'wait' ? { lbl: '⏳ Wait for better', cls: 'text-warn-500', bg: 'bg-warn-500/15 border-warn-500/40' }
+              :                       { lbl: '✗ Skip this one', cls: 'text-danger-500', bg: 'bg-danger-500/15 border-danger-500/40' };
+  body.innerHTML = `
+    <div class="text-[10px] uppercase tracking-wider text-ink-400 font-bold mb-1">AI gut check</div>
+    <div class="${vCfg.bg} border rounded-xl p-3 mb-3">
+      <div class="${vCfg.cls} font-bold text-base mb-1">${vCfg.lbl}</div>
+      <div class="text-sm text-ink-200 leading-snug">${escapeHtml(result.reasoning || '')}</div>
+      ${result.biggest_concern ? `<div class="mt-2 text-[11px] text-ink-300"><strong class="text-ink-200">Biggest concern:</strong> ${escapeHtml(result.biggest_concern)}</div>` : ''}
+    </div>
+    <div class="flex gap-2">
+      <button id="gc-place" class="flex-1 ${verdict==='bet' ? 'bg-neon-500 text-ink-950' : 'bg-ink-700 text-white'} font-bold py-2.5 rounded-xl">${verdict==='bet' ? 'Place bet' : 'Place anyway'}</button>
+      <button id="gc-skip" class="flex-1 bg-ink-700 hover:bg-ink-600 text-white font-bold py-2.5 rounded-xl">Cancel</button>
+    </div>
+    <label class="flex items-center gap-2 mt-3 text-[11px] text-ink-300 cursor-pointer"><input type="checkbox" id="gc-disable" class="accent-neon-500"> Disable gut-check until I turn it back on in Settings</label>`;
+  document.getElementById('gc-place').onclick = () => {
+    if (document.getElementById('gc-disable').checked) {
+      const p = P(); if (p) { p.settings = { ...p.settings, gutCheckDisabled: true }; persistProfiles(); toast('Gut-check disabled. Re-enable in Settings.'); }
+    }
+    modal.classList.add('hidden');
+    actuallyPlace(stake);
+  };
+  document.getElementById('gc-skip').onclick = () => modal.classList.add('hidden');
 }
 
 function actuallyPlace(stake) {
@@ -4184,7 +4281,43 @@ function checkGuardrails(stake) {
     const pct = (stake / p.bankroll * 100).toFixed(1);
     return { type: 'audit', icon: '⚠️', title: 'Big bet warning', message: `This is ${pct}% of your bankroll (${fmt$(stake)} / ${fmt$(p.bankroll)}). Most pros stay under ${(s.betSizeAuditPct*100).toFixed(0)}%.`, allowOverride: true };
   }
+  // Hard daily / weekly stoploss enforcement
+  // dailyLossLimit & weeklyLossLimit are in DOLLARS of NET loss (not stake).
+  if (s.dailyLossLimit && s.dailyLossLimit > 0) {
+    const dayPL = _settledPLSinceMidnight(p);
+    if (dayPL <= -Math.abs(s.dailyLossLimit)) {
+      return { type: 'daily_stop', icon: '🛑', title: 'Daily loss limit hit', message: `You're down ${fmt$(Math.abs(dayPL))} today. Your daily stoploss is ${fmt$(s.dailyLossLimit)}. No more bets today — come back tomorrow. (This is what discipline looks like.)`, allowOverride: false };
+    }
+  }
+  if (s.weeklyLossLimit && s.weeklyLossLimit > 0) {
+    const wkPL = _settledPLSinceWeekStart(p);
+    if (wkPL <= -Math.abs(s.weeklyLossLimit)) {
+      return { type: 'weekly_stop', icon: '🛑', title: 'Weekly loss limit hit', message: `You're down ${fmt$(Math.abs(wkPL))} this week. Your weekly stoploss is ${fmt$(s.weeklyLossLimit)}. No more bets until Monday reset. (This is the rule that keeps you in the game long-term.)`, allowOverride: false };
+    }
+  }
   return null;
+}
+
+function _settledPLSinceMidnight(p) {
+  const start = new Date(); start.setHours(0,0,0,0);
+  const startMs = start.getTime();
+  return (p.bets || []).reduce((a, b) => {
+    if (b.status !== 'won' && b.status !== 'lost') return a;
+    const t = b.settledAt ? new Date(b.settledAt).getTime() : 0;
+    if (t < startMs) return a;
+    return a + (b.status === 'won' ? (b.payout - b.stake) : -b.stake);
+  }, 0);
+}
+function _settledPLSinceWeekStart(p) {
+  const d = new Date(); const day = d.getDay(); const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff); d.setHours(0,0,0,0);
+  const startMs = d.getTime();
+  return (p.bets || []).reduce((a, b) => {
+    if (b.status !== 'won' && b.status !== 'lost') return a;
+    const t = b.settledAt ? new Date(b.settledAt).getTime() : 0;
+    if (t < startMs) return a;
+    return a + (b.status === 'won' ? (b.payout - b.stake) : -b.stake);
+  }, 0);
 }
 
 // Generic backdrop-click closer for modals
