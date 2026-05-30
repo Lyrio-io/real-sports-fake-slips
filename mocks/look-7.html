@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#ffffff" />
+<title>Look 7 — Boost · Real Sports Fake Slips</title>
+<style>
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: #ffffff; color: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
+body { min-height: 100vh; overflow-x: hidden; padding-bottom: 140px; }
+button { font-family: inherit; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; background: none; border: none; color: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Header */
+.hdr { padding: 14px 18px 10px; background: #fff; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; }
+.hdr-left { display: flex; align-items: center; gap: 8px; }
+.logo-mark { width: 30px; height: 30px; border-radius: 8px; background: #1e40af; color: #fff; font-weight: 900; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.brand { font-size: 15px; font-weight: 900; letter-spacing: -0.02em; }
+.brand .sub { color: #64748b; font-weight: 600; font-size: 12px; margin-left: 4px; }
+.hdr-right { display: flex; align-items: center; gap: 8px; }
+.deposit-btn { padding: 7px 14px; border-radius: 8px; background: #1e40af; color: #fff; font-size: 12px; font-weight: 800; }
+.bk-chip { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; }
+.bk-chip svg { width: 14px; height: 14px; fill: #f59e0b; }
+
+/* Promo strip */
+.promo { padding: 14px 18px 16px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
+.promo .row { display: flex; align-items: center; justify-content: space-between; }
+.promo .ttl { font-size: 16px; font-weight: 900; color: #78350f; }
+.promo .desc { font-size: 12px; color: #92400e; font-weight: 600; margin-top: 2px; }
+.promo .cta { font-size: 11px; color: #fff; background: #78350f; padding: 6px 12px; border-radius: 999px; font-weight: 800; }
+
+/* Live carousel */
+.live-row { padding: 14px 0 18px; background: #fff; }
+.live-row .h { padding: 0 18px 10px; display: flex; align-items: center; justify-content: space-between; }
+.live-row .h h2 { font-size: 14px; font-weight: 900; display: flex; align-items: center; gap: 6px; }
+.live-row .h .dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: pulse 1.6s infinite; }
+.live-row .h .all { font-size: 12px; color: #1e40af; font-weight: 800; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+
+.live-scroll { display: flex; gap: 10px; padding: 0 18px; overflow-x: auto; scrollbar-width: none; }
+.live-scroll::-webkit-scrollbar { display: none; }
+.live-card { flex-shrink: 0; width: 260px; background: linear-gradient(180deg, #fef2f2 0%, #fff 50%); border: 1px solid #fecaca; border-radius: 14px; padding: 14px; }
+.live-card .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.live-card .clock { font-size: 11px; font-weight: 800; color: #b91c1c; background: #fef2f2; padding: 3px 8px; border-radius: 6px; border: 1px solid #fecaca; }
+.live-card .lg { font-size: 11px; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; }
+.live-card .matchup { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.live-card .team { display: flex; align-items: center; gap: 8px; }
+.live-card .name { font-size: 14px; font-weight: 800; }
+.live-card .sc { font-size: 18px; font-weight: 900; }
+.live-card .sc.dim { color: #a1a1aa; }
+.live-card .lp { margin-top: 10px; padding-top: 10px; border-top: 1px solid #fde2e2; font-size: 11px; color: #64748b; font-weight: 500; }
+.live-card .lp b { color: #0a0a0a; }
+.live-card .quick { margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.live-card .qb { padding: 6px 4px; text-align: center; border-radius: 8px; background: #fff; border: 1px solid #e4e4e7; }
+.live-card .qb .l { font-size: 9px; color: #64748b; font-weight: 700; }
+.live-card .qb .v { font-size: 12px; font-weight: 800; margin-top: 1px; }
+.live-card .qb .o { font-size: 9px; color: #64748b; }
+.logo-mini { width: 24px; height: 24px; flex-shrink: 0; }
+.logo-sm { width: 28px; height: 28px; flex-shrink: 0; }
+
+/* Boost card */
+.boost { margin: 0 16px 18px; padding: 18px; border-radius: 18px; background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%); color: #fff; position: relative; overflow: hidden; }
+.boost::before { content: "+50%"; position: absolute; top: -10px; right: -10px; font-size: 96px; font-weight: 900; opacity: 0.07; }
+.boost .tag { display: inline-block; font-size: 10px; font-weight: 800; color: #fef3c7; background: rgba(254,243,199,.15); padding: 4px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+.boost h3 { font-size: 18px; font-weight: 900; line-height: 1.2; }
+.boost .legs { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.boost .leg { background: rgba(255,255,255,.1); border-radius: 8px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; }
+.boost .leg .l { font-size: 12px; font-weight: 700; }
+.boost .leg .o { font-size: 12px; font-weight: 800; color: #fef3c7; }
+.boost .footer { margin-top: 12px; display: flex; align-items: center; justify-content: space-between; }
+.boost .odds-old { font-size: 12px; color: rgba(255,255,255,.5); text-decoration: line-through; font-weight: 700; }
+.boost .odds-new { font-size: 22px; font-weight: 900; color: #fef3c7; margin-left: 8px; }
+.boost .place { padding: 8px 16px; border-radius: 999px; background: #fef3c7; color: #1e3a8a; font-size: 12px; font-weight: 900; }
+
+/* Sport categories with featured games */
+.cat-section { background: #fff; padding: 14px 0 0; }
+.cat-h { padding: 4px 18px 12px; display: flex; align-items: center; justify-content: space-between; }
+.cat-h h2 { font-size: 18px; font-weight: 900; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
+.cat-h .logo-tag { font-size: 11px; color: #fff; padding: 3px 8px; border-radius: 6px; font-weight: 800; }
+.cat-h .logo-tag.mlb { background: #003087; }
+.cat-h .logo-tag.nba { background: #c8102e; }
+.cat-h .more { font-size: 12px; color: #1e40af; font-weight: 800; }
+
+.gcard { margin: 0 16px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; }
+.gcard .meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 11px; font-weight: 700; }
+.gcard .meta .when { color: #0a0a0a; }
+.gcard .meta .when.warn { color: #b45309; }
+.gcard .meta .markets { color: #64748b; }
+.gcard .team-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.gcard .team-row:last-of-type { margin-bottom: 14px; }
+.gcard .team { display: flex; align-items: center; gap: 10px; }
+.gcard .name { font-size: 15px; font-weight: 800; }
+.gcard .rec { font-size: 11px; color: #94a3b8; font-weight: 600; margin-top: 2px; }
+.gcard .pick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gcard .pick-grid:not(:last-child) { margin-bottom: 6px; }
+.pick { padding: 10px 6px; text-align: center; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; }
+.pick:active { transform: scale(0.96); }
+.pick .l { font-size: 10px; font-weight: 700; color: #64748b; }
+.pick .v { font-size: 14px; font-weight: 800; margin-top: 2px; }
+.pick .o { font-size: 10px; font-weight: 600; color: #64748b; margin-top: 1px; }
+.pick.boost { background: linear-gradient(135deg, #fef3c7, #fde68a); border-color: #f59e0b; position: relative; }
+.pick.boost::after { content: "🔥"; position: absolute; top: 3px; right: 5px; font-size: 9px; }
+.pick.boost .o { color: #92400e; font-weight: 800; }
+
+/* Props teaser */
+.props { margin: 0 16px 12px; padding: 14px; border-radius: 14px; background: #f8fafc; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; }
+.props h4 { font-size: 13px; font-weight: 800; }
+.props p { font-size: 11px; color: #64748b; font-weight: 600; margin-top: 2px; }
+.props .arr { color: #1e40af; font-weight: 900; font-size: 18px; }
+
+/* Slip floating */
+.slip { position: fixed; left: 12px; right: 12px; bottom: 72px; padding: 12px 14px; border-radius: 14px; background: #1e40af; color: #fff; display: flex; align-items: center; justify-content: space-between; z-index: 49; box-shadow: 0 12px 30px rgba(30,64,175,.4); }
+.slip .left { display: flex; align-items: center; gap: 10px; }
+.slip .count-circ { width: 28px; height: 28px; border-radius: 50%; background: #fef3c7; color: #1e40af; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
+.slip .ttl { font-size: 13px; font-weight: 800; }
+.slip .sub { font-size: 11px; color: #bfdbfe; margin-top: 1px; }
+.slip .place-btn { padding: 8px 16px; border-radius: 999px; background: #fef3c7; color: #1e40af; font-size: 13px; font-weight: 900; }
+
+/* Bottom nav */
+.nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e2e8f0; padding-bottom: max(18px, env(safe-area-inset-bottom, 18px)); z-index: 50; }
+.nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px 8px 0; }
+.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px; color: #94a3b8; }
+.nav-btn.active { color: #1e40af; }
+.nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+.nav-btn.active svg { stroke-width: 2.5; }
+.nav-btn .lbl { font-size: 10px; font-weight: 700; }
+.nav-btn.active .lbl { font-weight: 800; }
+
+@media (min-width: 500px) {
+  body { background: #e2e8f0; display: flex; justify-content: center; padding: 24px 0; }
+  .phone { width: 390px; min-height: 844px; background: #ffffff; box-shadow: 0 30px 80px rgba(0,0,0,.18); border-radius: 36px; overflow: hidden; position: relative; padding-bottom: 140px; }
+  .nav, .slip { max-width: 366px; margin: 0 auto; }
+  .slip { left: 0; right: 0; }
+}
+</style>
+</head>
+<body>
+<div class="phone">
+
+<header class="hdr">
+  <div class="hdr-left">
+    <div class="logo-mark">R</div>
+    <div class="brand">RSFS<span class="sub">/ Sportsbook</span></div>
+  </div>
+  <div class="hdr-right">
+    <div class="bk-chip num"><svg viewBox="0 0 24 24"><path d="M12 2L9 7H3l5 5-2 8 6-5 6 5-2-8 5-5h-6z"/></svg> $1,247</div>
+    <button class="deposit-btn">+ Deposit</button>
+  </div>
+</header>
+
+<!-- Promo strip -->
+<div class="promo">
+  <div class="row">
+    <div>
+      <div class="ttl">🎁 Deposit $50, get $50</div>
+      <div class="desc">First deposit only · expires Sunday</div>
+    </div>
+    <button class="cta">Claim</button>
+  </div>
+</div>
+
+<!-- Live row -->
+<div class="live-row">
+  <div class="h">
+    <h2><span class="dot"></span> Live now · 1 game</h2>
+    <a class="all">See all →</a>
+  </div>
+  <div class="live-scroll">
+    <div class="live-card">
+      <div class="top">
+        <span class="lg">NBA</span>
+        <span class="clock num">Q3 8:42</span>
+      </div>
+      <div class="matchup">
+        <div class="team">
+          <svg class="logo-sm" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#552583"/><text x="20" y="25" text-anchor="middle" fill="#FDB927" font-weight="900" font-size="13" font-family="-apple-system">LAL</text></svg>
+          <span class="name">Lakers</span>
+        </div>
+        <span class="sc num">72</span>
+      </div>
+      <div class="matchup">
+        <div class="team">
+          <svg class="logo-sm" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#007A33"/><text x="20" y="25" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="13" font-family="-apple-system">BOS</text></svg>
+          <span class="name">Celtics</span>
+        </div>
+        <span class="sc num dim">68</span>
+      </div>
+      <div class="lp"><b>L. James</b> 3-PT made · LAL on 8-2 run</div>
+      <div class="quick">
+        <button class="qb"><div class="l">LAL</div><div class="v num">-3.5</div><div class="o num">-110</div></button>
+        <button class="qb"><div class="l">O</div><div class="v num">224.5</div><div class="o num">-108</div></button>
+        <button class="qb"><div class="l">LAL ML</div><div class="v num">-180</div><div class="o">·</div></button>
+      </div>
+    </div>
+    <div class="live-card" style="background:linear-gradient(180deg,#eff6ff 0%,#fff 50%);border-color:#bfdbfe">
+      <div class="top">
+        <span class="lg">NBA</span>
+        <span class="clock num" style="color:#1e40af;background:#eff6ff;border-color:#bfdbfe">10:00 PM</span>
+      </div>
+      <div class="matchup">
+        <div class="team">
+          <svg class="logo-sm" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#1D428A"/><text x="20" y="25" text-anchor="middle" fill="#FFC72C" font-weight="900" font-size="13" font-family="-apple-system">GSW</text></svg>
+          <span class="name">Warriors</span>
+        </div>
+        <span class="sc num">—</span>
+      </div>
+      <div class="matchup">
+        <div class="team">
+          <svg class="logo-sm" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#98002E"/><text x="20" y="25" text-anchor="middle" fill="#F9A01B" font-weight="900" font-size="13" font-family="-apple-system">MIA</text></svg>
+          <span class="name">Heat</span>
+        </div>
+        <span class="sc num">—</span>
+      </div>
+      <div class="lp">Starts in 3h 15m · Chase Center</div>
+      <div class="quick">
+        <button class="qb"><div class="l">GSW</div><div class="v num">-5.5</div><div class="o num">-110</div></button>
+        <button class="qb"><div class="l">O</div><div class="v num">221.5</div><div class="o num">-110</div></button>
+        <button class="qb"><div class="l">GSW ML</div><div class="v num">-240</div><div class="o">·</div></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Boost card -->
+<div class="boost">
+  <span class="tag">⚡ Same Game Parlay Boost</span>
+  <h3>Yankees ML + Aaron Judge HR + Game O 9.5</h3>
+  <div class="legs">
+    <div class="leg"><span class="l">NYY Moneyline</span><span class="o">-150</span></div>
+    <div class="leg"><span class="l">A. Judge anytime HR</span><span class="o">+325</span></div>
+    <div class="leg"><span class="l">Game Total Over 9.5</span><span class="o">-115</span></div>
+  </div>
+  <div class="footer">
+    <div>
+      <span class="odds-old num">+645</span>
+      <span class="odds-new num">+850</span>
+    </div>
+    <button class="place">Add to slip</button>
+  </div>
+</div>
+
+<!-- MLB Section -->
+<div class="cat-section">
+  <div class="cat-h">
+    <h2><span class="logo-tag mlb">MLB</span> Today &amp; Tomorrow</h2>
+    <a class="more">More →</a>
+  </div>
+
+  <div class="gcard">
+    <div class="meta">
+      <span class="when">Sun 7:05 PM ET · Yankee Stadium</span>
+      <span class="markets">+247 markets</span>
+    </div>
+    <div class="team-row">
+      <div class="team">
+        <svg class="logo-sm" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#003087"/><text x="20" y="25" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="13" font-family="-apple-system">NYY</text></svg>
+        <div><div class="name">Yankees</div><div class="rec num">36-22 · W4</div></div>
+      </div>
+    </div>
+    <div class="team-row">
+      <div class="team">
+        <svg class="logo-sm" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#BD3039"/><text x="20" y="25" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="13" font-family="-apple-system">BOS</text></svg>
+        <div><div class="name">Red Sox</div><div class="rec num">31-28 · L2</div></div>
+      </div>
+    </div>
+    <div class="pick-grid">
+      <button class="pick"><div class="l">NYY</div><div class="v num">-1.5</div><div class="o num">+135</div></button>
+      <button class="pick"><div class="l">Over</div><div class="v num">9.5</div><div class="o num">-115</div></button>
+      <button class="pick boost"><div class="l">NYY ML</div><div class="v num">-145</div><div class="o num">was -150</div></button>
+    </div>
+    <div class="pick-grid">
+      <button class="pick"><div class="l">BOS</div><div class="v num">+1.5</div><div class="o num">-160</div></button>
+      <button class="pick"><div class="l">Under</div><div class="v num">9.5</div><div class="o num">-105</div></button>
+      <button class="pick"><div class="l">BOS ML</div><div class="v num">+130</div><div class="o num">1.30x</div></button>
+    </div>
+  </div>
+
+  <div class="props">
+    <div>
+      <h4>⚾ Player props · Yankees</h4>
+      <p>Aaron Judge HR · O 1.5 hits · K props</p>
+    </div>
+    <span class="arr">›</span>
+  </div>
+</div>
+
+<div class="slip">
+  <div class="left">
+    <div class="count-circ">2</div>
+    <div>
+      <div class="ttl">2-leg parlay</div>
+      <div class="sub num">$25 → $87.50</div>
+    </div>
+  </div>
+  <button class="place-btn">Review</button>
+</div>
+
+<nav class="nav">
+  <div class="nav-grid">
+    <button class="nav-btn active"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span class="lbl">Lobby</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="lbl">Live</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><path d="M2 12l3-3h3l2-2h4l2 2h3l3 3-3 3h-3l-2 2h-4l-2-2H5z"/></svg><span class="lbl">Bets</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg><span class="lbl">Analyst</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg><span class="lbl">Account</span></button>
+  </div>
+</nav>
+
+</div>
+</body>
+</html>

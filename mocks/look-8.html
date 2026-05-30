@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#f5f3ee" />
+<title>Look 8 — Broadsheet · Real Sports Fake Slips</title>
+<style>
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: #f5f3ee; color: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+body { min-height: 100vh; overflow-x: hidden; padding-bottom: 140px; }
+button { font-family: inherit; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; background: none; border: none; color: inherit; }
+.serif { font-family: "Iowan Old Style", Georgia, "Times New Roman", serif; letter-spacing: -0.018em; }
+.mono { font-family: ui-monospace, "SF Mono", "Menlo", "Consolas", monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Top bar */
+.topbar { padding: 12px 18px 10px; display: flex; align-items: center; justify-content: space-between; background: #f5f3ee; border-bottom: 1px solid #d6d2c7; }
+.topbar .date { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #6b6359; font-weight: 700; }
+.bk { display: flex; align-items: center; gap: 8px; }
+.bk .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #6b6359; }
+.bk .v { font-size: 14px; font-weight: 800; }
+
+/* Masthead */
+.masthead { padding: 16px 18px 8px; border-bottom: 2px solid #0a0a0a; }
+.masthead h1 { font-size: 28px; line-height: 1; font-weight: 800; }
+.masthead h1 i { font-style: italic; color: #6b6359; }
+
+/* Live ticker */
+.live-ticker { background: #0a0a0a; color: #fff; padding: 9px 0; overflow: hidden; }
+.lt-inner { display: flex; gap: 18px; padding: 0 18px; overflow-x: auto; scrollbar-width: none; }
+.lt-inner::-webkit-scrollbar { display: none; }
+.lt-item { display: flex; align-items: center; gap: 8px; flex-shrink: 0; font-size: 12px; }
+.lt-item .dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; animation: pulse 1.6s infinite; }
+.lt-item .lab { font-size: 10px; color: #ef4444; font-weight: 800; }
+.lt-item .tm { font-weight: 700; }
+.lt-item .sc { font-weight: 800; }
+.lt-item .sc.dim { color: #a1a1aa; font-weight: 500; }
+.lt-item .clk { font-size: 10px; color: #fafafa; padding: 1px 5px; border: 1px solid #525252; border-radius: 3px; margin-left: 2px; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+/* Hero matchup (editorial style) */
+.hero { background: #fff; padding: 22px 18px 18px; border-bottom: 2px solid #0a0a0a; position: relative; }
+.hero .tag { font-size: 10px; color: #b91c1c; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.hero .tag .dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; animation: pulse 1.6s infinite; }
+.hero h2 { font-size: 30px; line-height: 1.05; font-weight: 800; margin-bottom: 4px; }
+.hero h2 i { font-style: italic; color: #4b4944; }
+.hero .sub { font-size: 14px; font-style: italic; color: #4b4944; }
+
+/* Stadium / live widget */
+.live-widget { margin: 18px 0 0; background: #fafaf7; padding: 16px; border-radius: 4px; border: 1px solid #d6d2c7; }
+.live-widget .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.live-widget .row:last-of-type { margin-bottom: 14px; }
+.live-widget .team { display: flex; align-items: center; gap: 12px; }
+.live-widget .nm { font-size: 17px; font-weight: 800; }
+.live-widget .nm i { font-style: italic; color: #4b4944; font-weight: 600; font-size: 13px; margin-left: 4px; }
+.live-widget .sc { font-size: 32px; font-weight: 900; line-height: 1; }
+.live-widget .sc.dim { color: #a1a1aa; }
+.live-widget .logo { width: 44px; height: 44px; flex-shrink: 0; }
+
+/* Quarter table (editorial) */
+.qtable { display: grid; grid-template-columns: 38px 1fr 1fr 1fr 1fr 50px; gap: 1px; background: #d6d2c7; border: 1px solid #d6d2c7; margin-top: 6px; font-family: ui-monospace, monospace; font-size: 11px; }
+.qtable > div { background: #fafaf7; padding: 5px 4px; text-align: center; font-weight: 700; }
+.qtable .h { color: #6b6359; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; }
+.qtable .h.now { background: #fef2f2; color: #b91c1c; }
+.qtable .v.now { background: #fef2f2; color: #b91c1c; font-weight: 900; }
+.qtable .tm-tag { color: #0a0a0a; font-weight: 900; }
+.qtable .ttl { font-weight: 900; color: #0a0a0a; }
+
+/* Last play (editorial) */
+.last-play { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0 0; border-top: 1px solid #d6d2c7; margin-top: 12px; }
+.last-play .dot { width: 4px; min-width: 4px; height: 36px; background: #b91c1c; border-radius: 2px; }
+.last-play .ph { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #b91c1c; font-weight: 800; }
+.last-play .txt { font-size: 12.5px; color: #2d2d2d; line-height: 1.4; margin-top: 2px; }
+.last-play .txt b { font-weight: 900; }
+
+/* Hero lines */
+.hero-lines { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.hl { padding: 10px 6px; text-align: center; border-radius: 8px; background: #f5f3ee; border: 1px solid #d6d2c7; transition: all .12s; }
+.hl:active { transform: scale(0.96); background: #ecebe5; }
+.hl.live { background: #fef2f2; border-color: #fecaca; }
+.hl .l { font-size: 9px; color: #6b6359; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.hl .v { font-size: 15px; font-weight: 900; font-family: ui-monospace, monospace; margin-top: 2px; }
+.hl .o { font-size: 10px; color: #6b6359; font-weight: 700; margin-top: 1px; font-family: ui-monospace, monospace; }
+.hl.live .l { color: #b91c1c; }
+.hl.live .l::after { content: " · LIVE"; }
+
+/* Section header */
+.sec { padding: 16px 18px 8px; display: flex; align-items: center; justify-content: space-between; }
+.sec h3 { font-size: 16px; font-weight: 800; }
+.sec h3 i { font-style: italic; color: #6b6359; }
+.sec .ct { font-size: 11px; color: #6b6359; font-weight: 600; }
+
+/* Standard game card */
+.gcard { margin: 0 18px 12px; background: #fff; border: 1px solid #d6d2c7; border-radius: 8px; padding: 14px; }
+.gcard .meta { display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: #6b6359; margin-bottom: 10px; font-family: ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+.gcard .team-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.gcard .team-row:last-of-type { margin-bottom: 12px; }
+.gcard .team { display: flex; align-items: center; gap: 10px; }
+.gcard .nm { font-size: 15px; font-weight: 800; }
+.gcard .nm i { font-style: italic; color: #4b4944; font-size: 12px; margin-left: 3px; font-weight: 600; }
+.gcard .rec { font-size: 10px; color: #6b6359; font-weight: 700; font-family: ui-monospace, monospace; }
+.gcard .logo-s { width: 32px; height: 32px; flex-shrink: 0; }
+.gcard .pick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.gcard .pick-grid:not(:last-child) { margin-bottom: 6px; }
+.gcard .pick { padding: 8px 4px; text-align: center; border-radius: 6px; background: #fafaf7; border: 1px solid #d6d2c7; }
+.gcard .pick .l { font-size: 9px; color: #6b6359; font-weight: 800; }
+.gcard .pick .v { font-size: 13px; font-weight: 900; font-family: ui-monospace, monospace; margin-top: 1px; }
+.gcard .pick .o { font-size: 9px; color: #6b6359; font-family: ui-monospace, monospace; }
+
+/* Slip */
+.slip { position: fixed; left: 12px; right: 12px; bottom: 74px; padding: 12px 14px; border-radius: 6px; background: #0a0a0a; color: #fff; display: flex; align-items: center; justify-content: space-between; z-index: 49; }
+.slip .left { display: flex; align-items: center; gap: 10px; }
+.slip .count-circ { width: 26px; height: 26px; border-radius: 50%; background: #fff; color: #0a0a0a; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px; }
+.slip .ttl { font-size: 13px; font-weight: 800; font-family: "Iowan Old Style", Georgia, serif; }
+.slip .sub { font-size: 11px; color: #a1a1aa; font-family: ui-monospace, monospace; }
+.slip .place-btn { padding: 8px 16px; background: #fff; color: #0a0a0a; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Bottom nav */
+.nav { position: fixed; bottom: 0; left: 0; right: 0; background: #f5f3ee; border-top: 2px solid #0a0a0a; padding-bottom: max(18px, env(safe-area-inset-bottom, 18px)); z-index: 50; }
+.nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px 4px 0; }
+.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px; color: #6b6359; }
+.nav-btn.active { color: #0a0a0a; }
+.nav-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
+.nav-btn .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; font-family: ui-monospace, monospace; }
+
+@media (min-width: 500px) {
+  body { background: #ebe7df; display: flex; justify-content: center; padding: 24px 0; }
+  .phone { width: 390px; min-height: 844px; background: #f5f3ee; box-shadow: 0 30px 80px rgba(0,0,0,.2); border-radius: 36px; overflow: hidden; position: relative; padding-bottom: 140px; }
+  .nav, .slip { max-width: 366px; margin: 0 auto; }
+  .slip { left: 0; right: 0; }
+}
+</style>
+</head>
+<body>
+<div class="phone">
+
+<div class="topbar">
+  <div class="date mono">Edition · Sat 30 May · Vol 4</div>
+  <div class="bk"><span class="lbl mono">BR</span><span class="v mono">$1,247</span></div>
+</div>
+
+<div class="masthead">
+  <h1 class="serif">Real Sports. <i>Fake Slips.</i></h1>
+</div>
+
+<!-- Live ticker -->
+<div class="live-ticker">
+  <div class="lt-inner">
+    <div class="lt-item">
+      <span class="dot"></span><span class="lab mono">LIVE</span>
+      <svg viewBox="0 0 40 40" width="14" height="14"><circle cx="20" cy="20" r="20" fill="#552583"/><text x="20" y="26" text-anchor="middle" fill="#FDB927" font-weight="900" font-size="16">L</text></svg>
+      <span class="tm">LAL</span><span class="sc num">72</span>
+      <span style="color:#525252">·</span>
+      <svg viewBox="0 0 40 40" width="14" height="14"><circle cx="20" cy="20" r="20" fill="#007A33"/><text x="20" y="26" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="16">B</text></svg>
+      <span class="tm">BOS</span><span class="sc num dim">68</span>
+      <span class="clk mono">Q3 8:42</span>
+    </div>
+    <div class="lt-item">
+      <span class="lab mono" style="color:#a1a1aa">7:30</span>
+      <span class="tm">CHI @ DEN</span>
+    </div>
+    <div class="lt-item">
+      <span class="lab mono" style="color:#a1a1aa">10:00</span>
+      <span class="tm">GSW @ MIA</span>
+    </div>
+  </div>
+</div>
+
+<!-- HERO matchup -->
+<div class="hero">
+  <div class="tag mono"><span class="dot"></span>Cover Story · Live</div>
+  <h2 class="serif">Lakers vs. Celtics, <i>renewed.</i></h2>
+  <div class="sub serif">Q3 in Los Angeles. LeBron's run cuts the lead to four.</div>
+
+  <div class="live-widget">
+    <div class="row">
+      <div class="team">
+        <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#552583"/><text x="20" y="25" text-anchor="middle" fill="#FDB927" font-weight="900" font-size="13">LAL</text></svg>
+        <div>
+          <div class="nm serif">Los Angeles Lakers <i>14·8</i></div>
+          <div class="mono" style="font-size:10px;color:#6b6359;margin-top:2px">Home · W3 streak</div>
+        </div>
+      </div>
+      <div class="sc num">72</div>
+    </div>
+    <div class="row">
+      <div class="team">
+        <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#007A33"/><text x="20" y="25" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="13">BOS</text></svg>
+        <div>
+          <div class="nm serif">Boston Celtics <i>17·5</i></div>
+          <div class="mono" style="font-size:10px;color:#6b6359;margin-top:2px">Away · W5 streak</div>
+        </div>
+      </div>
+      <div class="sc num dim">68</div>
+    </div>
+
+    <div class="qtable">
+      <div class="h">&nbsp;</div>
+      <div class="h">Q1</div><div class="h">Q2</div><div class="h now">Q3</div><div class="h">Q4</div>
+      <div class="h">T</div>
+
+      <div class="tm-tag">LAL</div>
+      <div class="v">22</div><div class="v">26</div><div class="v now">24</div><div class="v">—</div>
+      <div class="ttl">72</div>
+
+      <div class="tm-tag">BOS</div>
+      <div class="v">19</div><div class="v">22</div><div class="v now">27</div><div class="v">—</div>
+      <div class="ttl" style="color:#a1a1aa">68</div>
+    </div>
+
+    <div class="last-play">
+      <div class="dot"></div>
+      <div>
+        <div class="ph mono">Last play · 8:42 Q3</div>
+        <div class="txt serif"><b>LeBron James</b> 3-PT made from 24 ft, assist by <b>D'Angelo Russell</b>. LAL on an <b>8-2 run</b>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-lines">
+    <button class="hl live"><div class="l">Spread LAL</div><div class="v">-3.5</div><div class="o">-110</div></button>
+    <button class="hl live"><div class="l">Over</div><div class="v">224.5</div><div class="o">-108</div></button>
+    <button class="hl live"><div class="l">LAL ML</div><div class="v">-180</div><div class="o">3rd Q</div></button>
+  </div>
+</div>
+
+<!-- Tonight section -->
+<div class="sec">
+  <h3 class="serif"><i>Also</i> Tonight</h3>
+  <span class="ct mono">2 games</span>
+</div>
+
+<div class="gcard">
+  <div class="meta"><span>NBA · 10:00 PM ET</span><span>Chase Center</span></div>
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo-s" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#1D428A"/><text x="20" y="25" text-anchor="middle" fill="#FFC72C" font-weight="900" font-size="13">GSW</text></svg>
+      <div><div class="nm serif">Golden State Warriors <i>12·10</i></div></div>
+    </div>
+  </div>
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo-s" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#98002E"/><text x="20" y="25" text-anchor="middle" fill="#F9A01B" font-weight="900" font-size="13">MIA</text></svg>
+      <div><div class="nm serif">Miami Heat <i>11·11</i></div></div>
+    </div>
+  </div>
+  <div class="pick-grid">
+    <button class="pick"><div class="l">GSW</div><div class="v">-5.5</div><div class="o">-110</div></button>
+    <button class="pick"><div class="l">Over</div><div class="v">221.5</div><div class="o">-110</div></button>
+    <button class="pick"><div class="l">GSW ML</div><div class="v">-240</div><div class="o">·</div></button>
+  </div>
+  <div class="pick-grid">
+    <button class="pick"><div class="l">MIA</div><div class="v">+5.5</div><div class="o">-110</div></button>
+    <button class="pick"><div class="l">Under</div><div class="v">221.5</div><div class="o">-110</div></button>
+    <button class="pick"><div class="l">MIA ML</div><div class="v">+200</div><div class="o">·</div></button>
+  </div>
+</div>
+
+<div class="sec"><h3 class="serif"><i>Tomorrow</i> in Baseball</h3><span class="ct mono">2 games</span></div>
+
+<div class="gcard">
+  <div class="meta"><span>MLB · Sun 7:05 PM</span><span>Yankee Stadium</span></div>
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo-s" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#003087"/><text x="20" y="25" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="13">NYY</text></svg>
+      <div><div class="nm serif">New York Yankees <i>36·22</i></div></div>
+    </div>
+  </div>
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo-s" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#BD3039"/><text x="20" y="25" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="13">BOS</text></svg>
+      <div><div class="nm serif">Boston Red Sox <i>31·28</i></div></div>
+    </div>
+  </div>
+  <div class="pick-grid">
+    <button class="pick"><div class="l">NYY</div><div class="v">-1.5</div><div class="o">+135</div></button>
+    <button class="pick"><div class="l">Over</div><div class="v">9.5</div><div class="o">-115</div></button>
+    <button class="pick"><div class="l">NYY ML</div><div class="v">-150</div><div class="o">·</div></button>
+  </div>
+</div>
+
+<div class="slip">
+  <div class="left">
+    <div class="count-circ">2</div>
+    <div>
+      <div class="ttl">Two legs ready</div>
+      <div class="sub">$25 → $87.50</div>
+    </div>
+  </div>
+  <button class="place-btn">Place</button>
+</div>
+
+<nav class="nav">
+  <div class="nav-grid">
+    <button class="nav-btn active"><svg viewBox="0 0 24 24"><path d="M4 4h16M4 10h16M4 16h12"/></svg><span class="lbl">Front</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="lbl">Live</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><path d="M6 4h12l-2 16H8z"/></svg><span class="lbl">Slip</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg><span class="lbl">Analyst</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span class="lbl">More</span></button>
+  </div>
+</nav>
+
+</div>
+</body>
+</html>

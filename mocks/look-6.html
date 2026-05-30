@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#ffffff" />
+<title>Look 6 — Pulse · Real Sports Fake Slips</title>
+<style>
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: #f8fafc; color: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
+body { min-height: 100vh; overflow-x: hidden; padding-bottom: 140px; }
+button { font-family: inherit; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; background: none; border: none; color: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Header */
+.hdr { padding: 18px 20px 12px; background: #fff; display: flex; align-items: center; justify-content: space-between; }
+.hdr .greet { font-size: 12px; color: #71717a; font-weight: 600; }
+.hdr .greet b { color: #0a0a0a; font-weight: 800; }
+.bk-pill { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: linear-gradient(135deg,#0a0a0a,#1f2937); color: #fff; }
+.bk-pill .lbl { font-size: 10px; color: #a1a1aa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.bk-pill .amt { font-size: 14px; font-weight: 800; }
+
+/* LIVE TICKER */
+.ticker { background: #0a0a0a; padding: 10px 0; overflow: hidden; }
+.ticker-inner { display: flex; gap: 18px; padding: 0 20px; overflow-x: auto; scrollbar-width: none; }
+.ticker-inner::-webkit-scrollbar { display: none; }
+.ticker-item { display: flex; align-items: center; gap: 8px; flex-shrink: 0; color: #fff; font-size: 12px; }
+.ticker-item .dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; animation: pulse 1.6s infinite; }
+.ticker-item .lab { font-size: 10px; color: #ef4444; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.ticker-item .tm { font-weight: 700; }
+.ticker-item .sc { font-weight: 800; }
+.ticker-item .sc.dim { color: #a1a1aa; font-weight: 600; }
+.ticker-item .vs { color: #525252; font-size: 11px; }
+.ticker-item .clk { color: #fafafa; font-size: 10px; padding: 2px 6px; border: 1px solid #525252; border-radius: 4px; margin-left: 4px; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+/* HERO LIVE GAME */
+.hero-live { margin: 16px 16px 18px; background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 12px 32px rgba(15,23,42,.08); border: 1px solid #f1f5f9; }
+.hero-live .strip { padding: 10px 16px; background: linear-gradient(90deg, #fef2f2 0%, #fff 100%); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #fee2e2; }
+.hero-live .strip .left { display: flex; align-items: center; gap: 8px; }
+.hero-live .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 0 4px rgba(239,68,68,.18); animation: pulse 1.6s infinite; }
+.hero-live .live-text { font-size: 11px; font-weight: 800; color: #b91c1c; text-transform: uppercase; letter-spacing: 0.05em; }
+.hero-live .league { font-size: 11px; color: #71717a; font-weight: 600; }
+.hero-live .clock { font-size: 12px; font-weight: 800; color: #b91c1c; background: #fef2f2; padding: 3px 8px; border-radius: 6px; border: 1px solid #fecaca; }
+
+.hero-live .matchup { padding: 18px 16px 12px; }
+.hero-live .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.hero-live .team { display: flex; align-items: center; gap: 12px; }
+.hero-live .team-name { font-size: 17px; font-weight: 800; }
+.hero-live .team-sub { font-size: 11px; color: #71717a; font-weight: 500; margin-top: 1px; }
+.hero-live .score { font-size: 32px; font-weight: 900; line-height: 1; }
+.hero-live .score.dim { color: #a1a1aa; }
+.logo { width: 44px; height: 44px; flex-shrink: 0; }
+
+/* Quarter breakdown */
+.qb { padding: 0 16px 12px; display: flex; gap: 4px; align-items: center; font-size: 10px; font-family: ui-monospace, monospace; color: #71717a; }
+.qb .h { font-weight: 700; color: #a1a1aa; padding: 4px 8px; border-bottom: 1px solid #e4e4e7; min-width: 38px; text-align: center; }
+.qb .v { font-weight: 700; padding: 4px 8px; border-bottom: 1px solid #e4e4e7; min-width: 38px; text-align: center; color: #0a0a0a; }
+.qb .v.now { background: #fef2f2; color: #b91c1c; border-color: #fecaca; border-bottom-width: 2px; }
+.qb .tm-tag { font-weight: 800; color: #0a0a0a; min-width: 30px; }
+
+/* Last play */
+.last-play { padding: 12px 16px; background: #fafafa; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 10px; }
+.last-play .lp-dot { width: 4px; height: 16px; background: #10b981; border-radius: 2px; flex-shrink: 0; }
+.last-play .lp-text { font-size: 12px; color: #3f3f46; font-weight: 500; line-height: 1.4; }
+.last-play .lp-text b { color: #0a0a0a; font-weight: 800; }
+
+/* Quick bet bar */
+.qbet { padding: 14px 16px; }
+.qbet .label { font-size: 11px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.qbet .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }
+.qbet .grid:last-child { margin-bottom: 0; }
+.btn-bet { padding: 10px 6px; text-align: center; border-radius: 12px; background: #fafafa; border: 1px solid #ececef; transition: transform .12s; }
+.btn-bet:active { transform: scale(0.96); }
+.btn-bet .lbl { font-size: 10px; color: #71717a; font-weight: 700; }
+.btn-bet .v { font-size: 14px; font-weight: 800; margin-top: 2px; }
+.btn-bet .o { font-size: 10px; color: #71717a; font-weight: 600; margin-top: 1px; }
+.btn-bet.live-flash { border-color: #fca5a5; background: linear-gradient(135deg, #fff 0%, #fef2f2 100%); }
+.btn-bet.live-flash .lbl::after { content: " · LIVE"; color: #b91c1c; font-weight: 800; }
+
+/* Sport tabs */
+.sport-tabs { padding: 4px 20px 10px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.sport-tabs::-webkit-scrollbar { display: none; }
+.sport-tab { padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 700; white-space: nowrap; background: #fff; border: 1px solid #e4e4e7; color: #525252; flex-shrink: 0; }
+.sport-tab.active { background: #0a0a0a; color: #fff; border-color: #0a0a0a; }
+
+/* Game card */
+.gcard { margin: 0 16px 12px; background: #fff; border: 1px solid #e4e4e7; border-radius: 16px; padding: 14px; }
+.gcard .meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 11px; }
+.gcard .meta .league { color: #71717a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.gcard .meta .when { color: #0a0a0a; font-weight: 700; }
+.gcard .meta .when.soon { color: #b45309; }
+.gcard .team-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.gcard .team-row:last-of-type { margin-bottom: 12px; }
+.gcard .team { display: flex; align-items: center; gap: 10px; }
+.gcard .team-name { font-size: 15px; font-weight: 800; }
+.gcard .team-streak { display: inline-block; font-size: 9px; padding: 2px 5px; border-radius: 4px; margin-left: 6px; font-weight: 800; }
+.gcard .team-streak.w { background: #d1fae5; color: #065f46; }
+.gcard .team-streak.l { background: #fee2e2; color: #991b1b; }
+.gcard .team-rec { font-size: 11px; color: #a1a1aa; font-weight: 600; }
+.gcard .logo-s { width: 32px; height: 32px; flex-shrink: 0; }
+
+/* Section */
+.sec { padding: 4px 20px 8px; display: flex; align-items: center; justify-content: space-between; }
+.sec h2 { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+.sec .ct { font-size: 11px; color: #a1a1aa; font-weight: 600; }
+.sec .live h2 { color: #b91c1c; }
+
+/* Slip floating */
+.slip { position: fixed; left: 12px; right: 12px; bottom: 72px; padding: 12px 14px; border-radius: 16px; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff; display: flex; align-items: center; justify-content: space-between; z-index: 49; box-shadow: 0 12px 30px rgba(5,150,105,.4); }
+.slip .left { display: flex; align-items: center; gap: 10px; }
+.slip .count-circ { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
+.slip .ttl { font-size: 13px; font-weight: 800; }
+.slip .sub { font-size: 11px; color: rgba(255,255,255,.85); margin-top: 1px; }
+.slip .place-btn { padding: 8px 16px; border-radius: 999px; background: #fff; color: #047857; font-size: 13px; font-weight: 800; }
+
+/* Bottom nav */
+.nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e4e4e7; padding-bottom: max(18px, env(safe-area-inset-bottom, 18px)); z-index: 50; }
+.nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 8px 0; }
+.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px; color: #a1a1aa; }
+.nav-btn.active { color: #047857; }
+.nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+.nav-btn.active svg { stroke-width: 2.5; }
+.nav-btn .lbl { font-size: 10px; font-weight: 700; }
+.nav-btn.active .lbl { font-weight: 800; }
+
+@media (min-width: 500px) {
+  body { background: #e2e8f0; display: flex; justify-content: center; padding: 24px 0; }
+  .phone { width: 390px; min-height: 844px; background: #f8fafc; box-shadow: 0 30px 80px rgba(0,0,0,.18); border-radius: 36px; overflow: hidden; position: relative; padding-bottom: 140px; }
+  .nav, .slip { max-width: 366px; margin: 0 auto; }
+  .slip { left: 0; right: 0; }
+}
+</style>
+</head>
+<body>
+<div class="phone">
+
+<header class="hdr">
+  <div class="greet">Saturday · <b>Hi Jorge</b></div>
+  <div class="bk-pill">
+    <span class="lbl">BR</span>
+    <span class="amt num">$1,247</span>
+  </div>
+</header>
+
+<!-- Live ticker -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <div class="ticker-item">
+      <span class="dot"></span><span class="lab">LIVE</span>
+      <svg viewBox="0 0 40 40" width="16" height="16"><circle cx="20" cy="20" r="20" fill="#552583"/><text x="20" y="26" text-anchor="middle" fill="#FDB927" font-weight="900" font-size="16" font-family="-apple-system">L</text></svg>
+      <span class="tm">LAL</span><span class="sc">72</span>
+      <span class="vs">·</span>
+      <svg viewBox="0 0 40 40" width="16" height="16"><circle cx="20" cy="20" r="20" fill="#007A33"/><text x="20" y="26" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="16" font-family="-apple-system">B</text></svg>
+      <span class="tm">BOS</span><span class="sc dim">68</span>
+      <span class="clk">Q3 8:42</span>
+    </div>
+    <div class="ticker-item">
+      <span class="lab" style="color:#a1a1aa">UP</span>
+      <span class="tm">GSW @ MIA</span><span class="vs">10:00 PM</span>
+    </div>
+    <div class="ticker-item">
+      <span class="lab" style="color:#a1a1aa">UP</span>
+      <span class="tm">NYY @ BOS</span><span class="vs">Tue 7:05 PM</span>
+    </div>
+  </div>
+</div>
+
+<!-- HERO LIVE GAME with ESPN-style detail -->
+<div class="hero-live">
+  <div class="strip">
+    <div class="left">
+      <span class="live-dot"></span>
+      <span class="live-text">Live</span>
+      <span class="league">· NBA · Crypto.com Arena</span>
+    </div>
+    <span class="clock num">Q3 8:42</span>
+  </div>
+  <div class="matchup">
+    <div class="row">
+      <div class="team">
+        <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#552583"/><text x="20" y="25" text-anchor="middle" fill="#FDB927" font-weight="900" font-size="13" font-family="-apple-system">LAL</text></svg>
+        <div>
+          <div class="team-name">Lakers</div>
+          <div class="team-sub">14-8 · Home · <span style="color:#059669;font-weight:700">W3</span></div>
+        </div>
+      </div>
+      <div class="score num">72</div>
+    </div>
+    <div class="row">
+      <div class="team">
+        <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#007A33"/><text x="20" y="25" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="13" font-family="-apple-system">BOS</text></svg>
+        <div>
+          <div class="team-name">Celtics</div>
+          <div class="team-sub">17-5 · Away · <span style="color:#059669;font-weight:700">W5</span></div>
+        </div>
+      </div>
+      <div class="score num dim">68</div>
+    </div>
+  </div>
+  <div class="qb">
+    <div class="tm-tag">&nbsp;</div>
+    <div class="h">Q1</div><div class="h">Q2</div><div class="h now">Q3</div><div class="h">Q4</div>
+    <div class="h" style="border-color:transparent;min-width:42px;color:#0a0a0a">T</div>
+  </div>
+  <div class="qb">
+    <div class="tm-tag">LAL</div>
+    <div class="v">22</div><div class="v">26</div><div class="v now num">24</div><div class="v">—</div>
+    <div class="v num" style="font-weight:900;color:#0a0a0a">72</div>
+  </div>
+  <div class="qb" style="margin-bottom:6px">
+    <div class="tm-tag">BOS</div>
+    <div class="v">19</div><div class="v">22</div><div class="v now num">27</div><div class="v">—</div>
+    <div class="v num" style="font-weight:900;color:#a1a1aa">68</div>
+  </div>
+  <div class="last-play">
+    <div class="lp-dot"></div>
+    <div class="lp-text"><b>LeBron James</b> 3-PT made from 24 ft · <b>Russell</b> assist · LAL on an <b>8-2 run</b></div>
+  </div>
+  <div class="qbet">
+    <div class="label">Live odds · update every 15s</div>
+    <div class="grid">
+      <button class="btn-bet live-flash"><div class="lbl">LAL spread</div><div class="v num">-3.5</div><div class="o num">-110</div></button>
+      <button class="btn-bet live-flash"><div class="lbl">Over</div><div class="v num">224.5</div><div class="o num">-108</div></button>
+      <button class="btn-bet live-flash"><div class="lbl">LAL ML</div><div class="v num">-180</div><div class="o">3rd Q only</div></button>
+    </div>
+  </div>
+</div>
+
+<!-- Sport tabs -->
+<div class="sport-tabs">
+  <button class="sport-tab active">All</button>
+  <button class="sport-tab">NBA</button>
+  <button class="sport-tab">NFL</button>
+  <button class="sport-tab">MLB</button>
+  <button class="sport-tab">NHL</button>
+  <button class="sport-tab">Soccer</button>
+</div>
+
+<!-- Upcoming -->
+<div class="sec"><h2>Tonight</h2><span class="ct">3 games · 5 hrs</span></div>
+
+<div class="gcard">
+  <div class="meta">
+    <span class="league">NBA · Chase Center</span>
+    <span class="when soon">10:00 PM · 3h 15m</span>
+  </div>
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo-s" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#1D428A"/><text x="20" y="25" text-anchor="middle" fill="#FFC72C" font-weight="900" font-size="13" font-family="-apple-system">GSW</text></svg>
+      <div><span class="team-name">Warriors</span> <span class="team-streak w">W2</span></div>
+    </div>
+    <span class="team-rec num">12-10</span>
+  </div>
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo-s" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#98002E"/><text x="20" y="25" text-anchor="middle" fill="#F9A01B" font-weight="900" font-size="13" font-family="-apple-system">MIA</text></svg>
+      <div><span class="team-name">Heat</span> <span class="team-streak l">L1</span></div>
+    </div>
+    <span class="team-rec num">11-11</span>
+  </div>
+  <div class="qbet" style="padding:0">
+    <div class="grid">
+      <button class="btn-bet"><div class="lbl">GSW</div><div class="v num">-5.5</div><div class="o num">-110</div></button>
+      <button class="btn-bet"><div class="lbl">Over</div><div class="v num">221.5</div><div class="o num">-110</div></button>
+      <button class="btn-bet"><div class="lbl">GSW ML</div><div class="v num">-240</div><div class="o num">1.42x</div></button>
+    </div>
+    <div class="grid">
+      <button class="btn-bet"><div class="lbl">MIA</div><div class="v num">+5.5</div><div class="o num">-110</div></button>
+      <button class="btn-bet"><div class="lbl">Under</div><div class="v num">221.5</div><div class="o num">-110</div></button>
+      <button class="btn-bet"><div class="lbl">MIA ML</div><div class="v num">+200</div><div class="o num">3.00x</div></button>
+    </div>
+  </div>
+</div>
+
+<div class="sec"><h2>Tomorrow</h2><span class="ct">2 games</span></div>
+
+<div class="gcard">
+  <div class="meta">
+    <span class="league">MLB · Yankee Stadium</span>
+    <span class="when">Sun 7:05 PM</span>
+  </div>
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo-s" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#003087"/><text x="20" y="25" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="13" font-family="-apple-system">NYY</text></svg>
+      <div><span class="team-name">Yankees</span> <span class="team-streak w">W4</span></div>
+    </div>
+    <span class="team-rec num">36-22</span>
+  </div>
+  <div class="team-row">
+    <div class="team">
+      <svg class="logo-s" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#BD3039"/><text x="20" y="25" text-anchor="middle" fill="#FFFFFF" font-weight="900" font-size="13" font-family="-apple-system">BOS</text></svg>
+      <div><span class="team-name">Red Sox</span> <span class="team-streak l">L2</span></div>
+    </div>
+    <span class="team-rec num">31-28</span>
+  </div>
+  <div class="qbet" style="padding:0">
+    <div class="grid">
+      <button class="btn-bet"><div class="lbl">NYY</div><div class="v num">-1.5</div><div class="o num">+135</div></button>
+      <button class="btn-bet"><div class="lbl">Over</div><div class="v num">9.5</div><div class="o num">-115</div></button>
+      <button class="btn-bet"><div class="lbl">NYY ML</div><div class="v num">-150</div><div class="o num">1.67x</div></button>
+    </div>
+  </div>
+</div>
+
+<div class="slip">
+  <div class="left">
+    <div class="count-circ">2</div>
+    <div>
+      <div class="ttl">2-leg parlay</div>
+      <div class="sub num">$25 → win $87.50</div>
+    </div>
+  </div>
+  <button class="place-btn">Place</button>
+</div>
+
+<nav class="nav">
+  <div class="nav-grid">
+    <button class="nav-btn active"><svg viewBox="0 0 24 24"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg><span class="lbl">Lobby</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="lbl">Live</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="lbl">Parlay</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg><span class="lbl">Analyst</span></button>
+    <button class="nav-btn"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span class="lbl">More</span></button>
+  </div>
+</nav>
+
+</div>
+</body>
+</html>
