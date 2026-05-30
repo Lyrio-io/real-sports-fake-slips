@@ -1426,11 +1426,25 @@
             <div id="reality-check" class="text-sm space-y-2 text-ink-200"></div>
           </div>
           <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mt-4">
+            <h3 class="font-semibold text-sm mb-2 flex items-center gap-2">
+              <span class="text-violet-500">●</span> Bias detector
+              <span class="text-[11px] text-ink-300 font-normal">(your patterns, brutally honest)</span>
+            </h3>
+            <div id="bias-detector" class="text-xs space-y-1.5 text-ink-200"></div>
+          </div>
+          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mt-4">
             <h3 class="font-semibold text-sm mb-3 flex items-center gap-2">
               <span class="text-violet-500">●</span> Parlay performance by leg count
               <span class="text-[11px] text-ink-300 font-normal">(does 3-leg crush 7-leg?)</span>
             </h3>
             <div id="parlay-breakdown" class="text-sm overflow-x-auto"></div>
+          </div>
+          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mt-4">
+            <h3 class="font-semibold text-sm mb-3 flex items-center gap-2">
+              <span class="text-cyan-500">●</span> Market mastery
+              <span class="text-[11px] text-ink-300 font-normal">(sport × market — find your edge surface)</span>
+            </h3>
+            <div id="market-mastery" class="text-sm overflow-x-auto"></div>
           </div>
           <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mt-4">
             <h3 class="font-semibold text-sm mb-3 flex items-center gap-2">
@@ -6301,6 +6315,136 @@ function renderParlayBreakdown() {
   </div>`;
 }
 
+/* Bias detector — surfaces blind spots in Jorge's betting patterns */
+function renderBiasDetector() {
+  const el = document.getElementById('bias-detector'); if (!el) return;
+  const p = P(); if (!p) { el.innerHTML = ''; return; }
+  const all = p.bets || [];
+  const settled = all.filter(b => b.status === 'won' || b.status === 'lost');
+  if (settled.length < 5) {
+    el.innerHTML = '<div class="text-ink-400">Need at least 5 settled bets to expose patterns. Keep placing.</div>';
+    return;
+  }
+  const out = [];
+  // 1. Favorite bias — % of single bets on favorites
+  const singles = settled.filter(b => b.type === 'single' && b.legs && b.legs.length === 1 && b.legs[0].american != null);
+  if (singles.length >= 5) {
+    const favs = singles.filter(b => b.legs[0].american < 0);
+    const favPct = (favs.length / singles.length) * 100;
+    const favPL = favs.reduce((a, b) => a + (b.status === 'won' ? (b.payout - b.stake) : -b.stake), 0);
+    const favWagered = favs.reduce((a, b) => a + b.stake, 0);
+    const favROI = favWagered ? (favPL / favWagered * 100) : 0;
+    if (favPct >= 65) {
+      const cls = favROI >= 0 ? 'text-neon-500' : 'text-danger-500';
+      out.push(`<div><strong class="text-warn-500">Favorite-heavy:</strong> ${favPct.toFixed(0)}% of your singles are on favorites (-odds). Favorite singles ROI: <span class="${cls} num">${favROI >= 0 ? '+' : ''}${favROI.toFixed(1)}%</span>. ${favROI < 0 ? '<span class="text-danger-500">Paying juice to bet on "safe" picks &mdash; not actually safe.</span>' : ''}</div>`);
+    }
+  }
+  // 2. Source distribution
+  const bySource = {};
+  for (const b of settled) {
+    const src = normalizeSource(b.source) || '— untagged —';
+    bySource[src] = bySource[src] || { n: 0, pl: 0, wagered: 0 };
+    bySource[src].n++; bySource[src].wagered += b.stake;
+    bySource[src].pl += (b.status === 'won' ? (b.payout - b.stake) : -b.stake);
+  }
+  const sourceEntries = Object.entries(bySource).sort((a, b) => b[1].n - a[1].n);
+  if (sourceEntries.length) {
+    const topSrc = sourceEntries[0];
+    if (topSrc[1].n / settled.length >= 0.4) {
+      const roi = topSrc[1].wagered ? (topSrc[1].pl / topSrc[1].wagered * 100) : 0;
+      const cls = roi >= 0 ? 'text-neon-500' : 'text-danger-500';
+      out.push(`<div><strong class="text-warn-500">Source concentration:</strong> ${(topSrc[1].n / settled.length * 100).toFixed(0)}% of your bets came from <strong>${escapeHtml(topSrc[0])}</strong>. Their ROI: <span class="${cls} num">${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%</span>. ${roi < -5 ? 'Cut bait.' : roi > 5 ? 'Keep riding.' : 'Roughly breakeven — no signal yet.'}</div>`);
+    }
+    // Worst source
+    const ranked = sourceEntries.filter(([_, r]) => r.n >= 5).map(([n, r]) => ({ n, ...r, roi: r.wagered ? r.pl/r.wagered*100 : 0 })).sort((a,b)=>a.roi-b.roi);
+    if (ranked.length && ranked[0].roi < -10) {
+      out.push(`<div><strong class="text-danger-500">Worst source:</strong> <strong>${escapeHtml(ranked[0].n)}</strong> is bleeding you at ${ranked[0].roi.toFixed(1)}% ROI over ${ranked[0].n.length === 0 ? 0 : ranked[0].n} bets. Stop following them.</div>`);
+    }
+  }
+  // 3. Late-fire bias — bets placed within 30min of game start
+  const lateBets = settled.filter(b => {
+    if (!b.placedAt) return false;
+    const placed = new Date(b.placedAt).getTime();
+    const start = Math.min(...(b.legs || []).map(l => l.start ? new Date(l.start).getTime() : Infinity));
+    return Number.isFinite(start) && (start - placed) <= 30 * 60 * 1000 && (start - placed) > 0;
+  });
+  if (lateBets.length >= 5 && lateBets.length / settled.length >= 0.3) {
+    const latePL = lateBets.reduce((a, b) => a + (b.status === 'won' ? (b.payout - b.stake) : -b.stake), 0);
+    const lateWagered = lateBets.reduce((a, b) => a + b.stake, 0);
+    const lateROI = lateWagered ? (latePL / lateWagered * 100) : 0;
+    const cls = lateROI >= 0 ? 'text-neon-500' : 'text-danger-500';
+    out.push(`<div><strong class="text-warn-500">Late firer:</strong> ${(lateBets.length / settled.length * 100).toFixed(0)}% of your bets land within 30 min of tipoff. Late-bet ROI: <span class="${cls} num">${lateROI >= 0 ? '+' : ''}${lateROI.toFixed(1)}%</span>. Most amateurs lose worst on late bets — emotion driven.</div>`);
+  }
+  // 4. Parlay weight
+  const parlays = settled.filter(b => b.type === 'parlay');
+  const parlayWagered = parlays.reduce((a, b) => a + b.stake, 0);
+  const totalWagered = settled.reduce((a, b) => a + b.stake, 0);
+  if (parlays.length >= 5 && parlayWagered / totalWagered >= 0.4) {
+    const parlayPL = parlays.reduce((a, b) => a + (b.status === 'won' ? (b.payout - b.stake) : -b.stake), 0);
+    const parlayROI = parlayWagered ? (parlayPL / parlayWagered * 100) : 0;
+    const cls = parlayROI >= 0 ? 'text-neon-500' : 'text-danger-500';
+    out.push(`<div><strong class="text-warn-500">Parlay-heavy:</strong> ${(parlayWagered / totalWagered * 100).toFixed(0)}% of your dollars are in parlays. Parlay ROI: <span class="${cls} num">${parlayROI >= 0 ? '+' : ''}${parlayROI.toFixed(1)}%</span>. ${parlayROI < -5 ? 'Books love this. Shift back to singles.' : ''}</div>`);
+  }
+  // 5. Stake creep — has average stake been growing?
+  if (settled.length >= 20) {
+    const sorted = settled.slice().sort((a,b) => new Date(a.placedAt) - new Date(b.placedAt));
+    const first = sorted.slice(0, 10);
+    const last = sorted.slice(-10);
+    const avgFirst = first.reduce((a,b)=>a+b.stake,0) / first.length;
+    const avgLast = last.reduce((a,b)=>a+b.stake,0) / last.length;
+    if (avgLast > avgFirst * 1.5) {
+      out.push(`<div><strong class="text-warn-500">Stake creep:</strong> Your avg stake went from ${fmt$(avgFirst)} (first 10) to ${fmt$(avgLast)} (last 10) — ${((avgLast/avgFirst - 1)*100).toFixed(0)}% growth. This is the chase pattern. Set a fixed unit size and stick to it.</div>`);
+    }
+  }
+  if (!out.length) out.push('<div class="text-ink-400">No clear biases detected yet. Either you\'re disciplined or the sample is still small. Keep grinding.</div>');
+  el.innerHTML = out.join('');
+}
+
+/* Market mastery — sport × market type ROI grid to find Jorge's edge surface */
+function renderMarketMastery() {
+  const el = document.getElementById('market-mastery'); if (!el) return;
+  const p = P(); if (!p) { el.innerHTML = ''; return; }
+  const settled = (p.bets || []).filter(b => b.status === 'won' || b.status === 'lost');
+  if (!settled.length) { el.innerHTML = '<div class="text-ink-400 text-xs">No settled bets yet.</div>'; return; }
+  // Bucket each LEG by sport × market type (since parlays mix). Attribute proportional stake.
+  // Simpler: bucket each single bet by its leg. Skip parlays.
+  const singles = settled.filter(b => b.type === 'single' && b.legs && b.legs.length === 1);
+  if (singles.length < 5) { el.innerHTML = '<div class="text-ink-400 text-xs">Need at least 5 settled single bets to map your edges.</div>'; return; }
+  const grid = {};
+  for (const b of singles) {
+    const l = b.legs[0];
+    const sport = sportAbbr(l.sportKey);
+    const market = l.market === 'h2h' ? 'ML' : l.market === 'spreads' ? 'Spread' : l.market === 'totals' ? 'Total' : l.market === 'alternate_spreads' ? 'Alt Spread' : l.market === 'alternate_totals' ? 'Alt Total' : l.market;
+    const key = `${sport}|${market}`;
+    grid[key] = grid[key] || { sport, market, n: 0, w: 0, l: 0, wagered: 0, pl: 0 };
+    grid[key].n++; grid[key].wagered += b.stake;
+    grid[key].pl += (b.status === 'won' ? (b.payout - b.stake) : -b.stake);
+    if (b.status === 'won') grid[key].w++; else grid[key].l++;
+  }
+  const rows = Object.values(grid).map(r => ({ ...r, roi: r.wagered ? r.pl / r.wagered * 100 : 0, wr: (r.w + r.l) ? r.w/(r.w+r.l)*100 : 0 })).sort((a,b) => b.roi - a.roi);
+  const best = Math.max(...rows.map(r => r.roi));
+  const worst = Math.min(...rows.map(r => r.roi));
+  el.innerHTML = `<table class="w-full text-xs">
+    <thead><tr class="text-ink-300 text-left">
+      <th class="py-1">Sport</th><th>Market</th><th class="text-right">Bets</th><th class="text-right">Win %</th><th class="text-right">Wagered</th><th class="text-right">ROI</th>
+    </tr></thead>
+    <tbody>${rows.map(r => {
+      const cls = r.roi >= 0 ? 'text-neon-500' : 'text-danger-500';
+      const star = r.roi === best && r.n >= 5 ? ' <span class="text-warn-500">★</span>' : '';
+      const skull = r.roi === worst && r.n >= 5 ? ' <span class="text-danger-500">💀</span>' : '';
+      return `<tr class="border-t border-ink-800">
+        <td class="py-1.5 font-semibold">${escapeHtml(r.sport)}${star}${skull}</td>
+        <td>${escapeHtml(r.market)}</td>
+        <td class="text-right num">${r.n}</td>
+        <td class="text-right num">${r.wr.toFixed(0)}%</td>
+        <td class="text-right num">${fmt$(r.wagered)}</td>
+        <td class="text-right num ${cls}">${r.roi >= 0 ? '+' : ''}${r.roi.toFixed(1)}%</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>
+  <div class="text-[11px] text-ink-400 mt-3 leading-snug">★ = your best surface, 💀 = your worst. Bet more in your green columns, cut your red ones. Need 20+ bets per cell before trusting the signal.</div>`;
+}
+
 function renderSportPerf() {
   const el = document.getElementById('sport-perf-table');
   if (!el) return;
@@ -6421,7 +6565,7 @@ function switchTab(name) {
   if (name === 'lines') renderLedger();
   if (name === 'open') renderOpenBets();
   if (name === 'history') renderHistory();
-  if (name === 'stats') { renderStats(); renderGoals(); renderSportPerf(); renderParlayBreakdown(); renderVsCard(); }
+  if (name === 'stats') { renderStats(); renderGoals(); renderSportPerf(); renderParlayBreakdown(); renderBiasDetector(); renderMarketMastery(); renderVsCard(); }
   if (name === 'settings') renderSettings();
   if (name === 'parlay') renderParlay();
   if (name === 'analyst') renderAnalysis();
