@@ -4099,15 +4099,31 @@ function renderSlip() {
     } else { b.style.background = 'transparent'; b.style.color = '#cfd6e3'; }
   });
 
-  // Helper text under stake input
+  // Helper text under stake input — now includes Kelly suggestion when we have an edge estimate
   const helper = document.getElementById('stake-helper');
   if (helper) {
-    if (state.stakeMode === 'wager') helper.textContent = `to win ${fmt$(towin)}`;
-    else if (state.stakeMode === 'towin') helper.textContent = `requires stake ${fmt$(stake)}`;
+    let base = '';
+    if (state.stakeMode === 'wager') base = `to win ${fmt$(towin)}`;
+    else if (state.stakeMode === 'towin') base = `requires stake ${fmt$(stake)}`;
     else if (state.stakeMode === 'units') {
       const pct = (S().unitSize * 100).toFixed(1);
-      helper.textContent = `${fmt$(stake)} (1u = ${pct}% bankroll · to win ${fmt$(towin)})`;
+      base = `${fmt$(stake)} (1u = ${pct}% bankroll · to win ${fmt$(towin)})`;
     }
+    // Kelly suggestion: only meaningful when we can estimate trueProb (via vigForLeg)
+    const kelly = kellyForSlip();
+    let kellyText = '';
+    if (kelly && kelly.bankroll > 0) {
+      if (kelly.f <= 0) {
+        kellyText = ` · <span class="text-danger-500">Kelly: -EV, skip</span>`;
+      } else {
+        const half = kelly.f / 2;
+        const halfDollar = Math.round(kelly.bankroll * half);
+        const overRecommend = stake > kelly.bankroll * half;
+        const cls = overRecommend ? 'text-warn-500' : 'text-neon-500';
+        kellyText = ` · <span class="${cls}">½ Kelly: ${fmt$(halfDollar)} (${(half*100).toFixed(1)}% BR)</span>`;
+      }
+    }
+    helper.innerHTML = base + kellyText;
   }
 
   // Source datalist + quick-tap preset chips (Jorge's regular tipsters always available)
@@ -4211,6 +4227,27 @@ function computeStakeFromInput() {
   return inputVal;
 }
 
+// Kelly criterion sizing for the current slip.
+// f* = (b*p - q) / b   where b = decimal_odds - 1, p = true win prob, q = 1 - p
+// Returns { f, bankroll, trueP, decOdds } or null if slip empty / no estimate available
+function kellyForSlip() {
+  if (!state.slip.length) return null;
+  const p = P(); if (!p) return null;
+  const decOdds = state.slip.reduce((a, l) => a * americanToDecimal(l.american), 1);
+  let trueP = 1;
+  for (const l of state.slip) {
+    const v = vigForLeg(l);
+    if (v == null) return null;
+    const noVigProb = americanToImplied(l.american) / (1 + v / 100);
+    trueP *= noVigProb;
+  }
+  const b = decOdds - 1;
+  if (b <= 0) return null;
+  const q = 1 - trueP;
+  const f = (b * trueP - q) / b;
+  return { f, bankroll: p.bankroll, trueP, decOdds };
+}
+
 // Compute vig % for a leg's market by looking up the opposite side in the cache
 function vigForLeg(leg) {
   const entry = state.cache[leg.sportKey]; if (!entry) return null;
@@ -4245,6 +4282,14 @@ function placeBet() {
   if (juicedLegs.length) {
     const lines = juicedLegs.map(x => `· ${prettyMarket(x.leg.market)} ${x.leg.outcome}${x.leg.point != null ? ' ' + x.leg.point : ''} — vig ${x.vig.toFixed(1)}%`).join('\n');
     if (!confirm(`⚠ Juiced market${juicedLegs.length > 1 ? 's' : ''}:\n${lines}\n\nThe book's cut on ${juicedLegs.length > 1 ? 'these' : 'this'} is way above the usual 4-5%. You're paying a premium. Bet anyway?`)) return;
+  }
+
+  // SGP blocker: refuse same-game parlays >3 legs without acknowledgment
+  const sgpGames = {};
+  for (const l of state.slip) { sgpGames[l.gameId] = (sgpGames[l.gameId] || 0) + 1; }
+  const maxSameGame = Math.max(...Object.values(sgpGames));
+  if (maxSameGame >= 4) {
+    if (!confirm(`⚠ ${maxSameGame}-leg same-game parlay.\n\nSGPs >3 legs have crushing correlation-adjusted vig — books juice these massively because amateurs love them. Real hit rate is way below what the price implies. Bet anyway?`)) return;
   }
 
   // Run guardrail checks
