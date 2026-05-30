@@ -699,6 +699,10 @@
   }
   .game-card:hover { border-color: #2d3445; transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 12px 40px -12px rgba(0,0,0,0.6); }
 
+  /* Live ESPN scoreboard slot — appears under game-card header when game is in progress */
+  .gc-live-slot { margin: 0 14px 10px; padding: 10px 12px; background: linear-gradient(180deg, #1a1f2e 0%, #131722 100%); border: 1px solid #2a3142; border-left: 3px solid #ef4444; border-radius: 12px; font-size: 12px; }
+  .gc-live-loading { color: #6b7280; font-size: 11px; font-style: italic; }
+
   /* Vig + fair-price footer (per-card "is this a sharp or juiced line?" callout) */
   .vig-footer { padding: 8px 14px 12px; border-top: 1px dashed #1f2530; margin: 0 4px; }
   .vig-footer-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; font-weight: 700; margin-bottom: 4px; }
@@ -1347,7 +1351,10 @@
         <div class="px-4 lg:px-8 pt-4 lg:pt-8 max-w-5xl mx-auto">
           <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h2 class="display text-2xl font-bold">Open Bets</h2>
-            <button id="settle-btn" class="bg-accent-600 hover:bg-accent-500 text-white px-4 py-2 rounded-xl text-sm font-semibold">Auto-Settle</button>
+            <button id="settle-btn" class="bg-neon-500 hover:bg-neon-400 text-ink-950 font-bold px-4 py-2.5 rounded-xl text-sm shadow-lg shadow-neon-500/30 flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1018 0 9 9 0 00-18 0z"/><path d="M9 12l2 2 4-4"/></svg>
+              Settle &amp; Refresh
+            </button>
           </div>
           <div id="open-bets-container" class="space-y-2"></div>
         </div>
@@ -2771,6 +2778,10 @@ function renderLines() {
   });
   const eld = document.getElementById('empty-load-demo');
   if (eld) eld.addEventListener('click', () => { loadMockData(); renderSportChips(); renderLines(); toast('Demo data loaded'); });
+  // After Lines render, populate any live ESPN scoreboards on visible game cards
+  if (state.activeTab === 'lines') {
+    setTimeout(() => populateLiveStates(), 50);
+  }
 }
 
 // Click-outside-to-collapse: any click that lands outside an expanded card collapses it.
@@ -3366,6 +3377,10 @@ function renderGameCard(g, sportKey, marketFilter) {
     </div>
   `;
 
+  // Live ESPN scoreboard slot — fills in with score / period / clock / last play
+  // for any game that's started. Even non-live games show the structure so the layout doesn't jump.
+  const liveSlotHtml = isLive ? `<div class="live-slot gc-live-slot" data-sport-key="${escapeHtml(sportKey || '')}" data-away="${escapeHtml(away)}" data-home="${escapeHtml(home)}"><div class="gc-live-loading">📺 Loading live score…</div></div>` : '';
+
   const headerHtml = `
     <div class="gc-header">
       <div class="gc-team-side away">
@@ -3388,7 +3403,8 @@ function renderGameCard(g, sportKey, marketFilter) {
           <div class="gc-team-record">${_teamRecord(home, g.id)} <span class="gc-team-split">· ${_teamSplitRecord(home, g.id, true)} home</span></div>
         </div>
       </div>
-    </div>`;
+    </div>
+    ${liveSlotHtml}`;
 
   if (!isExpanded) {
     // Compact view — entire card is clickable to expand
@@ -4540,7 +4556,8 @@ async function populateLiveStates() {
 function startLiveRefreshLoop() {
   if (_liveRefreshTimer) return;
   _liveRefreshTimer = setInterval(() => {
-    if (state.activeTab !== 'open') return; // only when looking at open bets
+    // Refresh on tabs that show live game state: Lines (game cards), Open (bet cards)
+    if (state.activeTab !== 'open' && state.activeTab !== 'lines') return;
     populateLiveStates();
   }, LIVE_CACHE_TTL);
 }
