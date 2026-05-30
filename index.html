@@ -1955,7 +1955,10 @@ const MOCK_SPORTS_LIST = [
 
 function _buildMockCache() {
   const now = Date.now();
-  return {
+  // Active season windows (US sports calendars). NFL: Aug-Feb only.
+  const m = new Date(now).getMonth(); // 0=Jan
+  const nflActive = (m >= 7 || m <= 1); // Aug..Feb inclusive
+  const cache = {
     baseball_mlb: { fetchedAt: new Date(now).toISOString(), games: [
       _mockGame('mock_mlb_1', 'baseball_mlb', 'New York Yankees', 'Boston Red Sox', 4, +130, +1.5, 8.5),
       _mockGame('mock_mlb_2', 'baseball_mlb', 'Los Angeles Dodgers', 'San Diego Padres', 6, -135, -1.5, 7.5),
@@ -1971,11 +1974,12 @@ function _buildMockCache() {
       _mockGame('mock_nhl_1', 'icehockey_nhl', 'Edmonton Oilers', 'Dallas Stars', 5, -110, -1.5, 6.0),
       _mockGame('mock_nhl_2', 'icehockey_nhl', 'Carolina Hurricanes', 'New York Rangers', 4.5, +120, +1.5, 5.5),
     ]},
-    americanfootball_nfl: { fetchedAt: new Date(now).toISOString(), games: [
+    americanfootball_nfl: { fetchedAt: new Date(now).toISOString(), games: nflActive ? [
       _mockGame('mock_nfl_1', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 8, +110, +2.5, 49.5),
       _mockGame('mock_nfl_2', 'americanfootball_nfl', 'Dallas Cowboys', 'Philadelphia Eagles', 28, -150, -3.5, 47.0),
-    ]},
+    ] : [] },
   };
+  return cache;
 }
 
 // Normalize American odds (no values in -99..99 range)
@@ -2185,7 +2189,7 @@ const MOCK_ANALYSIS = {
     strength: "strong",
     reasoning: "This is the best-priced bet on the board today. One sportsbook is paying +135 for Yankees to win, but the others are only paying around +110 — that's like buying the same candy bar at one store for less than the others. The books are also taking a small cut on this game (only 2.4%), which means you're getting closer to fair value than usual. Heads up though: even a smart pick is still a gamble. One bet's outcome is a coin flip — the math only works in your favor if you make many bets like this over time."
   },
-  summary: "Today's prices look pretty fair across baseball — books are taking a small cut on most MLB games. The NFL game stands out with a bigger cut (juiced), so be careful. Three games have noticeably good prices worth a look.",
+  summary: "Today's prices look pretty fair across baseball — books are taking a small cut on most MLB games. A few late games have noticeably better prices worth a look, but stay disciplined on stakes.",
   edges: [
     { bet: "Yankees ML", gameId: "mock_mlb_1", outcome: "New York Yankees", market: "h2h", point: null, american: 135, edge_type: "line_shopping", strength: "strong", reasoning: "One book is paying +135 — about 4% better than the other books. The books are only taking a small cut on this game, which is rare. That makes this one of the best-priced bets all day." },
     { bet: "Padres +1.5", gameId: "mock_mlb_2", outcome: "San Diego Padres", market: "spreads", point: 1.5, american: -135, edge_type: "low_vig", strength: "moderate", reasoning: "The run-line bet here has the smallest house cut on today's slate — about as fair a price as you'll see. The Padres get a 1.5-run head start. All three books agree on the line, so the market trusts itself." },
@@ -2193,9 +2197,9 @@ const MOCK_ANALYSIS = {
     { bet: "Cubs/Cardinals Under 9.0", gameId: "mock_mlb_3", outcome: "Under", market: "totals", point: 9.0, american: -106, edge_type: "low_vig", strength: "moderate", reasoning: "The Under is at -106 instead of the usual -110. Tiny difference per bet, but real money over many bets. The market is sharp on this game — house cut is low." },
   ],
   traps: [
-    { bet: "Cowboys/Eagles Over 47.0", gameId: "mock_nfl_2", trap_type: "high_vig", reasoning: "The books are taking over 7% on this total — way more than the usual 4%. That's a big chunk of every bet going to the house. The public usually bets the Over in NFL primetime, which is why books juice the price." },
+    { bet: "Astros/Mariners Over 7.0", gameId: "mock_mlb_4", trap_type: "high_vig", reasoning: "The books are taking over 6% on this total — well above the usual 4%. That's a big chunk of every bet going to the house. Public usually loves Overs in low-total pitcher's duels, which is why books juice the price here." },
     { bet: "Dodgers ML at -135", gameId: "mock_mlb_2", trap_type: "favorite_parlay_drag", reasoning: "Heavy favorites in parlays are a slow leak — every leg adds extra cut to the house. The Dodgers are likely to win, but you're paying a premium that compounds across legs. Avoid stacking favorites." },
-    { bet: "Eagles -3.5 in any 5-leg parlay", gameId: "mock_nfl_2", trap_type: "favorite_parlay_drag", reasoning: "Stacking favorites in long parlays is what the books love to see. Each leg eats more of your potential winnings. By 5 legs, you're paying way more than you'd think for the real chance of hitting." },
+    { bet: "Oilers -1.5 in any 5-leg parlay", gameId: "mock_nhl_1", trap_type: "favorite_parlay_drag", reasoning: "Stacking favorites in long parlays is what the books love to see. Each leg eats more of your potential winnings. By 5 legs, you're paying way more than you'd think for the real chance of hitting." },
     { bet: "Live in-game bets", gameId: "mock_mlb_5", trap_type: "high_vig", reasoning: "Live bets typically take 7-10% house cut versus 3-4% before the game starts. Same outcome, more expensive. Stick to pre-game lines." },
   ],
   parlay_candidates: {
@@ -4792,13 +4796,23 @@ function renderSportToggles() {
 function compileSlate() {
   // Build a compact slate with pre-computed math.
   // For each game: best ML/spread/total prices, vig %, bookmaker count, line gaps.
+  // Today-only: only games starting between now-6h (live) and end-of-today local time.
+  const now = Date.now();
+  const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999);
+  const windowEnd = endOfToday.getTime();
+  const windowStart = now - 6 * 3600 * 1000; // include games that started up to 6h ago (live)
   const games = [];
+  const includedSports = new Set();
   for (const sportKey of state.sports) {
     const entry = state.cache[sportKey]; if (!entry) continue;
     for (const g of entry.games || []) {
+      const startMs = new Date(g.commence_time).getTime();
+      if (!Number.isFinite(startMs)) continue;
+      if (startMs < windowStart || startMs > windowEnd) continue; // not today / not live
       const home = g.home_team, away = g.away_team;
       const bookCount = (g.bookmakers || []).length;
       const start = g.commence_time;
+      includedSports.add(sportKey);
 
       // Best moneyline
       const mlH = bestOddsForOutcome(g, 'h2h', home);
@@ -4867,7 +4881,13 @@ function compileSlate() {
       });
     }
   }
-  return { date: new Date().toISOString().slice(0,10), gameCount: games.length, games };
+  return {
+    date: new Date().toISOString().slice(0,10),
+    todayOnly: true,
+    sportsIncluded: Array.from(includedSports).map(sportAbbr),
+    gameCount: games.length,
+    games,
+  };
 }
 
 const ANALYST_SYSTEM_PROMPT = `You are a sportsbook market analyst writing for a 5th-grade reading level. You DO NOT predict winners — you have no edge over the market. Your job is to find STRUCTURAL signals in the pricing data and explain them in PLAIN ENGLISH, like a smart friend talking to a friend.
@@ -4918,6 +4938,9 @@ OUTPUT JSON (strict, no markdown wrapper):
 }
 
 RULES:
+- ONLY analyze games present in the input JSON. NEVER invent, reference, or mention any team, league, or game that is not in the input. If a sport is not in the input, do not bring it up.
+- The input is filtered to today's slate only. Do NOT reference future-week games, offseason leagues, or hypothetical matchups.
+- Every gameId, team name, and outcome you cite must appear verbatim in the input.
 - Pick 3-5 edges, 3-5 traps. Give all 3 parlay candidates if you can.
 - Parlays use legs from DIFFERENT games.
 - Output ONLY the JSON object. No markdown fences, no extra text.
@@ -4938,7 +4961,12 @@ async function runAnalysis() {
   }
   if (!state.anthropicKey) { toast('Add Anthropic API key in Settings'); switchTab('settings'); return; }
   const slate = compileSlate();
-  if (!slate.games.length) { toast('Refresh lines first'); switchTab('lines'); return; }
+  if (!slate.games.length) {
+    const hasAnyCache = Object.values(state.cache || {}).some(c => (c.games || []).length);
+    toast(hasAnyCache ? 'No games today — analyst rests' : 'Refresh lines first');
+    if (!hasAnyCache) switchTab('lines');
+    return;
+  }
 
   const btn = document.getElementById('run-analysis');
   const orig = btn.innerHTML;
