@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#06070a" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="manifest" href="manifest.json" />
 <title>Real Sports Fake Slips</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -1661,6 +1662,16 @@
             </div>
           </div>
 
+          <!-- Notifications + PWA install -->
+          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
+            <h3 class="font-semibold mb-1">Notifications &amp; lock screen</h3>
+            <p class="text-xs text-ink-300 mb-3">Get bet results and line-improvement alerts on your lock screen. On iPhone: tap the share icon in Safari → "Add to Home Screen", then enable notifications below. Android: tap the install icon in your browser bar.</p>
+            <div class="flex flex-wrap gap-2 items-center">
+              <button id="enable-notifs" class="bg-neon-500 hover:bg-neon-400 text-ink-950 font-bold px-4 py-2 rounded-xl text-sm">Enable notifications</button>
+              <span id="notif-status" class="text-xs text-ink-300"></span>
+            </div>
+          </div>
+
           <!-- Bankroll Plan settings: cap + manual reset -->
           <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
             <h3 class="font-semibold mb-1">Bankroll Plan</h3>
@@ -2781,6 +2792,106 @@ function clvCents(yourAmerican, closingAmerican) {
   return Math.round((yd - cd) * 100);
 }
 
+/* ===== Notifications (lock-screen push via Notifications API) ===== */
+// We use the browser Notifications API (works on installed PWAs + open tabs).
+// True iOS Live Activities require a native app — not possible from a web PWA.
+// What this gives you: clean OS-level notifications on lock screen when phone
+// is locked AND the PWA is installed to home screen (iOS 16.4+ / all Android).
+async function ensureNotifyPermission() {
+  if (!('Notification' in window)) return 'unsupported';
+  if (Notification.permission === 'granted') return 'granted';
+  if (Notification.permission === 'denied') return 'denied';
+  const result = await Notification.requestPermission();
+  return result;
+}
+async function ensureServiceWorker() {
+  if (!('serviceWorker' in navigator)) return null;
+  try {
+    const reg = await navigator.serviceWorker.register('sw.js', { scope: '/' });
+    return reg;
+  } catch (e) { console.warn('SW register failed', e); return null; }
+}
+// Clean, compact notification — short title + one-line body, no emoji clutter
+async function pushNotify({ title, body, tag, url }) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return false;
+  const reg = await navigator.serviceWorker?.getRegistration();
+  const opts = {
+    body: body || '',
+    tag: tag || 'rsfs',          // collapses duplicate notifications
+    badge: undefined,
+    icon: undefined,
+    silent: false,
+    requireInteraction: false,
+    data: { url: url || '/' },
+  };
+  try {
+    if (reg && reg.showNotification) await reg.showNotification(title, opts);
+    else new Notification(title, opts);
+    return true;
+  } catch (e) { console.warn('notify failed', e); return false; }
+}
+
+/* ===== Line watchlist (alert when a line you care about improves) ===== */
+const LS_WATCHLIST = 'psb.watchlist';
+let _watchlist = JSON.parse(localStorage.getItem(LS_WATCHLIST) || '[]');
+function _persistWatchlist() { localStorage.setItem(LS_WATCHLIST, JSON.stringify(_watchlist)); }
+function watchlistKey(gameId, market, outcome, point) { return `${gameId}|${market}|${outcome}|${point ?? ''}`; }
+function isWatched(gameId, market, outcome, point) {
+  const k = watchlistKey(gameId, market, outcome, point);
+  return _watchlist.some(w => w.k === k);
+}
+function toggleWatchlist(payload) {
+  const k = watchlistKey(payload.gameId, payload.market, payload.outcome, payload.point);
+  const idx = _watchlist.findIndex(w => w.k === k);
+  if (idx >= 0) {
+    _watchlist.splice(idx, 1);
+    _persistWatchlist();
+    toast(`Removed from watchlist`);
+    return false;
+  }
+  _watchlist.push({
+    k, gameId: payload.gameId, sportKey: payload.sportKey,
+    market: payload.market, outcome: payload.outcome, point: payload.point,
+    away: payload.away, home: payload.home,
+    startedAtAmerican: payload.american,
+    bestSinceWatch: payload.american,
+    addedAt: nowISO(),
+    notified: false,
+  });
+  _persistWatchlist();
+  toast(`Watching this line. Alert when it improves by 20¢+ or hits a better number.`);
+  return true;
+}
+// Scan watchlist against latest cache; if any improved meaningfully, fire notification
+async function scanWatchlistAndAlert() {
+  if (!_watchlist.length) return;
+  let dirty = false;
+  for (const w of _watchlist) {
+    const entry = state.cache[w.sportKey]; if (!entry) continue;
+    const g = (entry.games || []).find(x => x.id === w.gameId); if (!g) continue;
+    const best = bestOddsForOutcome(g, w.market, w.outcome, w.point); if (!best) continue;
+    // Improvement in cents vs original
+    const startDec = americanToDecimal(w.startedAtAmerican);
+    const curDec = americanToDecimal(best.american);
+    const deltaCents = Math.round((curDec - startDec) * 100);
+    if (deltaCents >= 20 && !w.notified) {
+      pushNotify({
+        title: `${w.away.split(' ').pop()} @ ${w.home.split(' ').pop()}`,
+        body: `${w.outcome}${w.point != null ? ' ' + (w.point > 0 ? '+' : '') + w.point : ''} ${fmtAmerican(w.startedAtAmerican)} → ${fmtAmerican(best.american)} (+${deltaCents}¢)`,
+        tag: 'watchlist-' + w.k,
+      });
+      toast(`📈 Line improved: ${w.outcome} ${fmtAmerican(w.startedAtAmerican)} → ${fmtAmerican(best.american)}`);
+      w.notified = true;
+      w.bestSinceWatch = best.american;
+      dirty = true;
+    } else if (curDec > americanToDecimal(w.bestSinceWatch)) {
+      w.bestSinceWatch = best.american;
+      dirty = true;
+    }
+  }
+  if (dirty) _persistWatchlist();
+}
+
 /* ===== Hedge alert ===== */
 // For a single-leg open bet, find the current best price on the OPPOSING side.
 // If that price >= +200 (configurable), compute hedge math and suggest a guaranteed-profit lock.
@@ -2872,6 +2983,8 @@ async function refreshLines(force = false) {
   }
   save(LS.CACHE, state.cache);
   localStorage.setItem(LS.LAST_REFRESH, String(Date.now()));
+  // After fresh data, check watchlist for line improvements
+  scanWatchlistAndAlert().catch(e => console.error('watchlist scan failed', e));
   document.getElementById('last-updated').textContent = `Updated ${new Date().toLocaleTimeString()} · ${ok} ok${fail?', '+fail+' failed':''}`;
   btn.innerHTML = orig; btn.disabled = false;
   renderSportChips();
@@ -5274,6 +5387,14 @@ function finalizeBet(b, result) {
   b.settledAt=nowISO(); p.bankroll+=b.payout;
   persistProfiles();
   notifyResolution(b);
+  // Lock-screen-ready OS notification (when permission granted)
+  const pl = b.status === 'won' ? (b.payout - b.stake) : b.status === 'lost' ? -b.stake : 0;
+  const summary = b.legs.map(l => `${l.outcome}${l.point != null ? ' ' + (l.point > 0 ? '+' : '') + l.point : ''}`).join(' · ');
+  pushNotify({
+    title: b.status === 'won' ? `Won +${fmt$(pl)}` : b.status === 'lost' ? `Lost ${fmt$(b.stake)}` : 'Push',
+    body: summary,
+    tag: 'bet-' + b.id,
+  });
   renderOpenBets(); renderHeader(); renderHistory(); renderStats();
   // AI post-bet retrospective (only when Anthropic key set + bet not already retro'd)
   if (state.anthropicKey && !b.retrospective) {
@@ -7331,6 +7452,28 @@ function init() {
   document.getElementById('reload-sports').addEventListener('click', reloadSports);
   document.getElementById('starting-bankroll').addEventListener('change', (e) => { const p = P(); if (!p) return; p.starting = parseFloat(e.target.value) || 1000; persistProfiles(); renderHeader(); });
 
+  // Notifications
+  const enableNotifs = document.getElementById('enable-notifs');
+  const notifStatus = document.getElementById('notif-status');
+  function refreshNotifStatus() {
+    if (!notifStatus) return;
+    if (!('Notification' in window)) { notifStatus.textContent = '✗ Not supported in this browser'; return; }
+    const p = Notification.permission;
+    notifStatus.textContent = p === 'granted' ? '✓ Enabled · alerts will appear on lock screen' : p === 'denied' ? '✗ Denied — re-enable in browser settings' : '◯ Not enabled';
+    notifStatus.className = `text-xs ${p === 'granted' ? 'text-neon-500' : p === 'denied' ? 'text-danger-500' : 'text-ink-300'}`;
+  }
+  refreshNotifStatus();
+  if (enableNotifs) enableNotifs.addEventListener('click', async () => {
+    const sw = await ensureServiceWorker();
+    const perm = await ensureNotifyPermission();
+    refreshNotifStatus();
+    if (perm === 'granted') {
+      pushNotify({ title: 'Real Sports Fake Slips', body: 'Notifications enabled. You\'ll get alerts when bets settle and lines improve.', tag: 'welcome' });
+    } else if (perm === 'denied') {
+      toast('Denied. Re-enable in your browser/iOS settings → Notifications.');
+    }
+  });
+
   // Bankroll Plan controls
   const sbc = document.getElementById('save-bankroll-cap');
   if (sbc) sbc.addEventListener('click', () => {
@@ -7422,6 +7565,8 @@ function init() {
       autoSettle(true).catch(e => console.error('auto-settle on boot failed', e));
     }
   }, 600);
+  // Register service worker for PWA install + lock-screen notifications (best-effort)
+  if ('serviceWorker' in navigator) ensureServiceWorker();
 }
 document.addEventListener('DOMContentLoaded', init);
 </script>
