@@ -1804,6 +1804,16 @@
             <input id="slip-source" list="source-list" type="text" placeholder="Source name (or pick a chip above)" class="w-full bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-neon-500" />
             <datalist id="source-list"></datalist>
           </div>
+          <!-- Bet reason diary — one-line "why" forces articulation -->
+          <div>
+            <label class="text-[11px] uppercase tracking-wider text-ink-200 font-bold block mb-1">Why this bet? <span class="text-ink-400 font-normal normal-case">(1 sentence — tracked vs results)</span></label>
+            <input id="slip-reason" type="text" placeholder="e.g. line moved sharp, value on dog, model edge…" maxlength="140" class="w-full bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-neon-500" />
+          </div>
+          <!-- Injury reminder -->
+          <div class="bg-warn-500/10 border border-warn-500/30 rounded-xl p-2.5 text-[11px] text-warn-500 flex items-start gap-2">
+            <span>🩹</span>
+            <div>Check injury reports before placing. Late scratches and game-time decisions kill more value than vig.</div>
+          </div>
           <div class="bg-ink-800 rounded-xl p-3 space-y-1.5">
             <div class="flex justify-between text-sm">
               <span class="text-ink-300">Combined</span>
@@ -4409,6 +4419,7 @@ function actuallyPlace(stake) {
   const p = P(); if (!p) return;
   const combinedDec = state.slip.reduce((a,l) => a*l.decimal, 1);
   const sourceName = normalizeSource((document.getElementById('slip-source')?.value || ''));
+  const reason = (document.getElementById('slip-reason')?.value || '').trim().slice(0, 140);
   const bet = {
     id: uid(), placedAt: nowISO(),
     type: state.slip.length === 1 ? 'single' : 'parlay',
@@ -4416,6 +4427,7 @@ function actuallyPlace(stake) {
     stake, decimal: combinedDec,
     american: state.slip.length === 1 ? state.slip[0].american : decimalToAmerican(combinedDec),
     toWin: profit(stake, combinedDec), status: 'pending', settledAt: null, payout: 0,
+    reason: reason || null,
     source: sourceName || null,
     units: stake / (p.bankroll + stake) / S().unitSize, // units at time of bet (approx)
   };
@@ -4425,6 +4437,7 @@ function actuallyPlace(stake) {
   }
   p.bets.push(bet); p.bankroll -= stake; persistProfiles();
   state.slip = []; renderSlip(); renderParlay(); renderHeader();
+  const ri = document.getElementById('slip-reason'); if (ri) ri.value = '';
   document.querySelectorAll('.pick').forEach(syncPickSelection);
   showBetPlaced(bet);
 }
@@ -5087,6 +5100,8 @@ function renderBetCard(b) {
       <button class="text-xs bg-warn-500 text-white px-2 py-1 rounded" data-manual-settle="${b.id}" data-result="push">Push</button>
       <button class="text-xs bg-ink-700 hover:bg-ink-600 px-2 py-1 rounded" data-cancel="${b.id}">Void</button>
     </div>` : '';
+  const reasonChip = b.reason ? `<div class="mt-2 text-[11px] text-ink-300 italic"><span class="text-ink-400">Why:</span> ${escapeHtml(b.reason)}</div>` : '';
+  const retroChip = b.retrospective ? `<div class="mt-2 text-[11px] px-2 py-1.5 rounded-lg bg-ink-800 border border-ink-700 leading-snug"><span class="text-violet-500 font-bold">AI retro:</span> <span class="text-ink-200">${escapeHtml(b.retrospective)}</span></div>` : '';
   return `<div class="bg-ink-900 border border-ink-700 rounded-2xl p-4">
     <div class="flex justify-between flex-wrap gap-2">
       <div>
@@ -5100,6 +5115,8 @@ function renderBetCard(b) {
     </div>
     ${scorePanels ? `<div class="mt-3">${scorePanels}</div>` : ''}
     <ul class="mt-2">${legsHtml}</ul>
+    ${reasonChip}
+    ${retroChip}
     ${actions}
   </div>`;
 }
@@ -5125,6 +5142,46 @@ function finalizeBet(b, result) {
   persistProfiles();
   notifyResolution(b);
   renderOpenBets(); renderHeader(); renderHistory(); renderStats();
+  // AI post-bet retrospective (only when Anthropic key set + bet not already retro'd)
+  if (state.anthropicKey && !b.retrospective) {
+    runRetrospective(b).catch(e => console.error('retro failed', e));
+  }
+}
+
+async function runRetrospective(bet) {
+  if (!state.anthropicKey) return;
+  const v = bet.legs.map(l => vigForLeg(l));
+  const summary = {
+    result: bet.status, stake: bet.stake, payout: bet.payout,
+    americanAtPlace: bet.american,
+    type: bet.type,
+    legs: bet.legs.map((l, i) => ({
+      market: prettyMarket(l.market), outcome: l.outcome, point: l.point,
+      yourPrice: l.american, vigAtPlace: v[i] != null ? +v[i].toFixed(2) : null,
+      result: l.status,
+    })),
+    yourReason: bet.reason || null,
+  };
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': state.anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: state.analystModel,
+        max_tokens: 120,
+        system: `You're a sportsbook mentor. Given a SETTLED bet, write ONE sentence (max 25 words) saying whether the bet was smart AT THE TIME, regardless of outcome. Patterns: "Won but bad bet — got lucky on a juiced market", "Lost but smart bet — fair price, just variance", "Smart bet, smart result", "Bad process, bad result." Don't pretend you can see the future — focus on process (price, vig, structure).`,
+        messages: [{ role: 'user', content: 'Bet settled. Was it smart at the time?\n' + JSON.stringify(summary) }],
+      }),
+    });
+    if (!r.ok) return;
+    const data = await r.json();
+    const text = (data.content?.[0]?.text || '').trim().slice(0, 200);
+    if (text) {
+      const p = P(); if (!p) return;
+      const stored = p.bets.find(x => x.id === bet.id);
+      if (stored) { stored.retrospective = text; persistProfiles(); renderOpenBets(); renderHistory(); }
+    }
+  } catch (e) { console.error('retro fetch failed', e); }
 }
 
 function notifyResolution(b) {
