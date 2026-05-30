@@ -2781,6 +2781,61 @@ function clvCents(yourAmerican, closingAmerican) {
   return Math.round((yd - cd) * 100);
 }
 
+/* ===== Hedge alert ===== */
+// For a single-leg open bet, find the current best price on the OPPOSING side.
+// If that price >= +200 (configurable), compute hedge math and suggest a guaranteed-profit lock.
+const HEDGE_THRESHOLD_AMERICAN = 200;
+function findOpposingPrice(leg) {
+  const entry = state.cache[leg.sportKey]; if (!entry) return null;
+  const g = (entry.games || []).find(x => x.id === leg.gameId); if (!g) return null;
+  // Identify the opposing outcome + point
+  let oppName, oppPoint;
+  if (leg.market === 'h2h') {
+    oppName = leg.outcome === g.home_team ? g.away_team : g.home_team;
+    oppPoint = null;
+  } else if (leg.market === 'spreads' || leg.market === 'alternate_spreads') {
+    oppName = leg.outcome === g.home_team ? g.away_team : g.home_team;
+    oppPoint = leg.point != null ? -leg.point : null;
+  } else if (leg.market === 'totals' || leg.market === 'alternate_totals') {
+    oppName = leg.outcome === 'Over' ? 'Under' : 'Over';
+    oppPoint = leg.point;
+  } else return null;
+  const best = bestOddsForOutcome(g, leg.market, oppName, oppPoint);
+  if (!best) return null;
+  return { ...best, oppName, oppPoint };
+}
+// Compute hedge stake + outcomes given original bet, hedge price.
+// Break-even hedge: H = (origStake × origDec) / hedgeDec  → equal profit either way
+function calcHedge(origStake, origDec, hedgeDec) {
+  const breakeven = (origStake * origDec) / hedgeDec;
+  const profitEven = (origStake * origDec) - origStake - breakeven; // same both sides
+  return { breakeven, profitEven };
+}
+// For an open bet, return hedge opportunity if opposing side meets threshold
+function hedgeForBet(bet) {
+  if (bet.status !== 'pending') return null;
+  if (!bet.legs || bet.legs.length !== 1) return null; // singles only
+  const leg = bet.legs[0];
+  const opp = findOpposingPrice(leg); if (!opp) return null;
+  if (opp.american < HEDGE_THRESHOLD_AMERICAN) return null;
+  const origDec = americanToDecimal(leg.american);
+  const hedgeDec = americanToDecimal(opp.american);
+  const { breakeven, profitEven } = calcHedge(bet.stake, origDec, hedgeDec);
+  return {
+    oppName: opp.oppName, oppAmerican: opp.american, oppBook: opp.book, oppPoint: opp.oppPoint,
+    hedgeStakeBreakeven: breakeven, lockedProfit: profitEven,
+    leg, hedgeDec, origDec,
+    // Pre-built slip leg for one-tap hedging
+    hedgeLeg: {
+      gameId: leg.gameId, sportKey: leg.sportKey, sportTitle: leg.sportTitle,
+      home: leg.home, away: leg.away, start: leg.start,
+      market: leg.market, outcome: opp.oppName, point: opp.oppPoint,
+      american: opp.american, decimal: hedgeDec, book: opp.book,
+      label: `${opp.oppName} (hedge)`,
+    },
+  };
+}
+
 /* refresh */
 async function refreshLines(force = false) {
   if (isDemoMode()) {
@@ -5052,6 +5107,18 @@ function renderOpenBets() {
   c.innerHTML = stuckBanner + _groupAndRenderBets(open, _bucketForOpenBet, sortByEarliestStart);
   c.querySelectorAll('[data-manual-settle]').forEach(b => b.addEventListener('click', () => manualSettle(b.dataset.manualSettle, b.dataset.result)));
   c.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => cancelBet(b.dataset.cancel)));
+  c.querySelectorAll('[data-hedge-bet-id]').forEach(btn => btn.addEventListener('click', () => {
+    const bet = (P()?.bets || []).find(x => x.id === btn.dataset.hedgeBetId);
+    if (!bet) return;
+    const h = hedgeForBet(bet);
+    if (!h) { toast('Hedge no longer available — line moved'); return renderOpenBets(); }
+    state.slip = [h.hedgeLeg];
+    const si = document.getElementById('stake-input'); if (si) si.value = h.hedgeStakeBreakeven.toFixed(2);
+    state.stakeMode = 'wager'; save('psb.stakeMode', state.stakeMode);
+    renderSlip(); renderParlay();
+    switchTab('lines');
+    toast(`Hedge loaded: ${fmt$(h.hedgeStakeBreakeven)} on ${h.hedgeLeg.outcome} locks ${fmt$(h.lockedProfit)} guaranteed`);
+  }));
   const bv = document.getElementById('bulk-void-stuck');
   if (bv) bv.addEventListener('click', () => {
     const stuckIds = open.filter(b => {
@@ -5155,6 +5222,18 @@ function renderBetCard(b) {
     </div>` : '';
   const reasonChip = b.reason ? `<div class="mt-2 text-[11px] text-ink-300 italic"><span class="text-ink-400">Why:</span> ${escapeHtml(b.reason)}</div>` : '';
   const retroChip = b.retrospective ? `<div class="mt-2 text-[11px] px-2 py-1.5 rounded-lg bg-ink-800 border border-ink-700 leading-snug"><span class="text-violet-500 font-bold">AI retro:</span> <span class="text-ink-200">${escapeHtml(b.retrospective)}</span></div>` : '';
+  // Hedge alert — opposing side has drifted to +200 or better, suggest a lock-in
+  const hedge = hedgeForBet(b);
+  const hedgeChip = hedge ? `<div class="mt-2 px-3 py-2.5 rounded-xl bg-gradient-to-br from-gold-500/15 to-warn-500/10 border border-gold-500/40 text-xs leading-snug">
+    <div class="flex items-center gap-2 mb-1.5">
+      <span class="text-base">🛡️</span>
+      <span class="text-gold-500 font-bold uppercase tracking-wider text-[10px]">Hedge available · ${fmtAmerican(hedge.oppAmerican)} at ${escapeHtml(hedge.oppBook)}</span>
+    </div>
+    <div class="text-ink-200 mb-2">
+      The opposing side (<strong>${escapeHtml(hedge.oppName)}${hedge.oppPoint != null ? ' ' + (hedge.oppPoint > 0 ? '+' : '') + hedge.oppPoint : ''}</strong>) is paying <span class="num">${fmtAmerican(hedge.oppAmerican)}</span>. Stake <span class="num font-bold">${fmt$(hedge.hedgeStakeBreakeven)}</span> to lock in <span class="num font-bold text-neon-500">${fmt$(hedge.lockedProfit)}</span> guaranteed (regardless of outcome).
+    </div>
+    <button class="add-hedge text-[11px] bg-gold-500 hover:brightness-110 text-ink-950 font-bold px-3 py-1.5 rounded-lg" data-hedge-bet-id="${b.id}">Add hedge to slip</button>
+  </div>` : '';
   return `<div class="bg-ink-900 border border-ink-700 rounded-2xl p-4">
     <div class="flex justify-between flex-wrap gap-2">
       <div>
@@ -5170,6 +5249,7 @@ function renderBetCard(b) {
     <ul class="mt-2">${legsHtml}</ul>
     ${reasonChip}
     ${retroChip}
+    ${hedgeChip}
     ${actions}
   </div>`;
 }
