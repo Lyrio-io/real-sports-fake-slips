@@ -11,7 +11,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   html, body { background: #faf8f3; color: #0a0a0a; font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-  body { min-height: 100vh; overflow-x: hidden; }
+  body { min-height: 100vh; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+  * { -webkit-tap-highlight-color: transparent; }
+  button { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  .mobile-nav { padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)); }
+  @media (min-width: 500px) { .mobile-nav { max-width: 390px; margin: 0 auto; left: 0; right: 0; } }
   .serif { font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif; letter-spacing: -0.02em; }
   .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
   .ink { color: #0a0a0a; }
@@ -270,8 +274,8 @@
 </div>
 
 <!-- Bottom nav -->
-<nav class="fixed bottom-0 left-0 right-0 bg-[#faf8f3] border-t-2 border-zinc-900" style="max-width:390px;margin:0 auto;">
-  <div class="grid grid-cols-5 px-2 pt-2 pb-5">
+<nav class="fixed bottom-0 left-0 right-0 bg-[#faf8f3] border-t-2 border-zinc-900 mobile-nav">
+  <div class="grid grid-cols-5 px-2 pt-2">
     <button class="flex flex-col items-center gap-0.5 ink">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg>
       <span class="text-[10px] mono uppercase">Lines</span>

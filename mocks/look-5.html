@@ -11,7 +11,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   html, body { background: #ffffff; color: #0a0a0a; font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.015em; }
-  body { min-height: 100vh; overflow-x: hidden; }
+  body { min-height: 100vh; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+  * { -webkit-tap-highlight-color: transparent; }
+  button { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  .mobile-nav { padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)); }
+  .mobile-slip { padding-bottom: 0; }
+  @media (min-width: 500px) {
+    .mobile-nav { max-width: 390px; margin: 0 auto; left: 0; right: 0; }
+    .mobile-slip { max-width: 390px; margin: 0 auto; left: 0; right: 0; }
+  }
   .num { font-variant-numeric: tabular-nums; }
   .card { background:#fff; border-radius:20px; box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.04); border:1px solid #f3f4f6; }
   .chip { background:#f3f4f6; color:#3f3f46; }
@@ -235,7 +243,7 @@
 </div>
 
 <!-- Slip bottom sheet preview -->
-<div class="fixed left-0 right-0 px-3" style="bottom:80px; max-width:390px; margin:0 auto;">
+<div class="fixed left-0 right-0 px-3 mobile-slip" style="bottom:80px;">
   <div class="card p-3 flex items-center justify-between" style="background:#0a0a0a; border:0;">
     <div class="flex items-center gap-3">
       <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-extrabold text-[14px]">2</div>
@@ -249,8 +257,8 @@
 </div>
 
 <!-- Bottom nav -->
-<nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-zinc-100" style="max-width:390px;margin:0 auto;">
-  <div class="grid grid-cols-5 px-2 pt-2 pb-5">
+<nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-zinc-100 mobile-nav">
+  <div class="grid grid-cols-5 px-2 pt-2">
     <button class="flex flex-col items-center gap-0.5 text-zinc-900">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg>
       <span class="text-[10px] font-extrabold">Lines</span>
