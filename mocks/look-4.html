@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#fcfcfc" />
+<title>Look 4 — Index · Real Sports Fake Slips</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { background: #fcfcfc; color: #111; font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.005em; }
+  body { min-height: 100vh; overflow-x: hidden; }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .hair { border-color: #e8e8e8; }
+  .hair-strong { border-color: #d4d4d4; }
+  .row { transition: background .12s; }
+  .row:hover { background: #f7f7f7; }
+  .row:active { background: #efefef; }
+  .yes { color: #047a4d; }
+  .no { color: #a83838; }
+  .micro-up { background:#d6f0e0; color:#047a4d; }
+  .micro-down { background:#f5d6d6; color:#a83838; }
+  .live-dot { background:#cf3a3a; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .pulse { animation: pulse 1.6s infinite; }
+  .bar { display:inline-block; width:3px; margin-right:1px; vertical-align: middle; background:#cbcbcb; }
+  .bar-up { background:#0a9a5c; }
+  .bar-down { background:#cf3a3a; }
+  @media (min-width: 500px) {
+    body { background:#ededed; display:flex; justify-content:center; padding:24px 0; }
+    .phone { width:390px; min-height:844px; background:#fcfcfc; box-shadow:0 20px 60px rgba(0,0,0,.15); border-radius:28px; overflow:hidden; position:relative; }
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+
+<!-- Header -->
+<header class="px-4 pt-4 pb-2 flex items-center justify-between border-b hair">
+  <div class="flex items-center gap-2">
+    <div class="w-6 h-6 bg-zinc-900 text-white flex items-center justify-center font-bold mono text-[11px]">R</div>
+    <div class="mono text-[12px] font-bold tracking-tight">RSFS<span class="text-zinc-400">/INDEX</span></div>
+  </div>
+  <div class="flex items-center gap-3">
+    <div class="text-right">
+      <div class="mono text-[9px] text-zinc-500 uppercase tracking-wider">BANKROLL</div>
+      <div class="mono text-[14px] font-bold leading-tight">$1,247.00</div>
+    </div>
+    <div class="w-7 h-7 rounded-full bg-zinc-100 flex items-center justify-center text-[10px] font-bold text-zinc-700">JS</div>
+  </div>
+</header>
+
+<!-- Filter bar -->
+<div class="px-4 py-2 flex items-center gap-3 text-[11px] mono border-b hair">
+  <div class="flex gap-1">
+    <button class="px-2 py-0.5 bg-zinc-900 text-white">ALL</button>
+    <button class="px-2 py-0.5 text-zinc-500 hover:text-zinc-900">NBA</button>
+    <button class="px-2 py-0.5 text-zinc-500 hover:text-zinc-900">NFL</button>
+    <button class="px-2 py-0.5 text-zinc-500 hover:text-zinc-900">MLB</button>
+    <button class="px-2 py-0.5 text-zinc-500 hover:text-zinc-900">NHL</button>
+  </div>
+  <div class="ml-auto text-zinc-400">5 games</div>
+</div>
+
+<!-- Column headers -->
+<div class="px-4 py-1.5 grid grid-cols-12 gap-2 text-[9px] mono uppercase tracking-wider text-zinc-500 border-b hair-strong">
+  <div class="col-span-5">Matchup</div>
+  <div class="col-span-2 text-right">Spread</div>
+  <div class="col-span-2 text-right">Total</div>
+  <div class="col-span-2 text-right">ML</div>
+  <div class="col-span-1 text-right">Δ</div>
+</div>
+
+<!-- LIVE section -->
+<div class="px-4 py-1 flex items-center gap-2 text-[10px] mono uppercase tracking-wider border-b hair bg-zinc-50">
+  <span class="live-dot pulse w-1.5 h-1.5 rounded-full"></span>
+  <span class="text-red-700 font-bold">LIVE</span>
+  <span class="text-zinc-400">·</span>
+  <span class="text-zinc-600">In progress</span>
+</div>
+
+<!-- Row: Lakers @ Celtics LIVE (two rows per matchup) -->
+<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
+  <div class="col-span-5 flex items-center gap-2">
+    <img src="https://a.espncdn.com/i/teamlogos/nba/500/lal.png" class="w-4 h-4" alt="LAL">
+    <span class="mono text-[12px] font-semibold">LAL</span>
+    <span class="mono text-[10px] text-zinc-400">14-8</span>
+    <span class="mono text-[13px] font-bold ml-auto">72</span>
+  </div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">-3.5</span> <span class="text-zinc-400 text-[10px]">-110</span></div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">o224.5</span></div>
+  <div class="col-span-2 text-right mono text-[12px] no font-bold">−180</div>
+  <div class="col-span-1 text-right"><span class="bar bar-up" style="height:6px"></span><span class="bar bar-up" style="height:8px"></span><span class="bar bar-up" style="height:5px"></span></div>
+</button>
+<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
+  <div class="col-span-5 flex items-center gap-2">
+    <img src="https://a.espncdn.com/i/teamlogos/nba/500/bos.png" class="w-4 h-4" alt="BOS">
+    <span class="mono text-[12px] font-semibold">BOS</span>
+    <span class="mono text-[10px] text-zinc-400">17-5</span>
+    <span class="mono text-[13px] font-bold text-zinc-400 ml-auto">68</span>
+  </div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">+3.5</span> <span class="text-zinc-400 text-[10px]">-110</span></div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">u224.5</span></div>
+  <div class="col-span-2 text-right mono text-[12px] yes font-bold">+155</div>
+  <div class="col-span-1 text-right"><span class="bar bar-down" style="height:5px"></span><span class="bar bar-down" style="height:7px"></span><span class="bar bar-down" style="height:4px"></span></div>
+</button>
+
+<!-- Meta row LIVE -->
+<div class="px-4 py-1 flex items-center justify-between text-[10px] mono text-zinc-500 border-b hair">
+  <span>NBA · Q3 8:42 · LAL@HOME</span>
+  <span class="text-red-700 font-bold">LIVE</span>
+</div>
+
+<!-- TONIGHT header -->
+<div class="px-4 py-1.5 text-[10px] mono uppercase tracking-wider text-zinc-500 border-b hair-strong bg-zinc-50">Tonight · 3 games</div>
+
+<!-- Row: Warriors @ Heat -->
+<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
+  <div class="col-span-5 flex items-center gap-2">
+    <img src="https://a.espncdn.com/i/teamlogos/nba/500/gs.png" class="w-4 h-4" alt="GSW">
+    <span class="mono text-[12px] font-semibold">GSW</span>
+    <span class="mono text-[10px] text-zinc-400">12-10</span>
+  </div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">-5.5</span> <span class="text-zinc-400 text-[10px]">-110</span></div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">o221.5</span></div>
+  <div class="col-span-2 text-right mono text-[12px] no font-bold">−240</div>
+  <div class="col-span-1 text-right"><span class="bar bar-down" style="height:4px"></span><span class="bar bar-down" style="height:6px"></span><span class="bar bar-up" style="height:5px"></span></div>
+</button>
+<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
+  <div class="col-span-5 flex items-center gap-2">
+    <img src="https://a.espncdn.com/i/teamlogos/nba/500/mia.png" class="w-4 h-4" alt="MIA">
+    <span class="mono text-[12px] font-semibold">MIA</span>
+    <span class="mono text-[10px] text-zinc-400">11-11</span>
+  </div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">+5.5</span> <span class="text-zinc-400 text-[10px]">-110</span></div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">u221.5</span></div>
+  <div class="col-span-2 text-right mono text-[12px] yes font-bold">+200</div>
+  <div class="col-span-1 text-right"><span class="bar bar-up" style="height:5px"></span><span class="bar bar-up" style="height:7px"></span><span class="bar bar-down" style="height:4px"></span></div>
+</button>
+<div class="px-4 py-1 flex items-center justify-between text-[10px] mono text-zinc-500 border-b hair">
+  <span>NBA · 10:00 PM ET · Chase</span>
+  <span class="text-zinc-400">Vol 1.2M</span>
+</div>
+
+<!-- TOMORROW header -->
+<div class="px-4 py-1.5 text-[10px] mono uppercase tracking-wider text-zinc-500 border-b hair-strong bg-zinc-50">Tomorrow · 2 games</div>
+
+<!-- Row: Yankees @ Red Sox -->
+<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
+  <div class="col-span-5 flex items-center gap-2">
+    <img src="https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png" class="w-4 h-4" alt="NYY">
+    <span class="mono text-[12px] font-semibold">NYY</span>
+    <span class="mono text-[10px] text-zinc-400">36-22</span>
+  </div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">-1.5</span> <span class="yes text-[10px]">+135</span></div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">o9.5</span></div>
+  <div class="col-span-2 text-right mono text-[12px] no font-bold">−150</div>
+  <div class="col-span-1 text-right"><span class="bar bar-up" style="height:6px"></span><span class="bar bar-up" style="height:5px"></span><span class="bar bar-up" style="height:8px"></span></div>
+</button>
+<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
+  <div class="col-span-5 flex items-center gap-2">
+    <img src="https://a.espncdn.com/i/teamlogos/mlb/500/bos.png" class="w-4 h-4" alt="BOS">
+    <span class="mono text-[12px] font-semibold">BOS</span>
+    <span class="mono text-[10px] text-zinc-400">31-28</span>
+  </div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">+1.5</span> <span class="no text-[10px]">−160</span></div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">u9.5</span></div>
+  <div class="col-span-2 text-right mono text-[12px] yes font-bold">+130</div>
+  <div class="col-span-1 text-right"><span class="bar bar-down" style="height:5px"></span><span class="bar bar-down" style="height:6px"></span><span class="bar bar-down" style="height:3px"></span></div>
+</button>
+<div class="px-4 py-1 flex items-center justify-between text-[10px] mono text-zinc-500 border-b hair">
+  <span>MLB · 7:05 PM · Yankee Stadium</span>
+  <span class="text-zinc-400">Vol 880K</span>
+</div>
+
+<!-- Row: Dodgers @ Padres -->
+<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
+  <div class="col-span-5 flex items-center gap-2">
+    <img src="https://a.espncdn.com/i/teamlogos/mlb/500/lad.png" class="w-4 h-4" alt="LAD">
+    <span class="mono text-[12px] font-semibold">LAD</span>
+    <span class="mono text-[10px] text-zinc-400">35-23</span>
+  </div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">-1.5</span> <span class="yes text-[10px]">+120</span></div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">o8.5</span></div>
+  <div class="col-span-2 text-right mono text-[12px] no font-bold">−165</div>
+  <div class="col-span-1 text-right"><span class="bar bar-up" style="height:5px"></span><span class="bar bar-up" style="height:4px"></span><span class="bar bar-up" style="height:7px"></span></div>
+</button>
+<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
+  <div class="col-span-5 flex items-center gap-2">
+    <img src="https://a.espncdn.com/i/teamlogos/mlb/500/sd.png" class="w-4 h-4" alt="SD">
+    <span class="mono text-[12px] font-semibold">SD</span>
+    <span class="mono text-[10px] text-zinc-400">29-30</span>
+  </div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">+1.5</span> <span class="no text-[10px]">−145</span></div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">u8.5</span></div>
+  <div class="col-span-2 text-right mono text-[12px] yes font-bold">+140</div>
+  <div class="col-span-1 text-right"><span class="bar bar-down" style="height:4px"></span><span class="bar bar-down" style="height:5px"></span><span class="bar bar-down" style="height:6px"></span></div>
+</button>
+<div class="px-4 py-1 flex items-center justify-between text-[10px] mono text-zinc-500 border-b hair">
+  <span>MLB · 10:10 PM · Petco Park</span>
+  <span class="text-zinc-400">Vol 540K</span>
+</div>
+
+<!-- THIS WEEK header -->
+<div class="px-4 py-1.5 text-[10px] mono uppercase tracking-wider text-zinc-500 border-b hair-strong bg-zinc-50">This Week</div>
+
+<!-- Row: Chiefs @ Bills -->
+<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
+  <div class="col-span-5 flex items-center gap-2">
+    <img src="https://a.espncdn.com/i/teamlogos/nfl/500/kc.png" class="w-4 h-4" alt="KC">
+    <span class="mono text-[12px] font-semibold">KC</span>
+    <span class="mono text-[10px] text-zinc-400">10-2</span>
+  </div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">+2.5</span> <span class="text-zinc-400 text-[10px]">-110</span></div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">o51.5</span></div>
+  <div class="col-span-2 text-right mono text-[12px] yes font-bold">+118</div>
+  <div class="col-span-1 text-right"><span class="bar bar-up" style="height:5px"></span><span class="bar bar-up" style="height:6px"></span><span class="bar bar-up" style="height:7px"></span></div>
+</button>
+<button class="w-full px-4 py-2 grid grid-cols-12 gap-2 items-center row border-b hair text-left">
+  <div class="col-span-5 flex items-center gap-2">
+    <img src="https://a.espncdn.com/i/teamlogos/nfl/500/buf.png" class="w-4 h-4" alt="BUF">
+    <span class="mono text-[12px] font-semibold">BUF</span>
+    <span class="mono text-[10px] text-zinc-400">9-3</span>
+  </div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">-2.5</span> <span class="text-zinc-400 text-[10px]">-110</span></div>
+  <div class="col-span-2 text-right mono text-[12px]"><span class="font-bold">u51.5</span></div>
+  <div class="col-span-2 text-right mono text-[12px] no font-bold">−140</div>
+  <div class="col-span-1 text-right"><span class="bar bar-down" style="height:5px"></span><span class="bar bar-down" style="height:6px"></span><span class="bar bar-down" style="height:4px"></span></div>
+</button>
+<div class="px-4 py-1 mb-24 flex items-center justify-between text-[10px] mono text-zinc-500 border-b hair">
+  <span>NFL · Sun 4:25 PM · Highmark</span>
+  <span class="text-zinc-400">Vol 4.2M</span>
+</div>
+
+<!-- Bottom nav -->
+<nav class="fixed bottom-0 left-0 right-0 bg-white border-t hair-strong" style="max-width:390px;margin:0 auto;">
+  <div class="grid grid-cols-5 px-1 pt-1.5 pb-5">
+    <button class="flex flex-col items-center gap-0.5 text-zinc-900 mono">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg>
+      <span class="text-[9px] uppercase tracking-wider font-bold">LINES</span>
+    </button>
+    <button class="flex flex-col items-center gap-0.5 text-zinc-400 mono">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span class="text-[9px] uppercase tracking-wider font-bold">PARLAY</span>
+    </button>
+    <button class="flex flex-col items-center gap-0.5 text-zinc-400 mono">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span class="text-[9px] uppercase tracking-wider font-bold">AI</span>
+    </button>
+    <button class="flex flex-col items-center gap-0.5 text-zinc-400 mono relative">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>
+      <span class="text-[9px] uppercase tracking-wider font-bold">SLIP</span>
+      <span class="absolute top-0 right-2 w-3.5 h-3.5 bg-zinc-900 text-white text-[8px] flex items-center justify-center font-bold">2</span>
+    </button>
+    <button class="flex flex-col items-center gap-0.5 text-zinc-400 mono">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      <span class="text-[9px] uppercase tracking-wider font-bold">MORE</span>
+    </button>
+  </div>
+</nav>
+
+</div>
+</body>
+</html>

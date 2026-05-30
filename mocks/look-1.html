@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#ffffff" />
+<title>Look 1 — Kalshi Sport · Real Sports Fake Slips</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html, body { background: #ffffff; color: #0a0a0a; font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { min-height: 100vh; overflow-x: hidden; }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  .ks-yes { background:#00b86b; color:#fff; }
+  .ks-yes:hover { background:#00a85f; }
+  .ks-no { background:#fff; color:#0a0a0a; border:1px solid #e5e7eb; }
+  .ks-no:hover { background:#f8f8f8; }
+  .pill { background:#f4f4f5; color:#52525b; }
+  .pill-active { background:#0a0a0a; color:#fff; }
+  .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; }
+  .live-dot { background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.15); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+  .pulse { animation: pulse 1.5s infinite; }
+  .spark path { fill:none; stroke:#00b86b; stroke-width:1.5; }
+  .spark-down path { stroke:#ef4444; }
+  /* phone frame for desktop preview */
+  @media (min-width: 500px) {
+    body { background:#f5f5f5; display:flex; justify-content:center; padding:24px 0; }
+    .phone { width:390px; min-height:844px; background:#fff; box-shadow:0 20px 60px rgba(0,0,0,.12); border-radius:32px; overflow:hidden; position:relative; }
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+
+<!-- Top header -->
+<header class="px-5 pt-5 pb-3 flex items-center justify-between border-b border-zinc-100">
+  <div class="flex items-center gap-2">
+    <div class="w-7 h-7 rounded-lg bg-[#00b86b] flex items-center justify-center text-white font-bold text-sm">R</div>
+    <div>
+      <div class="text-[15px] font-bold leading-tight">Real Sports</div>
+      <div class="text-[10px] text-zinc-500 leading-tight">Fake Slips</div>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    <div class="px-3 py-1.5 rounded-full bg-zinc-50 border border-zinc-200 text-[13px] font-semibold num">$1,247</div>
+    <div class="w-9 h-9 rounded-full bg-zinc-200 flex items-center justify-center text-xs font-bold text-zinc-600">J</div>
+  </div>
+</header>
+
+<!-- Category chips -->
+<div class="px-5 pt-4 pb-3 flex gap-2 overflow-x-auto" style="scrollbar-width:none;">
+  <button class="pill-active px-3.5 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap">Trending</button>
+  <button class="pill px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap">NBA</button>
+  <button class="pill px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap">NFL</button>
+  <button class="pill px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap">MLB</button>
+  <button class="pill px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap">NHL</button>
+  <button class="pill px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap">Soccer</button>
+</div>
+
+<!-- Section: LIVE -->
+<div class="px-5 mt-2 mb-2 flex items-center gap-2">
+  <span class="live-dot pulse w-2 h-2 rounded-full"></span>
+  <span class="text-[12px] font-bold text-red-500 uppercase tracking-wider">Live</span>
+  <span class="text-[12px] text-zinc-400">1 game</span>
+</div>
+
+<!-- LIVE Game card: Lakers vs Celtics -->
+<div class="mx-5 mb-4 card p-4">
+  <div class="flex items-center justify-between mb-3">
+    <div class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">NBA · Q3 8:42</div>
+    <svg class="spark" width="50" height="18" viewBox="0 0 50 18"><path d="M0,12 L8,10 L16,13 L24,8 L32,9 L40,5 L50,6"/></svg>
+  </div>
+  <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center gap-2.5">
+      <img src="https://a.espncdn.com/i/teamlogos/nba/500/lal.png" class="w-9 h-9" alt="LAL">
+      <div>
+        <div class="text-[15px] font-bold leading-tight">Lakers</div>
+        <div class="text-[11px] text-zinc-500 leading-tight">14-8 · Home</div>
+      </div>
+    </div>
+    <div class="num text-[22px] font-bold">72</div>
+  </div>
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-2.5">
+      <img src="https://a.espncdn.com/i/teamlogos/nba/500/bos.png" class="w-9 h-9" alt="BOS">
+      <div>
+        <div class="text-[15px] font-bold leading-tight">Celtics</div>
+        <div class="text-[11px] text-zinc-500 leading-tight">17-5 · Away</div>
+      </div>
+    </div>
+    <div class="num text-[22px] font-bold text-zinc-400">68</div>
+  </div>
+  <!-- Spread row -->
+  <div class="grid grid-cols-3 gap-2 mb-2">
+    <div class="text-[10px] text-zinc-400 col-span-3 uppercase tracking-wider font-semibold">Spread · Total · Moneyline</div>
+  </div>
+  <div class="grid grid-cols-3 gap-2 mb-1.5">
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500 leading-tight">LAL</div>
+      <div class="text-[13px] font-bold num leading-tight">-3.5</div>
+      <div class="text-[10px] text-zinc-500 num leading-tight">-110</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500 leading-tight">Over</div>
+      <div class="text-[13px] font-bold num leading-tight">224.5</div>
+      <div class="text-[10px] text-zinc-500 num leading-tight">-108</div>
+    </button>
+    <button class="ks-yes rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-white/80 leading-tight">LAL</div>
+      <div class="text-[13px] font-bold num leading-tight">-180</div>
+      <div class="text-[10px] text-white/80 num leading-tight">ML</div>
+    </button>
+  </div>
+  <div class="grid grid-cols-3 gap-2">
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500 leading-tight">BOS</div>
+      <div class="text-[13px] font-bold num leading-tight">+3.5</div>
+      <div class="text-[10px] text-zinc-500 num leading-tight">-110</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500 leading-tight">Under</div>
+      <div class="text-[13px] font-bold num leading-tight">224.5</div>
+      <div class="text-[10px] text-zinc-500 num leading-tight">-112</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500 leading-tight">BOS</div>
+      <div class="text-[13px] font-bold num leading-tight">+155</div>
+      <div class="text-[10px] text-zinc-500 num leading-tight">ML</div>
+    </button>
+  </div>
+</div>
+
+<!-- Section: TONIGHT -->
+<div class="px-5 mt-3 mb-2">
+  <div class="text-[12px] font-bold text-zinc-900 uppercase tracking-wider">Tonight</div>
+</div>
+
+<!-- Game: Warriors vs Heat -->
+<div class="mx-5 mb-3 card p-4">
+  <div class="flex items-center justify-between mb-3">
+    <div class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">NBA · 10:00 PM ET</div>
+    <svg class="spark spark-down" width="50" height="18" viewBox="0 0 50 18"><path d="M0,5 L8,6 L16,4 L24,9 L32,8 L40,11 L50,13"/></svg>
+  </div>
+  <div class="flex items-center justify-between mb-2">
+    <div class="flex items-center gap-2.5">
+      <img src="https://a.espncdn.com/i/teamlogos/nba/500/gs.png" class="w-9 h-9" alt="GSW">
+      <div class="text-[15px] font-bold leading-tight">Warriors</div>
+    </div>
+    <div class="text-[11px] text-zinc-400 num">12-10</div>
+  </div>
+  <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center gap-2.5">
+      <img src="https://a.espncdn.com/i/teamlogos/nba/500/mia.png" class="w-9 h-9" alt="MIA">
+      <div class="text-[15px] font-bold leading-tight">Heat</div>
+    </div>
+    <div class="text-[11px] text-zinc-400 num">11-11</div>
+  </div>
+  <div class="grid grid-cols-3 gap-2 mb-1.5">
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">GSW</div>
+      <div class="text-[13px] font-bold num">-5.5</div>
+      <div class="text-[10px] text-zinc-500 num">-110</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">Over</div>
+      <div class="text-[13px] font-bold num">221.5</div>
+      <div class="text-[10px] text-zinc-500 num">-110</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">GSW</div>
+      <div class="text-[13px] font-bold num">-240</div>
+      <div class="text-[10px] text-zinc-500 num">ML</div>
+    </button>
+  </div>
+  <div class="grid grid-cols-3 gap-2">
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">MIA</div>
+      <div class="text-[13px] font-bold num">+5.5</div>
+      <div class="text-[10px] text-zinc-500 num">-110</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">Under</div>
+      <div class="text-[13px] font-bold num">221.5</div>
+      <div class="text-[10px] text-zinc-500 num">-110</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">MIA</div>
+      <div class="text-[13px] font-bold num">+200</div>
+      <div class="text-[10px] text-zinc-500 num">ML</div>
+    </button>
+  </div>
+</div>
+
+<!-- Section: TOMORROW -->
+<div class="px-5 mt-4 mb-2">
+  <div class="text-[12px] font-bold text-zinc-900 uppercase tracking-wider">Tomorrow</div>
+</div>
+
+<!-- Compact card: Yankees vs Red Sox -->
+<div class="mx-5 mb-3 card p-4">
+  <div class="flex items-center justify-between mb-2">
+    <div class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">MLB · 7:05 PM ET</div>
+    <svg class="spark" width="50" height="18" viewBox="0 0 50 18"><path d="M0,10 L8,11 L16,8 L24,9 L32,6 L40,7 L50,4"/></svg>
+  </div>
+  <div class="flex items-center justify-between mb-2">
+    <div class="flex items-center gap-2.5">
+      <img src="https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png" class="w-9 h-9" alt="NYY">
+      <div class="text-[15px] font-bold">Yankees</div>
+    </div>
+    <div class="text-[11px] text-zinc-400 num">36-22</div>
+  </div>
+  <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center gap-2.5">
+      <img src="https://a.espncdn.com/i/teamlogos/mlb/500/bos.png" class="w-9 h-9" alt="BOS">
+      <div class="text-[15px] font-bold">Red Sox</div>
+    </div>
+    <div class="text-[11px] text-zinc-400 num">31-28</div>
+  </div>
+  <div class="grid grid-cols-3 gap-2 mb-1.5">
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">NYY</div>
+      <div class="text-[13px] font-bold num">-1.5</div>
+      <div class="text-[10px] text-zinc-500 num">+135</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">Over</div>
+      <div class="text-[13px] font-bold num">9.5</div>
+      <div class="text-[10px] text-zinc-500 num">-115</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">NYY</div>
+      <div class="text-[13px] font-bold num">-150</div>
+      <div class="text-[10px] text-zinc-500 num">ML</div>
+    </button>
+  </div>
+  <div class="grid grid-cols-3 gap-2">
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">BOS</div>
+      <div class="text-[13px] font-bold num">+1.5</div>
+      <div class="text-[10px] text-zinc-500 num">-160</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">Under</div>
+      <div class="text-[13px] font-bold num">9.5</div>
+      <div class="text-[10px] text-zinc-500 num">-105</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">BOS</div>
+      <div class="text-[13px] font-bold num">+130</div>
+      <div class="text-[10px] text-zinc-500 num">ML</div>
+    </button>
+  </div>
+</div>
+
+<!-- Featured card: Chiefs vs Bills Sunday -->
+<div class="px-5 mt-4 mb-2">
+  <div class="text-[12px] font-bold text-zinc-900 uppercase tracking-wider">This Week</div>
+</div>
+<div class="mx-5 mb-24 card p-4 bg-gradient-to-br from-emerald-50 to-white border-emerald-200">
+  <div class="flex items-center justify-between mb-3">
+    <div class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">⭐ Featured · NFL Sunday 4:25 PM</div>
+  </div>
+  <div class="flex items-center justify-between mb-2">
+    <div class="flex items-center gap-2.5">
+      <img src="https://a.espncdn.com/i/teamlogos/nfl/500/kc.png" class="w-10 h-10" alt="KC">
+      <div>
+        <div class="text-[16px] font-bold leading-tight">Chiefs</div>
+        <div class="text-[11px] text-zinc-500 num leading-tight">10-2</div>
+      </div>
+    </div>
+  </div>
+  <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center gap-2.5">
+      <img src="https://a.espncdn.com/i/teamlogos/nfl/500/buf.png" class="w-10 h-10" alt="BUF">
+      <div>
+        <div class="text-[16px] font-bold leading-tight">Bills</div>
+        <div class="text-[11px] text-zinc-500 num leading-tight">9-3</div>
+      </div>
+    </div>
+  </div>
+  <div class="grid grid-cols-3 gap-2 mb-1.5">
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">KC</div>
+      <div class="text-[13px] font-bold num">+2.5</div>
+      <div class="text-[10px] text-zinc-500 num">-110</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">Over</div>
+      <div class="text-[13px] font-bold num">51.5</div>
+      <div class="text-[10px] text-zinc-500 num">-110</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">KC</div>
+      <div class="text-[13px] font-bold num">+118</div>
+      <div class="text-[10px] text-zinc-500 num">ML</div>
+    </button>
+  </div>
+  <div class="grid grid-cols-3 gap-2">
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">BUF</div>
+      <div class="text-[13px] font-bold num">-2.5</div>
+      <div class="text-[10px] text-zinc-500 num">-110</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">Under</div>
+      <div class="text-[13px] font-bold num">51.5</div>
+      <div class="text-[10px] text-zinc-500 num">-110</div>
+    </button>
+    <button class="ks-no rounded-lg px-2 py-2 text-center">
+      <div class="text-[10px] text-zinc-500">BUF</div>
+      <div class="text-[13px] font-bold num">-140</div>
+      <div class="text-[10px] text-zinc-500 num">ML</div>
+    </button>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200" style="max-width:390px;margin:0 auto;">
+  <div class="grid grid-cols-5 px-2 pt-2 pb-5">
+    <button class="flex flex-col items-center gap-0.5 text-zinc-900">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg>
+      <span class="text-[10px] font-bold">Markets</span>
+    </button>
+    <button class="flex flex-col items-center gap-0.5 text-zinc-400">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span class="text-[10px] font-medium">Parlay</span>
+    </button>
+    <button class="flex flex-col items-center gap-0.5 text-zinc-400">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span class="text-[10px] font-medium">Analyst</span>
+    </button>
+    <button class="flex flex-col items-center gap-0.5 text-zinc-400 relative">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>
+      <span class="text-[10px] font-medium">Slip</span>
+      <span class="absolute top-0 right-3 w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center font-bold">2</span>
+    </button>
+    <button class="flex flex-col items-center gap-0.5 text-zinc-400">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      <span class="text-[10px] font-medium">More</span>
+    </button>
+  </div>
+</nav>
+
+</div>
+</body>
+</html>

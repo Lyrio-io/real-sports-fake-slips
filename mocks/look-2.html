@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#FAF8F3" />
+<title>Look 2 — Paper · Real Sports Fake Slips</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  html, body { background: #faf8f3; color: #0a0a0a; font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { min-height: 100vh; overflow-x: hidden; }
+  .serif { font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif; letter-spacing: -0.02em; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .ink { color: #0a0a0a; }
+  .ink-soft { color: #4b4944; }
+  .ink-faded { color: #8a857d; }
+  .yes-fg { color: #1f5f3b; }
+  .no-fg { color: #8a2a2a; }
+  .hair { border-color: #1a1a1a; }
+  .hair-soft { border-color: #d6d2c7; }
+  .pill { border:1px solid #1a1a1a; }
+  .pill-active { background:#0a0a0a; color:#faf8f3; }
+  .logo-mono { filter: grayscale(1) contrast(1.1); opacity:.85; }
+  .rule { border-top: 1px solid #0a0a0a; }
+  .live-dot { background:#8a2a2a; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .pulse { animation: pulse 1.8s infinite; }
+  @media (min-width: 500px) {
+    body { background:#ebe7df; display:flex; justify-content:center; padding:24px 0; }
+    .phone { width:390px; min-height:844px; background:#faf8f3; box-shadow:0 20px 60px rgba(0,0,0,.18); border-radius:32px; overflow:hidden; position:relative; }
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+
+<!-- Masthead -->
+<header class="px-5 pt-6 pb-3">
+  <div class="flex items-end justify-between rule pt-3 border-t border-zinc-900" style="border-top-width:2px;">
+    <div>
+      <div class="text-[10px] mono ink-faded uppercase tracking-[0.2em]">Edition · Sat 30 May</div>
+      <div class="serif text-[26px] font-bold ink leading-none mt-1">Real Sports.</div>
+      <div class="serif text-[26px] font-bold ink-soft leading-none italic">Fake Slips.</div>
+    </div>
+    <div class="text-right">
+      <div class="text-[10px] mono ink-faded uppercase tracking-[0.15em]">Bankroll</div>
+      <div class="mono text-[18px] font-bold ink">$1,247.00</div>
+    </div>
+  </div>
+</header>
+
+<!-- Section bar -->
+<div class="px-5 mt-1 mb-2 flex items-center gap-3 overflow-x-auto" style="scrollbar-width:none;">
+  <button class="pill-active px-3 py-1 text-[11px] mono uppercase tracking-wider whitespace-nowrap">All</button>
+  <button class="pill px-3 py-1 text-[11px] mono uppercase tracking-wider whitespace-nowrap">NBA</button>
+  <button class="pill px-3 py-1 text-[11px] mono uppercase tracking-wider whitespace-nowrap">NFL</button>
+  <button class="pill px-3 py-1 text-[11px] mono uppercase tracking-wider whitespace-nowrap">MLB</button>
+  <button class="pill px-3 py-1 text-[11px] mono uppercase tracking-wider whitespace-nowrap">NHL</button>
+  <button class="pill px-3 py-1 text-[11px] mono uppercase tracking-wider whitespace-nowrap">Soccer</button>
+</div>
+
+<!-- Section header -->
+<div class="px-5 mt-4 pb-1 flex items-center justify-between border-b hair-soft">
+  <div class="flex items-center gap-2">
+    <span class="live-dot pulse w-1.5 h-1.5 rounded-full"></span>
+    <span class="serif italic text-[15px] ink font-semibold">In Progress</span>
+  </div>
+  <span class="mono text-[10px] ink-faded uppercase tracking-wider">1 game</span>
+</div>
+
+<!-- Game 1 LIVE -->
+<div class="px-5 py-4 border-b hair-soft">
+  <div class="flex items-center justify-between mb-3">
+    <div class="mono text-[10px] ink-faded uppercase tracking-wider">NBA · Q3 · 8:42 left</div>
+    <div class="mono text-[10px] ink-faded uppercase tracking-wider">Crypto.com Arena</div>
+  </div>
+  <div class="flex items-center justify-between mb-1">
+    <div class="flex items-center gap-3">
+      <img src="https://a.espncdn.com/i/teamlogos/nba/500/lal.png" class="w-8 h-8 logo-mono" alt="LAL">
+      <div>
+        <div class="serif text-[18px] font-bold ink leading-tight">Los Angeles Lakers</div>
+        <div class="mono text-[10px] ink-faded">14·8</div>
+      </div>
+    </div>
+    <div class="mono text-[26px] font-bold ink">72</div>
+  </div>
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-3">
+      <img src="https://a.espncdn.com/i/teamlogos/nba/500/bos.png" class="w-8 h-8 logo-mono" alt="BOS">
+      <div>
+        <div class="serif text-[18px] font-bold ink leading-tight">Boston Celtics</div>
+        <div class="mono text-[10px] ink-faded">17·5</div>
+      </div>
+    </div>
+    <div class="mono text-[26px] font-bold ink-soft">68</div>
+  </div>
+  <div class="grid grid-cols-3 gap-x-3 gap-y-1 text-left">
+    <div class="border-t hair pt-1.5">
+      <div class="mono text-[9px] ink-faded uppercase tracking-wider mb-0.5">Spread</div>
+      <button class="block w-full text-left mb-0.5">
+        <span class="mono text-[12px] ink">LAL</span>
+        <span class="mono text-[13px] font-bold ink ml-1">-3.5</span>
+        <span class="mono text-[10px] ink-faded ml-1">-110</span>
+      </button>
+      <button class="block w-full text-left">
+        <span class="mono text-[12px] ink">BOS</span>
+        <span class="mono text-[13px] font-bold ink ml-1">+3.5</span>
+        <span class="mono text-[10px] ink-faded ml-1">-110</span>
+      </button>
+    </div>
+    <div class="border-t hair pt-1.5">
+      <div class="mono text-[9px] ink-faded uppercase tracking-wider mb-0.5">Total</div>
+      <button class="block w-full text-left mb-0.5">
+        <span class="mono text-[12px] ink">O</span>
+        <span class="mono text-[13px] font-bold ink ml-1">224.5</span>
+        <span class="mono text-[10px] ink-faded ml-1">-108</span>
+      </button>
+      <button class="block w-full text-left">
+        <span class="mono text-[12px] ink">U</span>
+        <span class="mono text-[13px] font-bold ink ml-1">224.5</span>
+        <span class="mono text-[10px] ink-faded ml-1">-112</span>
+      </button>
+    </div>
+    <div class="border-t hair pt-1.5">
+      <div class="mono text-[9px] ink-faded uppercase tracking-wider mb-0.5">Moneyline</div>
+      <button class="block w-full text-left mb-0.5">
+        <span class="mono text-[12px] ink">LAL</span>
+        <span class="mono text-[13px] font-bold no-fg ml-1">−180</span>
+      </button>
+      <button class="block w-full text-left">
+        <span class="mono text-[12px] ink">BOS</span>
+        <span class="mono text-[13px] font-bold yes-fg ml-1">+155</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Section: Tonight -->
+<div class="px-5 mt-1 pt-3 pb-1 flex items-center justify-between border-b hair-soft">
+  <div class="serif italic text-[15px] ink font-semibold">Tonight</div>
+  <span class="mono text-[10px] ink-faded uppercase tracking-wider">3 games</span>
+</div>
+
+<!-- Game 2 -->
+<div class="px-5 py-4 border-b hair-soft">
+  <div class="flex items-center justify-between mb-3">
+    <div class="mono text-[10px] ink-faded uppercase tracking-wider">NBA · 10:00 PM ET</div>
+    <div class="mono text-[10px] ink-faded uppercase tracking-wider">Chase Center</div>
+  </div>
+  <div class="flex items-center justify-between mb-1">
+    <div class="flex items-center gap-3">
+      <img src="https://a.espncdn.com/i/teamlogos/nba/500/gs.png" class="w-8 h-8 logo-mono" alt="GSW">
+      <div class="serif text-[16px] font-bold ink">Golden State Warriors</div>
+    </div>
+    <div class="mono text-[11px] ink-faded">12·10</div>
+  </div>
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-3">
+      <img src="https://a.espncdn.com/i/teamlogos/nba/500/mia.png" class="w-8 h-8 logo-mono" alt="MIA">
+      <div class="serif text-[16px] font-bold ink">Miami Heat</div>
+    </div>
+    <div class="mono text-[11px] ink-faded">11·11</div>
+  </div>
+  <div class="grid grid-cols-3 gap-x-3 gap-y-1">
+    <div class="border-t hair pt-1.5">
+      <div class="mono text-[9px] ink-faded uppercase tracking-wider mb-0.5">Spread</div>
+      <div class="mono text-[12px] ink">GSW <span class="font-bold">-5.5</span> <span class="ink-faded">-110</span></div>
+      <div class="mono text-[12px] ink">MIA <span class="font-bold">+5.5</span> <span class="ink-faded">-110</span></div>
+    </div>
+    <div class="border-t hair pt-1.5">
+      <div class="mono text-[9px] ink-faded uppercase tracking-wider mb-0.5">Total</div>
+      <div class="mono text-[12px] ink">O <span class="font-bold">221.5</span> <span class="ink-faded">-110</span></div>
+      <div class="mono text-[12px] ink">U <span class="font-bold">221.5</span> <span class="ink-faded">-110</span></div>
+    </div>
+    <div class="border-t hair pt-1.5">
+      <div class="mono text-[9px] ink-faded uppercase tracking-wider mb-0.5">Moneyline</div>
+      <div class="mono text-[12px] ink">GSW <span class="font-bold no-fg">−240</span></div>
+      <div class="mono text-[12px] ink">MIA <span class="font-bold yes-fg">+200</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Section: Tomorrow -->
+<div class="px-5 mt-1 pt-3 pb-1 flex items-center justify-between border-b hair-soft">
+  <div class="serif italic text-[15px] ink font-semibold">Tomorrow</div>
+  <span class="mono text-[10px] ink-faded uppercase tracking-wider">2 games</span>
+</div>
+
+<!-- Game 3 -->
+<div class="px-5 py-4 border-b hair-soft">
+  <div class="flex items-center justify-between mb-3">
+    <div class="mono text-[10px] ink-faded uppercase tracking-wider">MLB · 7:05 PM ET</div>
+    <div class="mono text-[10px] ink-faded uppercase tracking-wider">Yankee Stadium</div>
+  </div>
+  <div class="flex items-center justify-between mb-1">
+    <div class="flex items-center gap-3">
+      <img src="https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png" class="w-8 h-8 logo-mono" alt="NYY">
+      <div class="serif text-[16px] font-bold ink">New York Yankees</div>
+    </div>
+    <div class="mono text-[11px] ink-faded">36·22</div>
+  </div>
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-3">
+      <img src="https://a.espncdn.com/i/teamlogos/mlb/500/bos.png" class="w-8 h-8 logo-mono" alt="BOS">
+      <div class="serif text-[16px] font-bold ink">Boston Red Sox</div>
+    </div>
+    <div class="mono text-[11px] ink-faded">31·28</div>
+  </div>
+  <div class="grid grid-cols-3 gap-x-3 gap-y-1">
+    <div class="border-t hair pt-1.5">
+      <div class="mono text-[9px] ink-faded uppercase tracking-wider mb-0.5">Run Line</div>
+      <div class="mono text-[12px] ink">NYY <span class="font-bold">-1.5</span> <span class="yes-fg">+135</span></div>
+      <div class="mono text-[12px] ink">BOS <span class="font-bold">+1.5</span> <span class="no-fg">−160</span></div>
+    </div>
+    <div class="border-t hair pt-1.5">
+      <div class="mono text-[9px] ink-faded uppercase tracking-wider mb-0.5">Total</div>
+      <div class="mono text-[12px] ink">O <span class="font-bold">9.5</span> <span class="ink-faded">-115</span></div>
+      <div class="mono text-[12px] ink">U <span class="font-bold">9.5</span> <span class="ink-faded">-105</span></div>
+    </div>
+    <div class="border-t hair pt-1.5">
+      <div class="mono text-[9px] ink-faded uppercase tracking-wider mb-0.5">Moneyline</div>
+      <div class="mono text-[12px] ink">NYY <span class="font-bold no-fg">−150</span></div>
+      <div class="mono text-[12px] ink">BOS <span class="font-bold yes-fg">+130</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Feature: This Week -->
+<div class="px-5 mt-1 pt-3 pb-2 border-b hair-soft">
+  <div class="serif italic text-[15px] ink font-semibold">This Week's Feature</div>
+</div>
+<div class="px-5 py-5 mb-24">
+  <div class="mono text-[10px] ink-faded uppercase tracking-[0.2em] mb-1">★ NFL · Sunday 4:25 PM</div>
+  <div class="serif text-[22px] font-bold ink leading-tight">Chiefs at Bills.</div>
+  <div class="serif italic ink-soft text-[15px] mb-3">A rematch in Buffalo.</div>
+  <div class="flex items-center justify-between mb-1">
+    <div class="flex items-center gap-3">
+      <img src="https://a.espncdn.com/i/teamlogos/nfl/500/kc.png" class="w-9 h-9 logo-mono" alt="KC">
+      <div class="serif text-[17px] font-bold ink">Kansas City Chiefs</div>
+    </div>
+    <div class="mono text-[11px] ink-faded">10·2</div>
+  </div>
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-3">
+      <img src="https://a.espncdn.com/i/teamlogos/nfl/500/buf.png" class="w-9 h-9 logo-mono" alt="BUF">
+      <div class="serif text-[17px] font-bold ink">Buffalo Bills</div>
+    </div>
+    <div class="mono text-[11px] ink-faded">9·3</div>
+  </div>
+  <div class="grid grid-cols-3 gap-x-3 gap-y-1">
+    <div class="border-t hair pt-1.5">
+      <div class="mono text-[9px] ink-faded uppercase tracking-wider mb-0.5">Spread</div>
+      <div class="mono text-[12px] ink">KC <span class="font-bold">+2.5</span> <span class="ink-faded">-110</span></div>
+      <div class="mono text-[12px] ink">BUF <span class="font-bold">-2.5</span> <span class="ink-faded">-110</span></div>
+    </div>
+    <div class="border-t hair pt-1.5">
+      <div class="mono text-[9px] ink-faded uppercase tracking-wider mb-0.5">Total</div>
+      <div class="mono text-[12px] ink">O <span class="font-bold">51.5</span> <span class="ink-faded">-110</span></div>
+      <div class="mono text-[12px] ink">U <span class="font-bold">51.5</span> <span class="ink-faded">-110</span></div>
+    </div>
+    <div class="border-t hair pt-1.5">
+      <div class="mono text-[9px] ink-faded uppercase tracking-wider mb-0.5">Moneyline</div>
+      <div class="mono text-[12px] ink">KC <span class="font-bold yes-fg">+118</span></div>
+      <div class="mono text-[12px] ink">BUF <span class="font-bold no-fg">−140</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="fixed bottom-0 left-0 right-0 bg-[#faf8f3] border-t-2 border-zinc-900" style="max-width:390px;margin:0 auto;">
+  <div class="grid grid-cols-5 px-2 pt-2 pb-5">
+    <button class="flex flex-col items-center gap-0.5 ink">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg>
+      <span class="text-[10px] mono uppercase">Lines</span>
+    </button>
+    <button class="flex flex-col items-center gap-0.5 ink-faded">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span class="text-[10px] mono uppercase">Parlay</span>
+    </button>
+    <button class="flex flex-col items-center gap-0.5 ink-faded">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span class="text-[10px] mono uppercase">Analyst</span>
+    </button>
+    <button class="flex flex-col items-center gap-0.5 ink-faded">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>
+      <span class="text-[10px] mono uppercase">Slip</span>
+    </button>
+    <button class="flex flex-col items-center gap-0.5 ink-faded">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      <span class="text-[10px] mono uppercase">More</span>
+    </button>
+  </div>
+</nav>
+
+</div>
+</body>
+</html>
