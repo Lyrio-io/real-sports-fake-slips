@@ -1031,7 +1031,8 @@
   @keyframes hrPulse { from { transform: scale(1); } to { transform: scale(1.05); box-shadow: 0 0 20px rgba(245,158,11,0.8); } }
   /* Per-period score breakdown (NBA Q1-Q4, MLB innings, NHL P1-P3) */
   .gc-linescore { padding: 8px 18px 12px; }
-  .gc-linescore-table { display: grid; gap: 4px 6px; align-items: center; font-family: ui-monospace, "SF Mono", monospace; font-variant-numeric: tabular-nums; font-size: 11px; }
+  .ls-group-label { font-size: 10px; color: #71717a; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; padding-left: 36px; }
+  .gc-linescore-table { display: grid; gap: 4px 4px; align-items: center; font-family: ui-monospace, "SF Mono", monospace; font-variant-numeric: tabular-nums; font-size: 11px; }
   .gc-linescore-table .ls-h { font-size: 9px; color: #71717a; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 0; border-bottom: 1px solid #e4e4e7; }
   .gc-linescore-table .ls-h.now { color: #b91c1c; background: #fef2f2; border-bottom-color: #fecaca; border-radius: 4px 4px 0 0; }
   .gc-linescore-table .ls-team { font-size: 10px; font-weight: 800; color: #0a0a0a; padding: 3px 4px; }
@@ -3228,12 +3229,25 @@ function installOutsideClickClose() {
 }
 
 // Show the alt-picker modal for a given game + market (spreads or totals)
-function showAltPicker(gameId, sportKey, market) {
+async function showAltPicker(gameId, sportKey, market) {
   const cache = state.cache[sportKey];
   const game = cache?.games.find(x => x.id === gameId);
   if (!game) return;
-  const altData = state.eventCache[`${sportKey}:${gameId}:alt`]?.data;
-  if (!altData) { toast('No alt lines available'); return; }
+  let altData = state.eventCache[`${sportKey}:${gameId}:alt`]?.data;
+  // Lazy-fetch alt lines on first open instead of refusing to show the picker
+  if (!altData) {
+    toast('Fetching alt lines…');
+    try {
+      const data = await apiEventOdds(sportKey, gameId, 'alternate_spreads,alternate_totals');
+      state.eventCache[`${sportKey}:${gameId}:alt`] = { fetchedAt: nowISO(), data };
+      save(LS.EVENT_CACHE, state.eventCache);
+      altData = data;
+    } catch (e) {
+      console.error('alt fetch failed', e);
+      toast('Alt lines unavailable for this game');
+      return;
+    }
+  }
   const home = game.home_team, away = game.away_team;
 
   // Get all available points
@@ -3839,17 +3853,16 @@ function renderGameCard(g, sportKey, marketFilter) {
         const linePt = odds ? odds.point : (isHome ? spreadPoint : -spreadPoint);
         const payload = odds ? { gameId: g.id, sportKey, sportTitle, home, away, start: g.commence_time, market: 'spreads', outcome: teamName, point: odds.point, american: odds.american, decimal: odds.decimal, book: odds.book, label: spreadDisplay(odds, linePt) } : null;
         const display = spreadDisplay(odds, linePt);
-        cells.push(cellHtml(payload, display, !!altDataLocal, `${g.id}|${sportKey}|spreads`));
+        // Spread cells ALWAYS open the alt-picker (lazy-fetches alt data on first tap)
+        cells.push(cellHtml(payload, display, true, `${g.id}|${sportKey}|spreads`));
       } else if (c.key === 'total') {
-        const side = isHome ? 'Over' : 'Under'; // Convention: away row = Under (matches Underdog visual)
-        // Actually let's match Underdog: away team row shows OVER, home row shows UNDER (or maybe other way).
-        // From the screenshot: row 1 = Athletics shows "↑ 9.5" = Over. row 2 = Orioles shows "↓ 9.5" = Under.
-        // So AWAY = Over, HOME = Under.
+        // From the screenshot: away team row shows OVER, home row shows UNDER.
         const sideForRow = isHome ? 'Under' : 'Over';
         const odds = isHome ? activeUnder : activeOver;
         const display = totalDisplay(sideForRow, activeTotal);
         const payload = odds ? { gameId: g.id, sportKey, sportTitle, home, away, start: g.commence_time, market: 'totals', outcome: sideForRow, point: odds.point, american: odds.american, decimal: odds.decimal, book: odds.book, label: `${sideForRow.charAt(0)} ${odds.point}` } : null;
-        cells.push(cellHtml(payload, display, !!altDataLocal, `${g.id}|${sportKey}|totals`));
+        // Total cells ALWAYS open the alt-picker (lazy-fetches alt data on first tap)
+        cells.push(cellHtml(payload, display, true, `${g.id}|${sportKey}|totals`));
       } else if (c.key === 'winner') {
         const odds = isHome ? h2hHome : h2hAway;
         const payload = odds ? { gameId: g.id, sportKey, sportTitle, home, away, start: g.commence_time, market: 'h2h', outcome: teamName, point: null, american: odds.american, decimal: odds.decimal, book: odds.book, label: 'ML' } : null;
@@ -5430,11 +5443,13 @@ async function populateLiveStates() {
     const maxPeriods = sk === 'baseball_mlb' ? 9 : sk === 'icehockey_nhl' ? 3 : 4;
     const numPeriods = Math.max(awayLs.length, homeLs.length, currentPeriod, sk === 'baseball_mlb' ? 9 : 4);
     const showPeriods = Math.min(numPeriods, sk === 'baseball_mlb' ? 9 : 4);
-    const periodLabel = sk === 'baseball_mlb' ? 'I' : sk === 'icehockey_nhl' ? 'P' : 'Q';
+    // Sport-specific labels: MLB shows just '1 2 3 ... 9' with 'INNINGS' header above; basketball/hockey keep Q1/P1.
+    const periodPrefix = sk === 'baseball_mlb' ? '' : sk === 'icehockey_nhl' ? 'P' : 'Q';
+    const groupHeader = sk === 'baseball_mlb' ? 'Innings' : sk === 'icehockey_nhl' ? 'Periods' : 'Quarters';
     const headerCells = [];
     for (let i = 1; i <= showPeriods; i++) {
       const isNow = state === 'in' && i === currentPeriod;
-      headerCells.push(`<div class="ls-h ${isNow ? 'now' : ''}">${periodLabel}${i}</div>`);
+      headerCells.push(`<div class="ls-h ${isNow ? 'now' : ''}">${periodPrefix}${i}</div>`);
     }
     function teamRow(teamName, ls, isWinner) {
       const vals = [];
@@ -5448,8 +5463,11 @@ async function populateLiveStates() {
     }
     const awayTotal = (awayLs || []).reduce((a, x) => a + (parseInt(x.value, 10) || 0), 0);
     const homeTotal = (homeLs || []).reduce((a, x) => a + (parseInt(x.value, 10) || 0), 0);
-    const gridCols = `48px ${'1fr '.repeat(showPeriods)}48px`;
-    slot.innerHTML = `<div class="gc-linescore"><div class="gc-linescore-table" style="grid-template-columns:${gridCols}">
+    // Tighter total column so it fits on narrow phones
+    const gridCols = `36px ${'minmax(0,1fr) '.repeat(showPeriods)}28px`;
+    slot.innerHTML = `<div class="gc-linescore">
+      <div class="ls-group-label">${groupHeader}</div>
+      <div class="gc-linescore-table" style="grid-template-columns:${gridCols}">
       <div></div>${headerCells.join('')}<div class="ls-h">T</div>
       ${teamRow(slot.dataset.away, awayLs, awayTotal >= homeTotal)}
       ${teamRow(slot.dataset.home, homeLs, homeTotal >= awayTotal)}
