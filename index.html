@@ -492,6 +492,18 @@
   .gc-team-score.empty { display: none; }
   /* Starting pitcher / matchup info row (MLB) */
   .gc-pitchers { padding: 0 18px 8px; }
+  /* NRFI / YRFI strip — 1st-inning total at 0.5 (most popular MLB prop) */
+  .gc-nrfi { padding: 0 18px 12px; }
+  .gc-nrfi-wrap { display: grid; grid-template-columns: auto 1fr 1fr; gap: 6px; align-items: center; }
+  .gc-nrfi-label { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; padding-right: 4px; }
+  .gc-nrfi-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; border-radius: 10px; background: #ffffff; border: 1px solid #e4e4e7; cursor: pointer; transition: border-color 140ms ease, transform 140ms ease; }
+  .gc-nrfi-btn:hover { border-color: #00b86b; }
+  .gc-nrfi-btn:active { transform: scale(0.96); }
+  .gc-nrfi-btn[data-selected="true"] { background: #ecfdf5; border-color: #00b86b; box-shadow: 0 0 0 2px rgba(0,184,107,0.2); }
+  .gc-nrfi-btn .gc-nrfi-tag { font-size: 11px; font-weight: 800; color: #0a0a0a; letter-spacing: -0.01em; }
+  .gc-nrfi-btn .gc-nrfi-price { font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; color: #0a0a0a; }
+  .gc-nrfi-btn .gc-nrfi-price.pos { color: #00b86b; }
+  .gc-nrfi-empty { font-size: 11px; color: #71717a; padding: 4px 0; }
   .gc-pitcher { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: #52525b; padding: 4px 0; border-top: 1px dashed #e4e4e7; }
   .gc-pitcher:first-child { border-top: 0; }
   .gc-pitcher-name { font-weight: 700; color: #0a0a0a; }
@@ -3079,7 +3091,8 @@ async function expandGame(sportKey, eventId, mode) {
     // Request all known period markets — the Odds API will return only the ones it has,
     // and unknown keys (like 1st_3_innings, q2..q4, p2/p3) will be silently ignored.
     if (sportKey === 'baseball_mlb') {
-      markets = ['h2h_1st_3_innings','spreads_1st_3_innings','totals_1st_3_innings',
+      markets = ['totals_1st_1_innings',
+                 'h2h_1st_3_innings','spreads_1st_3_innings','totals_1st_3_innings',
                  'h2h_1st_5_innings','spreads_1st_5_innings','totals_1st_5_innings',
                  'h2h_1st_7_innings','spreads_1st_7_innings','totals_1st_7_innings'].join(',');
     }
@@ -3976,7 +3989,8 @@ function renderGameCard(g, sportKey, marketFilter) {
       <div class="gc-team-score empty" data-score-slot="home"></div>
     </div>
     <div data-linescore-slot="${g.id}" data-sport-key="${escapeHtml(sportKey)}" data-away="${escapeHtml(away)}" data-home="${escapeHtml(home)}"></div>
-    ${sportKey === 'baseball_mlb' ? `<div class="gc-pitchers" data-pitcher-slot="${g.id}"></div>` : ''}`;
+    ${sportKey === 'baseball_mlb' ? `<div class="gc-pitchers" data-pitcher-slot="${g.id}"></div>
+    <div class="gc-nrfi" data-nrfi-slot="${g.id}" data-sport-key="${escapeHtml(sportKey)}"></div>` : ''}`;
 
   if (!isExpanded) {
     // Compact view — entire card is clickable to expand
@@ -5490,6 +5504,47 @@ async function populateLiveStates() {
         </div>
       </div>`;
     }).join('');
+  });
+  // Fill NRFI / YRFI strip for MLB cards using period market cache
+  document.querySelectorAll('[data-nrfi-slot]').forEach(slot => {
+    const gameId = slot.dataset.nrfiSlot;
+    const sk = slot.dataset.sportKey;
+    if (sk !== 'baseball_mlb') return;
+    const periodData = state.eventCache[`${sk}:${gameId}:period`]?.data;
+    if (!periodData) { slot.innerHTML = '<div class="gc-nrfi-empty">NRFI/YRFI: tap "Inning markets" link to load</div>'; return; }
+    // Find totals_1st_1_innings market with point 0.5
+    let nrfiPrice = null, yrfiPrice = null, nrfiBook = '', yrfiBook = '';
+    for (const bm of periodData.bookmakers || []) {
+      const m = (bm.markets || []).find(m => m.key === 'totals_1st_1_innings');
+      if (!m) continue;
+      for (const o of m.outcomes || []) {
+        if (o.point !== 0.5) continue;
+        const dec = americanToDecimal(o.price);
+        if (o.name === 'Under' && (!nrfiPrice || dec > americanToDecimal(nrfiPrice))) { nrfiPrice = o.price; nrfiBook = bm.title; }
+        if (o.name === 'Over' && (!yrfiPrice || dec > americanToDecimal(yrfiPrice))) { yrfiPrice = o.price; yrfiBook = bm.title; }
+      }
+    }
+    if (nrfiPrice == null && yrfiPrice == null) { slot.innerHTML = ''; return; }
+    const awayRow = document.querySelector(`[data-team-row="away"][data-game-id="${gameId}"]`);
+    const homeRow = document.querySelector(`[data-team-row="home"][data-game-id="${gameId}"]`);
+    const home = homeRow?.dataset.team, away = awayRow?.dataset.team;
+    const sportTitle = sportAbbr(sk);
+    const game = (state.cache[sk]?.games || []).find(x => x.id === gameId);
+    const start = game?.commence_time;
+    function btn(side, label, price, bookName) {
+      if (price == null) return `<div class="gc-nrfi-btn" style="opacity:0.5"><div class="gc-nrfi-tag">${label}</div><div class="gc-nrfi-price">—</div></div>`;
+      const sign = price > 0 ? 'pos' : 'neg';
+      const sel = state.slip.some(l => l.gameId === gameId && l.market === 'totals_1st_1_innings' && l.outcome === side && l.point === 0.5);
+      const payload = { gameId, sportKey: sk, sportTitle, home, away, start, market: 'totals_1st_1_innings', outcome: side, point: 0.5, american: price, decimal: americanToDecimal(price), book: bookName, label };
+      const data = JSON.stringify(payload).replace(/'/g, '&#39;');
+      return `<button class="gc-nrfi-btn" data-leg='${data}' data-selected="${sel}"><div class="gc-nrfi-tag">${label}</div><div class="gc-nrfi-price ${sign}">${fmtAmerican(price)}</div></button>`;
+    }
+    slot.innerHTML = `<div class="gc-nrfi-wrap">
+      <div class="gc-nrfi-label">1st Inning</div>
+      ${btn('Under', 'NRFI', nrfiPrice, nrfiBook)}
+      ${btn('Over', 'YRFI', yrfiPrice, yrfiBook)}
+    </div>`;
+    slot.querySelectorAll('.gc-nrfi-btn[data-leg]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); addLegFromButton(b); }));
   });
 }
 
