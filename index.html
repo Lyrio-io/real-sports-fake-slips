@@ -411,6 +411,20 @@
   .mr-cta { background: #00b86b; color: #ffffff; font-weight: 800; font-size: 12px; padding: 6px 14px; border-radius: 999px; border: none; cursor: pointer; }
   .mr-cta:hover { filter: brightness(1.06); }
 
+  /* Leaderboard table */
+  .lb-table { display: grid; grid-template-columns: 1.4fr repeat(4, 1fr); gap: 6px 8px; align-items: center; font-size: 12px; }
+  .lb-h { font-size: 9px; color: #71717a; font-weight: 800; text-align: center; text-transform: uppercase; letter-spacing: 0.06em; }
+  .lb-name { display: flex; align-items: center; gap: 6px; font-weight: 800; color: #0a0a0a; font-size: 13px; padding: 4px 0; }
+  .lb-avatar { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 10px; color: #ffffff; flex-shrink: 0; }
+  .lb-cell { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; padding: 4px 0; border-radius: 6px; }
+  .lb-cell.leader { background: #fef3c7; border: 1px solid #fbbf24; position: relative; }
+  .lb-cell.leader::before { content: "★"; position: absolute; top: -2px; right: 2px; font-size: 9px; color: #d97706; }
+
+  /* Accent swatches */
+  .accent-swatch { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform 140ms ease, border-color 140ms ease; box-shadow: 0 2px 6px -2px rgba(15,23,42,0.15); }
+  .accent-swatch:hover { transform: scale(1.06); }
+  .accent-swatch.active { border-color: #0a0a0a; transform: scale(1.06); }
+
   /* === PERIOD SECTION (F3 / F5 / F7 etc.) === */
   .period-section {
     background: linear-gradient(180deg, #fafafa 0%, #fafafa 100%);
@@ -1856,6 +1870,29 @@
               </div>
 
               <button id="save-guardrails" class="w-full bg-neon-500 text-ink-950 font-bold py-2.5 rounded-xl hover:bg-neon-400">Save Guardrails</button>
+            </div>
+          </div>
+
+          <!-- Customization -->
+          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
+            <h3 class="font-semibold mb-1">Customization</h3>
+            <p class="text-xs text-ink-300 mb-3">Personalize the app. Saved to your profile.</p>
+            <div class="mb-3">
+              <label class="text-[11px] uppercase tracking-wider text-ink-200 font-bold block mb-2">Accent color</label>
+              <div class="flex gap-2 flex-wrap">
+                <button class="accent-swatch" data-accent="emerald" style="background:#00b86b"></button>
+                <button class="accent-swatch" data-accent="blue" style="background:#3b82f6"></button>
+                <button class="accent-swatch" data-accent="violet" style="background:#8b5cf6"></button>
+                <button class="accent-swatch" data-accent="red" style="background:#ef4444"></button>
+                <button class="accent-swatch" data-accent="amber" style="background:#f59e0b"></button>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="text-[11px] uppercase tracking-wider text-ink-200 font-bold block mb-2">Effects</label>
+              <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <input id="setting-mute-effects" type="checkbox" class="accent-neon-500" />
+                <span>Mute confetti + tone + haptics on bet settle</span>
+              </label>
             </div>
           </div>
 
@@ -7597,45 +7634,57 @@ function renderVsCard() {
   if (!slot) return;
   const names = Object.keys(state.profiles);
   if (names.length < 2) { slot.innerHTML = ''; return; }
-  // Pick the two profiles with the most bets (or just first two)
-  const ranked = names.map(n => {
+  // Build leaderboard rows: ROI, CLV %, Weekly P/L, Perf Score
+  const rows = names.map(n => {
     const p = state.profiles[n];
     const settled = (p.bets || []).filter(b => b.status === 'won' || b.status === 'lost');
-    const wins = settled.filter(b => b.status === 'won').length;
-    const losses = settled.filter(b => b.status === 'lost').length;
-    const wr = (wins + losses) ? (wins / (wins + losses) * 100) : 0;
-    const pl = (p.bets || []).reduce((a, b) => a + ((b.payout || 0) - (b.stake || 0)), 0);
-    return { name: n, p, wins, losses, wr, pl, bets: (p.bets || []).length };
-  }).sort((a, b) => b.bets - a.bets || b.pl - a.pl).slice(0, 2);
-  const [a, b] = ranked;
-  // Determine winner (by P&L primarily)
-  let winner = null;
-  if (a.pl > b.pl) winner = a.name;
-  else if (b.pl > a.pl) winner = b.name;
-  const aWins = winner === a.name;
-  const bWins = winner === b.name;
+    const wagered = settled.reduce((a, b) => a + b.stake, 0);
+    const pl = settled.reduce((a, b) => a + (b.status === 'won' ? (b.payout - b.stake) : -b.stake), 0);
+    const roi = wagered > 0 ? (pl / wagered) * 100 : 0;
+    // CLV %
+    let beat = 0, totalLegs = 0;
+    for (const b of settled) for (const l of (b.legs || [])) {
+      if (l.closingLine == null) continue;
+      totalLegs++;
+      if (americanToDecimal(l.american) > americanToDecimal(l.closingLine)) beat++;
+    }
+    const clv = totalLegs ? (beat / totalLegs) * 100 : null;
+    const wkPL = currentWeekPL(p);
+    const score = computePerformanceScore(p).score;
+    return { name: n, p, roi, clv, wkPL, score, bets: settled.length };
+  });
+  // Pick leaders per category
+  const leaders = {
+    roi: rows.reduce((a, b) => b.roi > a.roi ? b : a, rows[0]).name,
+    clv: rows.filter(r => r.clv != null).reduce((a, b) => (a == null || b.clv > a.clv) ? b : a, null)?.name,
+    wkPL: rows.reduce((a, b) => b.wkPL > a.wkPL ? b : a, rows[0]).name,
+    score: rows.reduce((a, b) => b.score > a.score ? b : a, rows[0]).name,
+  };
+  function statCell(name, value, isLeader, fmt) {
+    return `<div class="lb-cell ${isLeader ? 'leader' : ''}">${fmt(value)}</div>`;
+  }
   slot.innerHTML = `<div class="vs-card">
     <div class="text-xs uppercase tracking-widest text-ink-300 font-bold mb-3 text-center flex items-center justify-center gap-2">
-      <span class="text-gold-500">🏆</span> Friendly Competition
+      <span class="text-gold-500">🏆</span> Friend Leaderboard
     </div>
-    <div class="vs-grid">
-      <div class="vs-col">
-        <div class="w-12 h-12 mx-auto rounded-full grid place-items-center font-black text-ink-950 mb-2" style="background:${profileColor(a.name)}; ${aWins ? 'box-shadow: 0 0 0 3px #00b86b, 0 8px 24px -4px rgba(0,184,107,0.4);' : ''}">${profileInitial(a.name)}</div>
-        <div class="vs-name">${escapeHtml(a.name)}</div>
-        <div class="vs-pl ${a.pl >= 0 ? 'text-neon-500' : 'text-danger-500'}">${fmt$(a.pl)}</div>
-        <div class="vs-meta">${a.wins}-${a.losses} · ${a.bets} bets · ${(a.wins+a.losses) ? a.wr.toFixed(1)+'%' : '—'}</div>
-        ${aWins ? '<div class="vs-winner-pill">Leading</div>' : ''}
-      </div>
-      <div class="vs-divider">VS</div>
-      <div class="vs-col">
-        <div class="w-12 h-12 mx-auto rounded-full grid place-items-center font-black text-ink-950 mb-2" style="background:${profileColor(b.name)}; ${bWins ? 'box-shadow: 0 0 0 3px #00b86b, 0 8px 24px -4px rgba(0,184,107,0.4);' : ''}">${profileInitial(b.name)}</div>
-        <div class="vs-name">${escapeHtml(b.name)}</div>
-        <div class="vs-pl ${b.pl >= 0 ? 'text-neon-500' : 'text-danger-500'}">${fmt$(b.pl)}</div>
-        <div class="vs-meta">${b.wins}-${b.losses} · ${b.bets} bets · ${(b.wins+b.losses) ? b.wr.toFixed(1)+'%' : '—'}</div>
-        ${bWins ? '<div class="vs-winner-pill">Leading</div>' : ''}
-      </div>
+    <div class="lb-table">
+      <div class="lb-h"></div>
+      <div class="lb-h">ROI</div>
+      <div class="lb-h">CLV</div>
+      <div class="lb-h">Week</div>
+      <div class="lb-h">Score</div>
+      ${rows.map(r => `
+        <div class="lb-name">
+          <div class="lb-avatar" style="background:${profileColor(r.name)}">${profileInitial(r.name)}</div>
+          ${escapeHtml(r.name)}
+        </div>
+        ${statCell(r.name, r.roi, leaders.roi === r.name, v => r.bets >= 5 ? `<span class="${v >= 0 ? 'text-neon-500' : 'text-danger-500'}">${v >= 0 ? '+' : ''}${v.toFixed(1)}%</span>` : '<span class="text-ink-400">—</span>')}
+        ${statCell(r.name, r.clv, leaders.clv === r.name, v => v != null ? `<span class="${v >= 50 ? 'text-neon-500' : 'text-danger-500'}">${v.toFixed(0)}%</span>` : '<span class="text-ink-400">—</span>')}
+        ${statCell(r.name, r.wkPL, leaders.wkPL === r.name, v => `<span class="${v >= 0 ? 'text-neon-500' : 'text-danger-500'}">${v >= 0 ? '+' : ''}${fmt$(v)}</span>`)}
+        ${statCell(r.name, r.score, leaders.score === r.name, v => `<span class="${v >= 70 ? 'text-neon-500' : v >= 50 ? 'text-warn-500' : 'text-danger-500'}">${v}</span>`)}
+      `).join('')}
     </div>
-    ${(!winner) ? '<div class="text-center text-xs text-ink-300 mt-3">Tied — race is on.</div>' : `<div class="text-center text-xs text-ink-300 mt-3">${escapeHtml(winner)} ahead by <strong>${fmt$(Math.abs(a.pl - b.pl))}</strong></div>`}
+    <div class="text-center text-[10px] text-ink-300 mt-3">★ = leader in column. Quality metrics only, no bet-count race.</div>
   </div>`;
 }
 
@@ -8178,6 +8227,24 @@ async function reloadSports() {
   try { const list = await apiSports(); state.sportsList = list; save(LS.SPORTSLIST, list); renderSportChips(); renderSportToggles(); toast('Sports refreshed'); }
   catch (e) { console.error(e); toast('Failed — check key'); }
 }
+/* Customization: apply accent color across the app (CSS custom property override) */
+const ACCENT_PALETTE = {
+  emerald: { primary: '#00b86b', light: '#34d399', dark: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
+  blue:    { primary: '#3b82f6', light: '#60a5fa', dark: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
+  violet:  { primary: '#8b5cf6', light: '#a78bfa', dark: '#6d28d9', bg: '#f5f3ff', border: '#c4b5fd' },
+  red:     { primary: '#ef4444', light: '#f87171', dark: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+  amber:   { primary: '#f59e0b', light: '#fbbf24', dark: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+};
+function applyAccent(name) {
+  const palette = ACCENT_PALETTE[name] || ACCENT_PALETTE.emerald;
+  const root = document.documentElement.style;
+  root.setProperty('--accent-primary', palette.primary);
+  root.setProperty('--accent-light', palette.light);
+  root.setProperty('--accent-dark', palette.dark);
+  root.setProperty('--accent-bg', palette.bg);
+  root.setProperty('--accent-border', palette.border);
+}
+
 function init() {
   // Pre-seed default owner profiles on a fresh install (Jorge + Ricky)
   if (!Object.keys(state.profiles).length) {
@@ -8191,6 +8258,8 @@ function init() {
   else if (!state.currentProfile || !state.profiles[state.currentProfile]) { state.currentProfile = names[0]; save(LS.CURRENT, state.currentProfile); }
   // Backfill bankroll-plan fields on any pre-existing profile (idempotent)
   for (const n of Object.keys(state.profiles)) ensureProfile(n);
+  // Apply saved accent color (per-profile setting)
+  applyAccent(P()?.settings?.accent || 'emerald');
   // Mandatory weekly bankroll reset for every profile (runs once per ISO week)
   const resetNotes = [];
   for (const n of Object.keys(state.profiles)) {
@@ -8370,6 +8439,30 @@ function init() {
       toast('Denied. Re-enable in your browser/iOS settings → Notifications.');
     }
   });
+
+  // Customization: accent swatches + mute checkbox
+  document.querySelectorAll('.accent-swatch').forEach(b => b.addEventListener('click', () => {
+    const p = P(); if (!p) return;
+    const name = b.dataset.accent;
+    p.settings = { ...p.settings, accent: name };
+    persistProfiles();
+    applyAccent(name);
+    document.querySelectorAll('.accent-swatch').forEach(s => s.classList.toggle('active', s.dataset.accent === name));
+    toast(`Accent: ${name}`);
+  }));
+  // Sync swatch active state on render
+  const currentAccent = P()?.settings?.accent || 'emerald';
+  document.querySelectorAll('.accent-swatch').forEach(s => s.classList.toggle('active', s.dataset.accent === currentAccent));
+  const muteToggle = document.getElementById('setting-mute-effects');
+  if (muteToggle) {
+    muteToggle.checked = !!P()?.settings?.muteEffects;
+    muteToggle.addEventListener('change', () => {
+      const p = P(); if (!p) return;
+      p.settings = { ...p.settings, muteEffects: muteToggle.checked };
+      persistProfiles();
+      toast(`Effects ${muteToggle.checked ? 'muted' : 'on'}`);
+    });
+  }
 
   // Bankroll Plan controls
   const sbc = document.getElementById('save-bankroll-cap');
