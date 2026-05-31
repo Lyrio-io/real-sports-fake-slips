@@ -282,10 +282,15 @@
   .gc-summary-pair[data-clickable="false"] { cursor: default; }
   .gc-summary-pair .label { font-size: 10px; color: #71717a; text-transform: uppercase; font-weight: 800; letter-spacing: 0.06em; line-height: 1; }
   .gc-summary-pair .value { font-weight: 800; font-size: 18px; color: #0a0a0a; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1.1; white-space: nowrap; }
-  .gc-summary-pair .gc-ml-value { font-size: 13px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-  .gc-summary-pair .gc-ml-sep { color: #a1a1aa; font-weight: 500; }
   .gc-summary-pair .price { font-size: 10px; color: #71717a; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
   .gc-summary-pair .price.pos { color: #00b86b; }
+  /* Moneyline pair: stacked two-row layout (away / home) so values never overflow */
+  .gc-summary-pair.gc-ml-pair { justify-content: flex-start; padding: 8px 6px; gap: 0; }
+  .gc-summary-pair.gc-ml-pair .label { margin-bottom: 4px; }
+  .gc-ml-row { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 2px 4px; gap: 6px; }
+  .gc-ml-team { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.04em; }
+  .gc-ml-price { font-size: 13px; font-weight: 800; color: #0a0a0a; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .gc-ml-price.pos { color: #00b86b; }
 
   .gc-chevron {
     width: 36px; height: 36px; border-radius: 999px;
@@ -489,6 +494,21 @@
   .gc-team-name { font-size: 16px; font-weight: 800; color: #0a0a0a; line-height: 1.15; letter-spacing: -0.015em; }
   .gc-team-meta-sub { font-size: 11px; color: #71717a; font-weight: 500; margin-top: 2px; }
   .gc-team-meta-sub .gc-team-split { color: #a1a1aa; }
+  /* Live score on the right of each team row — populated by populateLiveStates */
+  .gc-team-score { font-family: ui-monospace, "SF Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 900; font-size: 22px; color: #0a0a0a; min-width: 26px; text-align: right; line-height: 1; }
+  .gc-team-score.dim { color: #a1a1aa; }
+  .gc-team-score.empty { display: none; }
+  /* Starting pitcher / matchup info row (MLB) */
+  .gc-pitchers { padding: 0 18px 8px; }
+  .gc-pitcher { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: #52525b; padding: 4px 0; border-top: 1px dashed #e4e4e7; }
+  .gc-pitcher:first-child { border-top: 0; }
+  .gc-pitcher-name { font-weight: 700; color: #0a0a0a; }
+  .gc-pitcher-stats { font-family: ui-monospace, monospace; color: #71717a; }
+  .gc-pitcher-score { font-weight: 800; padding: 2px 7px; border-radius: 999px; font-size: 10px; }
+  .gc-pitcher-score.elite { background: #d1fae5; color: #047857; }
+  .gc-pitcher-score.good { background: #ecfdf5; color: #059669; }
+  .gc-pitcher-score.avg { background: #f4f4f5; color: #52525b; }
+  .gc-pitcher-score.poor { background: #fef2f2; color: #b91c1c; }
   /* Hide the legacy AWAY/HOME chips if any markup still references them */
   .gc-team-position { display: none; }
 
@@ -3535,19 +3555,101 @@ function teamAvatar(name, size='md') {
   return `<span class="${sz} rounded-lg grid place-items-center font-bold text-ink-950" style="background:${c}">${escapeHtml(ini)}</span>`;
 }
 
-// Generate plausible team record from a stable hash (demo only)
-function _teamRecord(teamName, gameId) {
-  let h = 0; for (const c of (teamName + gameId)) h = (h*31 + c.charCodeAt(0)) >>> 0;
-  const wins = 14 + (h % 18);
-  const losses = 10 + ((h >> 4) % 16);
-  return `${wins}-${losses}`;
+// REAL team records pulled from ESPN scoreboard cache (no fake/demo hashes).
+// Returns null when no ESPN data exists — caller must hide the field gracefully.
+function _teamRecord(teamName, gameId, sportKey) {
+  const rec = _espnTeamRecord(sportKey, teamName, 'overall');
+  return rec || null;
 }
-// Split record (home or away half) — the relevant record for the team's role in this game
-function _teamSplitRecord(teamName, gameId, isHome) {
-  let h = 0; for (const c of (teamName + gameId + (isHome ? '_h' : '_a'))) h = (h*31 + c.charCodeAt(0)) >>> 0;
-  const wins = 5 + (h % 12);
-  const losses = 3 + ((h >> 4) % 9);
-  return `${wins}-${losses}`;
+function _teamSplitRecord(teamName, gameId, isHome, sportKey) {
+  const rec = _espnTeamRecord(sportKey, teamName, isHome ? 'home' : 'road');
+  return rec || null;
+}
+// Pull a record (overall|home|road) from cached ESPN scoreboard data
+function _espnTeamRecord(sportKey, teamName, type) {
+  if (!sportKey || !teamName) return null;
+  const cache = _liveCache?.[sportKey]?.data; if (!cache) return null;
+  const events = cache.events || cache.sports?.[0]?.leagues?.[0]?.events || [];
+  for (const ev of events) {
+    const comp = ev.competitions?.[0]; if (!comp) continue;
+    for (const c of comp.competitors || []) {
+      const cTeam = c.team || {};
+      const matches = (cTeam.displayName === teamName) || (cTeam.shortDisplayName === teamName) ||
+                      (cTeam.name === teamName) || (cTeam.nickname === teamName) ||
+                      ((cTeam.location + ' ' + cTeam.name) === teamName);
+      if (!matches) continue;
+      const records = c.records || [];
+      // ESPN's record types: 'total' (overall), 'home', 'road' (NBA/NHL), 'vsconf', etc.
+      const wanted = type === 'overall' ? ['total', 'YTD', 'overall'] :
+                     type === 'home' ? ['home', 'Home'] :
+                     type === 'road' ? ['road', 'away', 'Away'] : [];
+      for (const r of records) {
+        const typeLower = (r.type || r.name || '').toLowerCase();
+        if (wanted.some(w => typeLower === w.toLowerCase())) return r.summary || null;
+      }
+      return null;
+    }
+  }
+  return null;
+}
+// Starting pitchers (MLB only) — returns array of { side, name, era, record, score }
+function _espnProbables(sportKey, awayName, homeName) {
+  if (sportKey !== 'baseball_mlb') return null;
+  const cache = _liveCache?.[sportKey]?.data; if (!cache) return null;
+  const events = cache.events || [];
+  for (const ev of events) {
+    const comp = ev.competitions?.[0]; if (!comp) continue;
+    let matched = false;
+    for (const c of comp.competitors || []) {
+      const t = c.team || {};
+      if (t.displayName === awayName || t.displayName === homeName || t.name === awayName || t.name === homeName) { matched = true; break; }
+    }
+    if (!matched) continue;
+    const out = [];
+    for (const c of comp.competitors || []) {
+      const t = c.team || {};
+      const side = c.homeAway === 'home' ? 'home' : 'away';
+      const teamName = t.displayName || t.name;
+      const prob = (c.probables && c.probables[0]) || comp.competitors.find(x => x.homeAway === side)?.probables?.[0];
+      if (!prob || !prob.athlete) continue;
+      const ath = prob.athlete;
+      const statsList = prob.statistics || ath.statistics || [];
+      const findStat = (name) => {
+        for (const s of statsList) { if ((s.name || s.shortDisplayName || '').toLowerCase().includes(name)) return s.displayValue || s.value; }
+        return null;
+      };
+      const era = parseFloat(findStat('era')) || null;
+      const wl = findStat('w-l') || findStat('record') || null;
+      const k9 = parseFloat(findStat('k/9')) || null;
+      const score = era != null ? pitcherScore(era) : null;
+      out.push({ side, teamName, name: ath.shortName || ath.displayName, era, wl, k9, score });
+    }
+    return out.length ? out : null;
+  }
+  return null;
+}
+// Translate ERA to a 1-10 quality score with plain-English bucket
+// 2.50 ERA ≈ 9/10 elite, 3.50 ≈ 7/10 good, 4.50 ≈ 5/10 avg, 5.50+ ≈ 3/10 poor
+function pitcherScore(era) {
+  if (era == null || !Number.isFinite(era)) return null;
+  // Smooth mapping: clamp 1.5 ERA → 10, 6.5 ERA → 1
+  const raw = 10 - ((era - 1.5) / 5) * 9;
+  return Math.max(1, Math.min(10, Math.round(raw)));
+}
+function pitcherBucket(score) {
+  if (score == null) return '';
+  if (score >= 8) return 'elite';
+  if (score >= 6) return 'good';
+  if (score >= 4) return 'avg';
+  return 'poor';
+}
+function pitcherLabel(score) {
+  if (score == null) return '';
+  if (score >= 9) return 'elite';
+  if (score >= 7) return 'above avg';
+  if (score >= 5) return 'avg';
+  if (score >= 3) return 'below avg';
+  return 'rough';
 }
 
 // Short team code (3 letters max from last word)
@@ -3784,10 +3886,10 @@ function renderGameCard(g, sportKey, marketFilter) {
         <span class="value">${sumTotalPt != null ? sumTotalPt : '—'}</span>
         <span class="price ${sumTotalPrice > 0 ? 'pos' : ''}">${sumTotalPrice != null ? fmtAmerican(sumTotalPrice) : '—'}</span>
       </div>
-      <div class="gc-summary-pair" data-clickable="false">
+      <div class="gc-summary-pair gc-ml-pair" data-clickable="false">
         <span class="label">Moneyline</span>
-        <span class="value gc-ml-value">${sumMlAway != null ? fmtAmerican(sumMlAway) : '—'}<span class="gc-ml-sep">/</span>${sumMlHome != null ? fmtAmerican(sumMlHome) : '—'}</span>
-        <span class="price">${_teamCode(away)} / ${_teamCode(home)}</span>
+        <span class="gc-ml-row"><span class="gc-ml-team">${_teamCode(away)}</span><span class="gc-ml-price ${sumMlAway != null && sumMlAway > 0 ? 'pos' : ''}">${sumMlAway != null ? fmtAmerican(sumMlAway) : '—'}</span></span>
+        <span class="gc-ml-row"><span class="gc-ml-team">${_teamCode(home)}</span><span class="gc-ml-price ${sumMlHome != null && sumMlHome > 0 ? 'pos' : ''}">${sumMlHome != null ? fmtAmerican(sumMlHome) : '—'}</span></span>
       </div>
     </div>
     <button class="gc-chevron" data-toggle-card="${g.id}" aria-label="${isExpanded ? 'Collapse' : 'Expand'}">${chevSvg}</button>
@@ -3806,20 +3908,23 @@ function renderGameCard(g, sportKey, marketFilter) {
         <span class="gc-when">${escapeHtml(dayStr ? dayStr + ' ' : '')}${escapeHtml(startStr)}</span>
       </div>
     </div>
-    <div class="gc-team-row">
+    <div class="gc-team-row" data-team-row="away" data-game-id="${g.id}" data-team="${escapeHtml(away)}" data-sport-key="${escapeHtml(sportKey)}">
       ${teamAvatarHTML(sportKey, away, stripeColorAway, 44)}
       <div class="gc-team-info">
         <div class="gc-team-name">${escapeHtml(_teamShortName(away))}</div>
-        <div class="gc-team-meta-sub">${_teamRecord(away, g.id)} · Road · <span class="gc-team-split">${_teamSplitRecord(away, g.id, false)}</span></div>
+        <div class="gc-team-meta-sub" data-record-slot="away">Loading…</div>
       </div>
+      <div class="gc-team-score empty" data-score-slot="away"></div>
     </div>
-    <div class="gc-team-row">
+    <div class="gc-team-row" data-team-row="home" data-game-id="${g.id}" data-team="${escapeHtml(home)}" data-sport-key="${escapeHtml(sportKey)}">
       ${teamAvatarHTML(sportKey, home, stripeColorHome, 44)}
       <div class="gc-team-info">
         <div class="gc-team-name">${escapeHtml(_teamShortName(home))}</div>
-        <div class="gc-team-meta-sub">${_teamRecord(home, g.id)} · Home · <span class="gc-team-split">${_teamSplitRecord(home, g.id, true)}</span></div>
+        <div class="gc-team-meta-sub" data-record-slot="home">Loading…</div>
       </div>
-    </div>`;
+      <div class="gc-team-score empty" data-score-slot="home"></div>
+    </div>
+    ${sportKey === 'baseball_mlb' ? `<div class="gc-pitchers" data-pitcher-slot="${g.id}"></div>` : ''}`;
 
   if (!isExpanded) {
     // Compact view — entire card is clickable to expand
@@ -5156,26 +5261,87 @@ function _buildLiveStateHtml(sportKey, match) {
 
 // Scan the DOM for live-slot elements and fill them with ESPN data
 async function populateLiveStates() {
-  const slots = document.querySelectorAll('.live-slot');
-  if (!slots.length) return;
-  // Group slots by sportKey so we only fetch each scoreboard once
-  const bySport = {};
-  slots.forEach(s => {
-    const sk = s.dataset.sportKey || '';
-    if (!ESPN_SPORT_PATH[sk]) return;
-    if (!bySport[sk]) bySport[sk] = [];
-    bySport[sk].push(s);
-  });
-  for (const sk of Object.keys(bySport)) {
-    const data = await _fetchEspn(sk);
-    if (!data) continue;
-    for (const slot of bySport[sk]) {
-      const match = _findEspnEvent(data, slot.dataset.away, slot.dataset.home);
-      if (!match) continue;
-      const html = _buildLiveStateHtml(sk, match);
-      if (html) slot.innerHTML = html;
-    }
+  // Collect all sportKeys that have live-slots OR team-rows that need ESPN enrichment
+  const teamRows = document.querySelectorAll('[data-team-row]');
+  const liveSlots = document.querySelectorAll('.live-slot');
+  if (!teamRows.length && !liveSlots.length) return;
+  const sportSet = new Set();
+  liveSlots.forEach(s => { if (s.dataset.sportKey && ESPN_SPORT_PATH[s.dataset.sportKey]) sportSet.add(s.dataset.sportKey); });
+  teamRows.forEach(s => { if (s.dataset.sportKey && ESPN_SPORT_PATH[s.dataset.sportKey]) sportSet.add(s.dataset.sportKey); });
+  // Fetch each sport's scoreboard once
+  for (const sk of sportSet) {
+    await _fetchEspn(sk);
   }
+  // Fill live game state widgets
+  for (const slot of liveSlots) {
+    const sk = slot.dataset.sportKey; if (!ESPN_SPORT_PATH[sk]) continue;
+    const data = _liveCache[sk]?.data; if (!data) continue;
+    const match = _findEspnEvent(data, slot.dataset.away, slot.dataset.home);
+    if (!match) continue;
+    const html = _buildLiveStateHtml(sk, match);
+    if (html) slot.innerHTML = html;
+  }
+  // Fill team records, live scores, and pitcher info on each team-row
+  const cardsTouched = new Set();
+  for (const row of teamRows) {
+    const sk = row.dataset.sportKey; if (!ESPN_SPORT_PATH[sk]) continue;
+    const teamName = row.dataset.team;
+    const side = row.dataset.teamRow; // 'away' or 'home'
+    const data = _liveCache[sk]?.data; if (!data) continue;
+    // Records
+    const overall = _espnTeamRecord(sk, teamName, 'overall');
+    const split = _espnTeamRecord(sk, teamName, side === 'home' ? 'home' : 'road');
+    const recSlot = row.querySelector('[data-record-slot]');
+    if (recSlot) {
+      if (overall) {
+        const splitTxt = split ? ` · <span class="gc-team-split">${split} ${side === 'home' ? 'home' : 'road'}</span>` : '';
+        recSlot.innerHTML = `${overall} · ${side === 'home' ? 'Home' : 'Road'}${splitTxt}`;
+      } else { recSlot.textContent = side === 'home' ? 'Home' : 'Road'; }
+    }
+    // Score (only when game in progress or final)
+    const scoreSlot = row.querySelector('[data-score-slot]');
+    if (scoreSlot) {
+      const ev = (data.events || []).find(e => (e.competitions?.[0]?.competitors || []).some(c => c.team?.displayName === row.dataset.team || c.team?.shortDisplayName === row.dataset.team || c.team?.name === row.dataset.team));
+      const state = ev?.status?.type?.state;
+      if (ev && (state === 'in' || state === 'post')) {
+        const comp = ev.competitions[0];
+        const c = comp.competitors.find(x => x.team?.displayName === row.dataset.team || x.team?.shortDisplayName === row.dataset.team || x.team?.name === row.dataset.team);
+        if (c && c.score != null) {
+          const myScore = parseInt(c.score, 10);
+          const other = comp.competitors.find(x => x !== c);
+          const otherScore = other ? parseInt(other.score, 10) : 0;
+          scoreSlot.textContent = myScore;
+          scoreSlot.classList.remove('empty');
+          scoreSlot.classList.toggle('dim', myScore < otherScore);
+        }
+      }
+    }
+    cardsTouched.add(row.dataset.gameId);
+  }
+  // Fill pitcher info for MLB cards
+  document.querySelectorAll('[data-pitcher-slot]').forEach(slot => {
+    const row = document.querySelector(`[data-team-row][data-game-id="${slot.dataset.pitcherSlot}"]`);
+    if (!row) return;
+    const sk = row.dataset.sportKey;
+    const awayRow = document.querySelector(`[data-team-row="away"][data-game-id="${slot.dataset.pitcherSlot}"]`);
+    const homeRow = document.querySelector(`[data-team-row="home"][data-game-id="${slot.dataset.pitcherSlot}"]`);
+    const awayName = awayRow?.dataset.team, homeName = homeRow?.dataset.team;
+    if (!awayName || !homeName) return;
+    const probables = _espnProbables(sk, awayName, homeName);
+    if (!probables || !probables.length) { slot.innerHTML = ''; return; }
+    slot.innerHTML = probables.map(p => {
+      const bucket = pitcherBucket(p.score);
+      const label = pitcherLabel(p.score);
+      const stats = [p.era != null ? `${p.era.toFixed(2)} ERA` : null, p.wl].filter(Boolean).join(' · ');
+      return `<div class="gc-pitcher">
+        <div><span class="gc-pitcher-name">P: ${escapeHtml(p.name)}</span> <span class="text-[10px] text-ink-400">(${escapeHtml(p.side === 'home' ? homeName.split(' ').pop() : awayName.split(' ').pop())})</span></div>
+        <div class="flex items-center gap-2">
+          <span class="gc-pitcher-stats">${escapeHtml(stats || '—')}</span>
+          ${p.score != null ? `<span class="gc-pitcher-score ${bucket}">${p.score}/10 ${label}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  });
 }
 
 function startLiveRefreshLoop() {
