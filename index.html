@@ -425,6 +425,16 @@
   .accent-swatch:hover { transform: scale(1.06); }
   .accent-swatch.active { border-color: #0a0a0a; transform: scale(1.06); }
 
+  /* Morning Ritual — loss-recovery coach variants */
+  .morning-ritual-card.mr-coach-low { background: linear-gradient(180deg, #fef3c7 0%, #ffffff 70%); border-color: #fbbf24; }
+  .morning-ritual-card.mr-coach-med { background: linear-gradient(180deg, #fef3c7 0%, #ffffff 70%); border-color: #f59e0b; }
+  .morning-ritual-card.mr-coach-high { background: linear-gradient(180deg, #fef2f2 0%, #ffffff 70%); border-color: #ef4444; }
+  .morning-ritual-card.mr-coach-high .mr-greet,
+  .morning-ritual-card.mr-coach-med .mr-greet { color: #b91c1c; }
+  .mr-coach-msg { color: #7f1d1d; font-weight: 600; margin-bottom: 8px; }
+  .mr-cta-stand-down { background: #71717a; }
+  .mr-cta-stand-down:hover { background: #52525b; }
+
   /* === PERIOD SECTION (F3 / F5 / F7 etc.) === */
   .period-section {
     background: linear-gradient(180deg, #fafafa 0%, #fafafa 100%);
@@ -1647,6 +1657,13 @@
             </h3>
             <div id="reality-check" class="text-sm space-y-2 text-ink-200"></div>
           </div>
+          <div id="weekly-recap-card" class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mt-4 hidden">
+            <h3 class="font-semibold text-sm mb-2 flex items-center gap-2">
+              <span class="text-gold-500">📖</span> This week so far
+              <span class="text-[10px] text-ink-400 font-normal uppercase tracking-wider">Auto recap</span>
+            </h3>
+            <div id="weekly-recap-body" class="text-sm space-y-2 text-ink-200"></div>
+          </div>
           <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mt-4">
             <h3 class="font-semibold text-sm mb-2 flex items-center gap-2">
               <span class="text-violet-500">●</span> Bias detector
@@ -2834,6 +2851,143 @@ function lifetimeProfit(p) {
 function currentWeekPL(p) {
   if (!p) return 0;
   return p.bankroll - (p.bankrollCap || 0);
+}
+
+/* ===== Share Cards — canvas-rendered PNG of a settled bet ===== */
+async function shareBetCard(betId) {
+  const p = P(); if (!p) return;
+  const bet = (p.bets || []).find(x => x.id === betId); if (!bet) return;
+  const status = bet.status;
+  const pl = status === 'won' ? (bet.payout - bet.stake) : status === 'lost' ? -bet.stake : 0;
+  // Render to canvas
+  const W = 800, H = 1000;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  // Background gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  if (status === 'won') { grad.addColorStop(0, '#ecfdf5'); grad.addColorStop(1, '#ffffff'); }
+  else if (status === 'lost') { grad.addColorStop(0, '#fef2f2'); grad.addColorStop(1, '#ffffff'); }
+  else { grad.addColorStop(0, '#fffbeb'); grad.addColorStop(1, '#ffffff'); }
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+  // Header
+  ctx.fillStyle = '#0a0a0a'; ctx.font = 'bold 36px -apple-system, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Real Sports Fake Slips', W/2, 70);
+  ctx.font = '20px -apple-system'; ctx.fillStyle = '#71717a';
+  ctx.fillText('Sandbox', W/2, 100);
+  // Status pill
+  const pillColor = status === 'won' ? '#00b86b' : status === 'lost' ? '#ef4444' : '#f59e0b';
+  ctx.fillStyle = pillColor;
+  ctx.beginPath(); ctx.roundRect(W/2 - 100, 150, 200, 60, 30); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 32px -apple-system';
+  ctx.fillText(status.toUpperCase(), W/2, 192);
+  // P/L
+  ctx.font = 'bold 72px -apple-system'; ctx.fillStyle = pillColor;
+  const plText = (pl >= 0 ? '+' : '') + '$' + Math.abs(pl).toFixed(2);
+  ctx.fillText(plText, W/2, 290);
+  // Bet legs
+  ctx.font = 'bold 24px -apple-system'; ctx.fillStyle = '#0a0a0a';
+  ctx.textAlign = 'center';
+  let y = 360;
+  ctx.fillText(`${bet.type === 'parlay' ? bet.legs.length + '-leg parlay' : 'Single'} · ${fmtAmerican(bet.american)}`, W/2, y); y += 50;
+  ctx.font = '22px -apple-system'; ctx.fillStyle = '#27272a';
+  ctx.textAlign = 'left';
+  for (const l of bet.legs.slice(0, 4)) {
+    const txt = `${(l.outcome || '').slice(0, 24)}${l.point != null ? ' ' + (l.point > 0 ? '+' : '') + l.point : ''} (${fmtAmerican(l.american)})`;
+    ctx.fillText('• ' + txt, 80, y); y += 36;
+    ctx.font = '16px -apple-system'; ctx.fillStyle = '#71717a';
+    ctx.fillText(`   ${l.away} @ ${l.home}`, 80, y); y += 30;
+    ctx.font = '22px -apple-system'; ctx.fillStyle = '#27272a';
+  }
+  if (bet.legs.length > 4) { ctx.fillText(`+ ${bet.legs.length - 4} more`, 80, y); y += 36; }
+  // Stake + result
+  y = H - 200;
+  ctx.font = '20px -apple-system'; ctx.fillStyle = '#71717a'; ctx.textAlign = 'center';
+  ctx.fillText(`Risked $${bet.stake.toFixed(2)} · ${new Date(bet.settledAt || bet.placedAt).toLocaleDateString()}`, W/2, y);
+  // Bottom watermark
+  ctx.font = 'bold 18px -apple-system'; ctx.fillStyle = '#a1a1aa';
+  ctx.fillText('Practice with fake money. Real lines.', W/2, H - 60);
+  // Convert and share
+  canvas.toBlob(async (blob) => {
+    if (!blob) { toast('Share failed'); return; }
+    const file = new File([blob], `bet-${bet.id}.png`, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'My bet', text: `${status.toUpperCase()}: ${plText}` }); return; }
+      catch (e) { /* user cancelled or share failed; fall through to download */ }
+    }
+    // Fallback: download
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `bet-${bet.id}.png`; a.click();
+    URL.revokeObjectURL(url);
+    toast('Bet image saved');
+  }, 'image/png');
+}
+
+/* ===== Loss Recovery Coach =====
+   When the user is down significantly for the week, surface a coaching nudge
+   instead of pushing more bets. Counter-engagement design. */
+function getLossRecoveryNudge(p) {
+  if (!p) return null;
+  const wkPL = currentWeekPL(p);
+  const cap = p.bankrollCap || 1000;
+  const pctDown = -wkPL / cap;
+  if (pctDown < 0.20) return null;   // not down enough to coach
+  // Calculate days until weekly reset (Monday)
+  const today = new Date();
+  const day = today.getDay();
+  const daysToMonday = day === 0 ? 1 : (8 - day);
+  const dayLossLimit = p.settings?.dailyLossLimit || 0;
+  const dailyPL = _settledPLSinceMidnight(p);
+  const hitDailyStop = dayLossLimit > 0 && dailyPL <= -Math.abs(dayLossLimit);
+  return {
+    severity: pctDown >= 0.40 ? 'high' : pctDown >= 0.30 ? 'med' : 'low',
+    wkPL, pctDown,
+    daysToMonday,
+    hitDailyStop,
+    message: hitDailyStop
+      ? `You hit your daily stoploss. No more bets today — that's the rule that keeps you in the game.`
+      : pctDown >= 0.40
+        ? `Down ${(pctDown * 100).toFixed(0)}% of your weekly cap. ${daysToMonday}d until reset. Stand down — study tomorrow's pitcher slate instead of chasing.`
+      : pctDown >= 0.30
+        ? `You're ${(pctDown * 100).toFixed(0)}% in the hole this week. Slow down — your next bet should be the smallest of the day, not the biggest.`
+      : `Down a bit. Stay patient — variance happens to sharp bettors too.`,
+  };
+}
+
+/* ===== Weekly Recap =====
+   Sunday-night narrative summary. Auto-generated from settled bet data — no API call. */
+function generateWeeklyRecap(p) {
+  if (!p) return null;
+  const d = new Date(); const day = d.getDay(); const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff); d.setHours(0, 0, 0, 0);
+  const weekStart = d.getTime();
+  const settled = (p.bets || []).filter(b => {
+    if (b.status !== 'won' && b.status !== 'lost') return false;
+    const t = b.settledAt ? new Date(b.settledAt).getTime() : 0;
+    return t >= weekStart;
+  });
+  if (!settled.length) return null;
+  const wins = settled.filter(b => b.status === 'won').length;
+  const losses = settled.filter(b => b.status === 'lost').length;
+  const wagered = settled.reduce((a, b) => a + b.stake, 0);
+  const pl = settled.reduce((a, b) => a + (b.status === 'won' ? (b.payout - b.stake) : -b.stake), 0);
+  const roi = wagered ? (pl / wagered) * 100 : 0;
+  // Best decision: highest +EV win or +EV bet that lost to variance
+  // Best skipped: any trap mentioned in retro
+  const bestRetro = settled.find(b => (b.retrospective || '').toLowerCase().includes('smart'));
+  const worstRetro = settled.find(b => (b.retrospective || '').toLowerCase().includes('bad bet') || (b.retrospective || '').toLowerCase().includes('lucky'));
+  // Bias snapshot: home team win rate
+  const homeBets = settled.filter(b => b.legs?.[0]?.outcome === b.legs?.[0]?.home);
+  const homeWins = homeBets.filter(b => b.status === 'won').length;
+  const homeWR = homeBets.length ? (homeWins / homeBets.length) * 100 : null;
+  const lines = [
+    `Week in review: ${settled.length} bets, ${wins}W-${losses}L, ${pl >= 0 ? '+' : ''}${fmt$(pl)} (${roi >= 0 ? '+' : ''}${roi.toFixed(1)}% ROI).`,
+  ];
+  if (bestRetro) lines.push(`Best decision: ${escapeHtml(bestRetro.legs.map(l => l.outcome).join(' + '))} — ${escapeHtml(bestRetro.retrospective || '')}`);
+  if (worstRetro) lines.push(`Watch out: ${escapeHtml(worstRetro.legs.map(l => l.outcome).join(' + '))} — ${escapeHtml(worstRetro.retrospective || '')}`);
+  if (homeBets.length >= 4 && homeWR != null) lines.push(`Home-team bets: ${homeWins}/${homeBets.length} (${homeWR.toFixed(0)}%)${homeWR < 40 ? ' — bias check.' : homeWR > 60 ? ' — leverage this.' : '.'}`);
+  return { lines, pl, roi };
 }
 
 /* ===== Achievement registry ===== */
@@ -5954,6 +6108,7 @@ function renderOpenBets() {
   c.innerHTML = stuckBanner + _groupAndRenderBets(open, _bucketForOpenBet, sortByEarliestStart);
   c.querySelectorAll('[data-manual-settle]').forEach(b => b.addEventListener('click', () => manualSettle(b.dataset.manualSettle, b.dataset.result)));
   c.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => cancelBet(b.dataset.cancel)));
+  c.querySelectorAll('[data-share]').forEach(b => b.addEventListener('click', () => shareBetCard(b.dataset.share)));
   c.querySelectorAll('[data-hedge-bet-id]').forEach(btn => btn.addEventListener('click', () => {
     const bet = (P()?.bets || []).find(x => x.id === btn.dataset.hedgeBetId);
     if (!bet) return;
@@ -6010,6 +6165,7 @@ function renderHistory() {
   // Sort within each group: most recent first
   const sortByRecency = (a,b) => new Date(b.settledAt || b.placedAt) - new Date(a.settledAt || a.placedAt);
   c.innerHTML = _groupAndRenderBets(settled, _bucketForSettled, sortByRecency);
+  c.querySelectorAll('[data-share]').forEach(b => b.addEventListener('click', () => shareBetCard(b.dataset.share)));
   populateLiveStates();
 }
 function renderBetCard(b) {
@@ -6066,6 +6222,13 @@ function renderBetCard(b) {
       <button class="text-xs bg-danger-600 hover:bg-danger-500 text-white px-2 py-1 rounded" data-manual-settle="${b.id}" data-result="lost">Lost</button>
       <button class="text-xs bg-warn-500 text-white px-2 py-1 rounded" data-manual-settle="${b.id}" data-result="push">Push</button>
       <button class="text-xs bg-ink-700 hover:bg-ink-600 px-2 py-1 rounded" data-cancel="${b.id}">Void</button>
+    </div>` :
+    (b.status === 'won' || b.status === 'lost') ? `
+    <div class="flex gap-1 flex-wrap mt-2">
+      <button class="text-xs bg-ink-800 hover:bg-ink-700 border border-ink-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5" data-share="${b.id}" title="Share this bet">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+        Share
+      </button>
     </div>` : '';
   const reasonChip = b.reason ? `<div class="mt-2 text-[11px] text-ink-300 italic"><span class="text-ink-400">Why:</span> ${escapeHtml(b.reason)}</div>` : '';
   const retroChip = b.retrospective ? `<div class="mt-2 text-[11px] px-2 py-1.5 rounded-lg bg-ink-800 border border-ink-700 leading-snug"><span class="text-violet-500 font-bold">AI retro:</span> <span class="text-ink-200">${escapeHtml(b.retrospective)}</span></div>` : '';
@@ -6622,6 +6785,17 @@ function renderHeader() {
   renderPerfChip();
 }
 
+function renderWeeklyRecap() {
+  const card = document.getElementById('weekly-recap-card');
+  const body = document.getElementById('weekly-recap-body');
+  if (!card || !body) return;
+  const p = P(); if (!p) { card.classList.add('hidden'); return; }
+  const recap = generateWeeklyRecap(p);
+  if (!recap) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  body.innerHTML = recap.lines.map(l => `<p>${l}</p>`).join('');
+}
+
 function renderAchievementCase() {
   const el = document.getElementById('achievement-case'); if (!el) return;
   const p = P(); if (!p) { el.innerHTML = ''; return; }
@@ -6663,17 +6837,21 @@ function renderMorningRitual() {
     if (h < 17) return 'Afternoon';
     return 'Evening';
   })();
+  // Loss Recovery Coach — swap the morning ritual content when down significantly
+  const nudge = getLossRecoveryNudge(p);
+  const mrClass = nudge ? `morning-ritual-card mr-coach-${nudge.severity}` : 'morning-ritual-card';
   host.innerHTML = `
-    <div class="morning-ritual-card">
+    <div class="${mrClass}">
       <div class="mr-head">
-        <div class="mr-greet">${greet}, ${escapeHtml(state.currentProfile)}</div>
+        <div class="mr-greet">${nudge ? '⚠ Discipline check' : greet + ', ' + escapeHtml(state.currentProfile)}</div>
         <button class="mr-dismiss" data-mr-dismiss aria-label="Dismiss">×</button>
       </div>
+      ${nudge ? `<div class="mr-line mr-coach-msg">${escapeHtml(nudge.message)}</div>` : ''}
       <div class="mr-line">Performance Score: <strong>${score}/100</strong> · Streak: <strong>🔥 ${streak}d</strong></div>
       <div class="mr-line">This week: <strong class="num ${wkCls}">${wkPL >= 0 ? '+' : ''}${fmt$(wkPL)}</strong> · Lifetime: <strong class="num ${ltCls}">${ltPL >= 0 ? '+' : ''}${fmt$(ltPL)}</strong></div>
-      ${pitcherEdge ? `<div class="mr-line mr-pitcher">${pitcherEdge} Check ERA gaps for value.</div>` : ''}
+      ${pitcherEdge && !nudge ? `<div class="mr-line mr-pitcher">${pitcherEdge} Check ERA gaps for value.</div>` : ''}
       <div class="mr-actions">
-        <button class="mr-cta" data-mr-cta>View slate →</button>
+        ${nudge ? `<button class="mr-cta mr-cta-stand-down" data-mr-cta>I'll stand down</button>` : `<button class="mr-cta" data-mr-cta>View slate →</button>`}
       </div>
     </div>`;
   host.querySelector('[data-mr-dismiss]').addEventListener('click', () => {
@@ -8097,7 +8275,7 @@ function switchTab(name) {
   if (name === 'lines') renderLedger();
   if (name === 'open') renderOpenBets();
   if (name === 'history') renderHistory();
-  if (name === 'stats') { renderStats(); renderGoals(); renderSportPerf(); renderParlayBreakdown(); renderBiasDetector(); renderMarketMastery(); renderClvPanel(); renderMonteCarlo(); renderAchievementCase(); renderVsCard(); }
+  if (name === 'stats') { renderStats(); renderGoals(); renderSportPerf(); renderParlayBreakdown(); renderBiasDetector(); renderMarketMastery(); renderClvPanel(); renderMonteCarlo(); renderAchievementCase(); renderWeeklyRecap(); renderVsCard(); }
   if (name === 'settings') renderSettings();
   if (name === 'parlay') renderParlay();
   if (name === 'analyst') renderAnalysis();
