@@ -488,6 +488,10 @@
   .gc-when { font-size: 11px; font-weight: 700; color: #0a0a0a; }
   .gc-live-tag { font-size: 11px; font-weight: 800; color: #b91c1c; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 5px; }
   .gc-live-tag .pulse-dot { width: 6px; height: 6px; }
+  /* Inline LIVE chip in the top meta strip (replaces the big bordered LIVE box) */
+  .gc-live-inline { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 6px; }
+  .gc-live-inline .pulse-dot { width: 5px; height: 5px; }
+  .gc-live-inline .gc-li-info { font-weight: 700; color: #7f1d1d; text-transform: none; letter-spacing: 0; }
   .gc-team-row { display: flex; align-items: center; gap: 12px; padding: 8px 18px; }
   .gc-team-row + .gc-team-row { padding-top: 4px; padding-bottom: 14px; }
   .gc-team-info { flex: 1; min-width: 0; }
@@ -552,12 +556,11 @@
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     padding: 10px 6px;
-    background: linear-gradient(180deg, #fafafa 0%, #f4f4f5 100%);
-    border: 1.5px solid #f4f4f5;
-    border-radius: 14px; cursor: pointer;
-    transition: all 140ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    background: #ffffff;
+    border: 1px solid #e4e4e7;
+    border-radius: 12px; cursor: pointer;
+    transition: border-color 140ms ease, transform 140ms ease;
     min-height: 62px;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 4px 12px -6px rgba(15,23,42,0.06);
     text-align: center;
   }
   .gc-cell:hover {
@@ -3754,7 +3757,7 @@ function renderGameCard(g, sportKey, marketFilter) {
       </button>`;
     }
     return `<button class="gc-cell" data-leg='${data}' data-selected="${sel}">
-      <div class="gc-cell-price ${sign}" style="font-size:16px;font-weight:800;color:${payload.american>0?'#00b86b':'#fff'}">${fmtAmerican(payload.american)}</div>
+      <div class="gc-cell-price ${sign}" style="font-size:16px;font-weight:800;color:${payload.american>0?'#00b86b':'#0a0a0a'}">${fmtAmerican(payload.american)}</div>
     </button>`;
   }
 
@@ -3896,13 +3899,15 @@ function renderGameCard(g, sportKey, marketFilter) {
   `;
 
   // Live ESPN scoreboard slot — fills in with score / period / clock / last play
-  // for any game that's started. Even non-live games show the structure so the layout doesn't jump.
-  const liveSlotHtml = isLive ? `<div class="live-slot gc-live-slot" data-sport-key="${escapeHtml(sportKey || '')}" data-away="${escapeHtml(away)}" data-home="${escapeHtml(home)}"><div class="gc-live-loading">📺 Loading live score…</div></div>` : '';
+  // Live state now lives in the top meta strip — populated by populateLiveStates()
+  // via the data-live-slot attribute (no more big bordered box duplicating the score).
+  const liveSlotHtml = '';
 
   const headerHtml = `
     <div class="gc-meta-strip">
       <div class="gc-meta-left">
         <span class="gc-league">${escapeHtml(sportTitle)}</span>
+        ${isLive ? `<span class="gc-live-inline live-slot gc-live-inline-slot" data-sport-key="${escapeHtml(sportKey || '')}" data-away="${escapeHtml(away)}" data-home="${escapeHtml(home)}"><span class="pulse-dot"></span> LIVE</span>` : ''}
       </div>
       <div class="gc-meta-right">
         <span class="gc-when">${escapeHtml(dayStr ? dayStr + ' ' : '')}${escapeHtml(startStr)}</span>
@@ -5167,6 +5172,32 @@ function _ordinal(n) {
   return n + (s[(v-20)%10] || s[v] || s[0]);
 }
 
+// Compact single-line summary for inline LIVE chip: 'Bot 7th · 2 outs', 'Q3 · 8:42', 'P2 · 12:18'
+function _buildLiveStateCompact(sportKey, match) {
+  if (!match) return null;
+  const status = match.event.status || {};
+  const stType = status.type || {};
+  const state = stType.state;
+  if (state !== 'in') return null;
+  const sit = match.comp.situation || {};
+  const period = status.period;
+  const clock = status.displayClock || '';
+  const detail = (stType.detail || stType.shortDetail || '').toLowerCase();
+  if (sportKey === 'baseball_mlb') {
+    const half = detail.includes('bot') ? 'Bot' : detail.includes('mid') ? 'Mid' : detail.includes('end') ? 'End' : 'Top';
+    const ord = period ? (period + (period === 1 ? 'st' : period === 2 ? 'nd' : period === 3 ? 'rd' : 'th')) : '';
+    const outs = sit.outs ?? 0;
+    return `${half} ${ord}${outs != null ? ' · ' + outs + ' out' + (outs === 1 ? '' : 's') : ''}`;
+  }
+  if (sportKey.startsWith('basketball_') || sportKey.startsWith('americanfootball_')) {
+    return `Q${period || ''}${clock ? ' · ' + clock : ''}`;
+  }
+  if (sportKey === 'icehockey_nhl') {
+    return `P${period || ''}${clock ? ' · ' + clock : ''}`;
+  }
+  return stType.shortDetail || stType.detail || 'In progress';
+}
+
 function _buildLiveStateHtml(sportKey, match) {
   if (!match) return null;
   const { event, comp, home, away } = match;
@@ -5272,14 +5303,20 @@ async function populateLiveStates() {
   for (const sk of sportSet) {
     await _fetchEspn(sk);
   }
-  // Fill live game state widgets
+  // Fill live game state widgets — inline chips get compact text, full slots get the rich widget
   for (const slot of liveSlots) {
     const sk = slot.dataset.sportKey; if (!ESPN_SPORT_PATH[sk]) continue;
     const data = _liveCache[sk]?.data; if (!data) continue;
     const match = _findEspnEvent(data, slot.dataset.away, slot.dataset.home);
     if (!match) continue;
-    const html = _buildLiveStateHtml(sk, match);
-    if (html) slot.innerHTML = html;
+    const isInline = slot.classList.contains('gc-live-inline');
+    if (isInline) {
+      const inning = _buildLiveStateCompact(sk, match);
+      if (inning) slot.innerHTML = `<span class="pulse-dot"></span> LIVE <span class="gc-li-info">· ${escapeHtml(inning)}</span>`;
+    } else {
+      const html = _buildLiveStateHtml(sk, match);
+      if (html) slot.innerHTML = html;
+    }
   }
   // Fill team records, live scores, and pitcher info on each team-row
   const cardsTouched = new Set();
@@ -5293,9 +5330,10 @@ async function populateLiveStates() {
     const split = _espnTeamRecord(sk, teamName, side === 'home' ? 'home' : 'road');
     const recSlot = row.querySelector('[data-record-slot]');
     if (recSlot) {
-      if (overall) {
-        const splitTxt = split ? ` · <span class="gc-team-split">${split} ${side === 'home' ? 'home' : 'road'}</span>` : '';
-        recSlot.innerHTML = `${overall} · ${side === 'home' ? 'Home' : 'Road'}${splitTxt}`;
+      if (overall && split) {
+        recSlot.innerHTML = `${overall} overall · <span class="gc-team-split">${split} ${side === 'home' ? 'home' : 'road'}</span>`;
+      } else if (overall) {
+        recSlot.innerHTML = `${overall} overall · ${side === 'home' ? 'Home' : 'Road'}`;
       } else { recSlot.textContent = side === 'home' ? 'Home' : 'Road'; }
     }
     // Score (only when game in progress or final)
