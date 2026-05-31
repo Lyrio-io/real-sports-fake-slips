@@ -545,13 +545,13 @@
   .gc-game-extra { font-size: 11px; color: #52525b; font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 6px; justify-content: center; }
   .gc-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) 1fr 1fr 1fr;
+    grid-template-columns: minmax(60px, 0.9fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
     padding: 6px 14px 16px;
   }
-  .gc-col-header { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0a0a0a; letter-spacing: 0.06em; padding: 6px 4px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .gc-col-header { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0a0a0a; letter-spacing: 0.06em; padding: 6px 2px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
   .gc-col-header svg { width: 12px; height: 12px; opacity: 0.7; }
-  .gc-row-label { font-weight: 700; color: #0a0a0a; padding: 8px 6px; align-self: center; font-size: 15px; line-height: 1.15; }
+  .gc-row-label { font-weight: 700; color: #0a0a0a; padding: 8px 4px; align-self: center; font-size: 14px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .gc-cell {
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
@@ -606,22 +606,22 @@
   }
   .alt-picker-modal.show { display: flex; animation: fadeIn 200ms ease; }
   .alt-picker-sheet {
-    background: linear-gradient(180deg, #f4f4f5 0%, #fafafa 100%);
-    border: 2px solid #f4f4f5;
-    border-radius: 28px;
+    background: #ffffff;
+    border: 1px solid #e4e4e7;
+    border-radius: 24px;
     padding: 0;
     width: 100%; max-width: 460px;
     height: min(92vh, 720px);
     overflow: hidden;
     display: flex; flex-direction: column;
     animation: scaleIn 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 24px 80px -20px rgba(0,0,0,0.7);
+    box-shadow: 0 24px 80px -20px rgba(15,23,42,0.25);
   }
   @keyframes scaleIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
-  .alt-picker-handle { width: 44px; height: 5px; background: #f4f4f5; border-radius: 999px; margin: 10px auto 0; }
+  .alt-picker-handle { width: 44px; height: 5px; background: #d4d4d8; border-radius: 999px; margin: 10px auto 0; }
   .alt-picker-header { padding: 12px 18px 10px; border-bottom: 1px solid #e4e4e7; flex-shrink: 0; }
   .alt-picker-title { font-weight: 800; font-size: 22px; letter-spacing: -0.02em; color: #0a0a0a; text-align: center; margin-top: 6px; }
-  .alt-picker-game { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; padding: 10px 14px; background: #fafafa; border-radius: 14px; }
+  .alt-picker-game { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; padding: 10px 14px; background: #fafafa; border: 1px solid #ececef; border-radius: 12px; }
 
   /* Scroll-snap list — the centered row is the "selected" line */
   .alt-picker-list-wrap { position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; }
@@ -649,23 +649,23 @@
   }
   .alt-picker-row[data-active="true"] { opacity: 1; }
   .alt-picker-side {
-    background: #e4e4e7; border: 1.5px solid #e4e4e7; border-radius: 14px;
-    padding: 12px 10px; cursor: pointer; transition: all 140ms ease;
+    background: #fafafa; border: 1px solid #e4e4e7; border-radius: 12px;
+    padding: 12px 10px; cursor: pointer; transition: border-color 140ms ease, transform 140ms ease;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     min-height: 64px; min-width: 0;
     box-sizing: border-box;
   }
-  .alt-picker-side:hover { border-color: #00b86b; background: #e4e4e7; box-shadow: 0 0 0 1px rgba(0,184,107,0.25), 0 0 16px -4px rgba(0,184,107,0.2); }
+  .alt-picker-side:hover { border-color: #00b86b; background: #f4f4f5; }
   .alt-picker-side:active { transform: scale(0.97); }
   .alt-picker-side .label { font-weight: 700; font-size: 13px; color: #0a0a0a; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .alt-picker-side .price { font-size: 13px; font-weight: 600; color: #71717a; font-variant-numeric: tabular-nums; margin-top: 3px; line-height: 1.1; }
   .alt-picker-side .price.pos { color: #00b86b; }
   .alt-picker-row[data-active="true"] .alt-picker-side {
-    background: linear-gradient(180deg, #a7f3d0 0%, #d1fae5 100%);
-    border-color: #00b86b; box-shadow: 0 0 0 2px #00b86b, 0 6px 20px -4px rgba(0,184,107,0.25);
+    background: #ecfdf5;
+    border-color: #00b86b; box-shadow: 0 0 0 2px rgba(0,184,107,0.25);
   }
-  .alt-picker-row[data-active="true"] .alt-picker-side .label,
-  .alt-picker-row[data-active="true"] .alt-picker-side .price { color: #00b86b; }
+  .alt-picker-row[data-active="true"] .alt-picker-side .label { color: #047857; font-weight: 800; }
+  .alt-picker-row[data-active="true"] .alt-picker-side .price { color: #00b86b; font-weight: 800; }
   .alt-picker-center { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; color: #52525b; text-align: center; padding: 0; transition: color 200ms ease; }
   .alt-picker-row[data-active="true"] .alt-picker-center { color: #0a0a0a; }
 
@@ -1026,6 +1026,9 @@
   .diamond .first  { right: -2px; top: 50%; transform: translateY(-50%); }
   .diamond .second { top: -2px; left: 50%; transform: translateX(-50%); }
   .diamond .third  { left: -2px; top: 50%; transform: translateY(-50%); }
+  /* Home run flash — animated pill that appears when last play was a HR */
+  .gc-hr-flash { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 900; color: #fff; background: linear-gradient(135deg, #f59e0b, #d97706); padding: 4px 9px; border-radius: 999px; margin-right: 8px; text-transform: uppercase; letter-spacing: 0.04em; animation: hrPulse 0.8s ease-in-out infinite alternate; box-shadow: 0 0 14px rgba(245,158,11,0.5); flex-shrink: 0; }
+  @keyframes hrPulse { from { transform: scale(1); } to { transform: scale(1.05); box-shadow: 0 0 20px rgba(245,158,11,0.8); } }
   /* Per-period score breakdown (NBA Q1-Q4, MLB innings, NHL P1-P3) */
   .gc-linescore { padding: 8px 18px 12px; }
   .gc-linescore-table { display: grid; gap: 4px 6px; align-items: center; font-family: ui-monospace, "SF Mono", monospace; font-variant-numeric: tabular-nums; font-size: 11px; }
@@ -5390,6 +5393,7 @@ async function populateLiveStates() {
     cardsTouched.add(row.dataset.gameId);
   }
   // Fill base diamond for MLB (away row shows when away is batting, home row when home is batting)
+  // Also flash a HOME RUN pill when last-play text says someone just went yard.
   document.querySelectorAll('[data-diamond-slot]').forEach(slot => {
     const row = slot.closest('[data-team-row]'); if (!row) return;
     const sk = row.dataset.sportKey; if (sk !== 'baseball_mlb') { slot.innerHTML = ''; return; }
@@ -5402,9 +5406,13 @@ async function populateLiveStates() {
     const detail = (match.event.status?.type?.detail || '').toLowerCase();
     const isBatting = (slot.dataset.diamondSlot === 'away' && detail.includes('top')) || (slot.dataset.diamondSlot === 'home' && detail.includes('bot'));
     if (!isBatting) { slot.innerHTML = ''; return; }
+    // Home-run detection from last-play text — flash a HR pill for ~10s after the play
+    const lastPlay = (sit.lastPlay?.text || sit.lastPlay?.shortText || '').toLowerCase();
+    const isHomeRun = /\bhome run\b|\bhomers?\b|\bhomered\b|\bgrand slam\b/.test(lastPlay);
     const on1 = !!sit.onFirst, on2 = !!sit.onSecond, on3 = !!sit.onThird;
     const label = [on1 ? '1st' : '', on2 ? '2nd' : '', on3 ? '3rd' : ''].filter(Boolean).join(', ') || 'Bases empty';
-    slot.innerHTML = `<div class="diamond" title="${label}"><span class="base second ${on2 ? 'on' : ''}"></span><span class="base first ${on1 ? 'on' : ''}"></span><span class="base third ${on3 ? 'on' : ''}"></span></div>`;
+    const hrPill = isHomeRun ? `<span class="gc-hr-flash" title="${escapeHtml(sit.lastPlay?.text || '')}">🏟️ HR</span>` : '';
+    slot.innerHTML = `${hrPill}<div class="diamond" title="${label}"><span class="base second ${on2 ? 'on' : ''}"></span><span class="base first ${on1 ? 'on' : ''}"></span><span class="base third ${on3 ? 'on' : ''}"></span></div>`;
   });
   // Fill per-period linescore breakdown (NBA Q1-Q4, MLB innings, NHL P1-P3)
   document.querySelectorAll('[data-linescore-slot]').forEach(slot => {
