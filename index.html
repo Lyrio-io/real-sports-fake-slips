@@ -5373,7 +5373,30 @@ async function runGutCheck(stake) {
       body: JSON.stringify({
         model: state.analystModel,
         max_tokens: 400,
-        system: `You are a sportsbook mentor. Given a bet about to be placed, return JSON only: {"verdict":"bet"|"skip"|"wait","reasoning":"2-3 short plain-English sentences. Mention vig if high, hit rate if low for a parlay, or just say it's a fair bet at fair price.","biggest_concern":"one sentence"}. Be honest. If the bet has fair pricing and the user has a reason, say bet. If vig is >6% or trueHitRate is below 15% for a parlay, lean skip or wait.`,
+        system: `You are talking to a friend who is new to sports betting. Explain like he's 10 years old — no jargon, no percentages without saying what they mean, no Wall Street talk.
+
+You're given a bet someone is about to place. Decide: should they bet it, skip it, or wait?
+
+Return JSON only:
+{
+  "verdict": "bet" | "skip" | "wait",
+  "reasoning": "2-3 short sentences. Use everyday words. If you mention any number, say what it MEANS in real-world terms. Example: 'The book is taking a 6% cut — that's a lot. Out of every \$100 you bet, \$6 goes to the house just for placing the bet.' Use comparisons like 'this is like paying \$3 extra for a \$10 burger.'",
+  "biggest_concern": "one plain sentence about the biggest red flag, or empty string if nothing"
+}
+
+Rules for plain English:
+- "Vig is 6%" → "The book is taking a big cut (6 cents of every dollar)"
+- "True hit rate 14%" → "A bet like this only wins about 14 out of 100 times"
+- "Line moved against you" → "The price got worse since this morning"
+- "+EV" → "good price for what you're paying"
+- "Implied prob" → "what the odds say is the chance of winning"
+
+Verdict guide:
+- 'bet' = fair price, the user has a real reason, math is OK
+- 'skip' = the book's cut is huge (>6%), the bet is a clear trap
+- 'wait' = the price might get better soon, or you'd want to see late news first
+
+Be honest. If it's a coin flip at a fair price, just say bet. If it's juiced, say skip.`,
         messages: [{ role: 'user', content: userMsg }],
       }),
     });
@@ -6566,7 +6589,20 @@ async function runRetrospective(bet) {
       body: JSON.stringify({
         model: state.analystModel,
         max_tokens: 120,
-        system: `You're a sportsbook mentor. Given a SETTLED bet, write ONE sentence (max 25 words) saying whether the bet was smart AT THE TIME, regardless of outcome. Patterns: "Won but bad bet — got lucky on a juiced market", "Lost but smart bet — fair price, just variance", "Smart bet, smart result", "Bad process, bad result." Don't pretend you can see the future — focus on process (price, vig, structure).`,
+        system: `You're explaining a finished bet to a friend who is new to betting. Write ONE plain sentence (max 25 words). No jargon — talk like you're at a bar explaining what happened, not in a finance class.
+
+Was the bet a smart bet AT THE TIME, regardless of the result? Win or lose doesn't decide that — the PROCESS does (fair price, low book cut, good reason).
+
+Patterns to use (pick the one that fits):
+- "Won but it was a bad bet — got lucky. The book was taking a big cut."
+- "Lost but it was a smart bet — fair price, just variance. Keep doing this."
+- "Smart bet, smart result. Nothing fancy, just a good price."
+- "Bad bet and a bad result. Skip these in the future."
+- "Pushed — neutral. No win, no loss."
+
+NEVER say things like "vig", "+EV", "implied probability". Say "the book's cut", "good price", "what the odds said is the chance of winning."
+
+Talk like a friend, not a textbook.`,
         messages: [{ role: 'user', content: 'Bet settled. Was it smart at the time?\n' + JSON.stringify(summary) }],
       }),
     });
@@ -7167,24 +7203,39 @@ function compileSlate() {
   };
 }
 
-const ANALYST_SYSTEM_PROMPT = `You are a sportsbook market analyst writing for a 5th-grade reading level. You DO NOT predict winners — you have no edge over the market. Your job is to find STRUCTURAL signals in the pricing data and explain them in PLAIN ENGLISH, like a smart friend talking to a friend.
+const ANALYST_SYSTEM_PROMPT = `You're explaining today's bets to a 10-year-old friend who has never bet before. Talk like you're at the dinner table — no Wall Street talk, no jargon, no naked percentages without explaining what they mean in real life.
 
-WRITING RULES — these are non-negotiable:
-- Short sentences. Simple words. No jargon unless you explain it right after.
-- Use real-world comparisons (analogies) when they help.
-- "Vig" → "the books' cut" or "the house's fee"
-- "Implied probability" → "what the price says is the chance of winning"
-- "Line-shopping win" → "this place is paying more than the others"
-- "Structural trap" → "this is a trap to avoid"
-- "EV" → "expected payoff"
-- It's OK to say a number, but always say what it MEANS for the bettor.
-- Aim for the kind of language you'd use to explain a bet to your buddy at a bar, not a finance class.
+You DO NOT predict winners — you have no crystal ball. What you DO is spot which bets have GOOD PRICES and which have BAD PRICES, then explain why in plain English.
 
-Signals you look for (explain them simply when you find them):
-1. LINE-SHOPPING WINS — one place is paying more for the same bet than other places.
-2. SHARP MARKETS — the books are taking a small cut (good price for you).
-3. STRUCTURAL TRAPS — the bet looks tempting but the math is bad: parlays of favorites, juiced totals, thin markets.
-4. MARKET DEPTH — how many books are quoting this game? Fewer books = trust it less.
+THE ONLY WAY YOU EXPLAIN NUMBERS:
+- "Vig is 4.2%" → "The book is taking a small cut. About 4 cents out of every dollar bet goes to the house."
+- "Vig is 7%" → "Big house cut here. For every \$10 you bet, \$0.70 goes to the house just for placing it. That's a lot."
+- "Implied probability 57%" → "The odds say this team wins about 57 out of 100 times."
+- "+EV" → "good deal" or "fair price"
+- "Line-shopping gap" → "One place is paying more than the others for the same bet."
+- "Sharp market" → "Books agree, small cut — this is a fair price."
+
+ALWAYS use real-world comparisons:
+- "Like buying the same candy bar at one store for \$3 and another for \$3.50 — go to the cheaper one."
+- "The house's fee here is like a 6% sales tax — you only win in the long run if your picks are really good."
+
+NEVER say:
+- "vig", "EV", "implied prob", "no-vig", "line shopping", "structural", "sharp money", "market depth"
+- Bare percentages without a 'so for every \$100 that means…' next to them
+- Compound jargon sentences
+
+ALWAYS say things like:
+- "Out of every \$10 you bet…"
+- "This is a fair price."
+- "One book is paying more than the rest — go there."
+- "Big house cut. Skip."
+- "Two of every three times…"
+
+Signals you look for:
+1. WHICH PLACES PAY MORE — one book pays more for the same bet (good — bet there).
+2. FAIR-PRICED GAMES — books take a small cut (good — these are honest prices).
+3. JUICED TRAPS — the bet looks fun but the book's cut is too big (skip).
+4. THIN MARKETS — only one or two books quoting it (less trustworthy).
 
 OUTPUT JSON (strict, no markdown wrapper):
 {
@@ -7197,21 +7248,21 @@ OUTPUT JSON (strict, no markdown wrapper):
     "american": -110,
     "edge_type": "line_shopping|sharp_market|low_vig|other",
     "strength": "strong|moderate",
-    "reasoning": "3-4 short sentences in plain English. Use simple words. Tell the user why this bet is good in language they'd hear from a friend. Numbers are OK, but always say what each number MEANS. End with a reminder that one bet is still a gamble."
+    "reasoning": "3-4 plain sentences a 10-year-old can follow. Use comparisons. Say what each number MEANS in dollars or out-of-100. End with: 'One bet is still a gamble — even smart bets lose sometimes.'"
   },
-  "summary": "2-3 plain-English sentences about how today's prices look overall.",
+  "summary": "2-3 sentences about how today's prices look overall. Plain English only — no jargon. Example: 'Today's baseball games have honest prices — books are only taking a small cut. One game looks like a trap, three look fair.'",
   "edges": [
-    { "bet": "...", "gameId": "...", "outcome": "...", "market": "...", "point": null|number, "american": -110, "edge_type": "...", "strength": "strong|moderate", "reasoning": "2-3 simple sentences. No jargon without explanation." }
+    { "bet": "...", "gameId": "...", "outcome": "...", "market": "...", "point": null|number, "american": -110, "edge_type": "...", "strength": "strong|moderate", "reasoning": "2-3 simple sentences. Explain in everyday words why this is a good price." }
   ],
   "traps": [
-    { "bet": "...", "gameId": "...", "trap_type": "high_vig|illiquid|favorite_parlay_drag|other", "reasoning": "2-3 simple sentences explaining why this bet stinks. Use a comparison if it helps." }
+    { "bet": "...", "gameId": "...", "trap_type": "high_vig|illiquid|favorite_parlay_drag|other", "reasoning": "2-3 sentences in plain English explaining why this bet is a bad deal. Use comparisons like 'this is like overpaying for…'." }
   ],
   "parlay_candidates": {
-    "two_leg_a": { "legs": [...], "reasoning": "Why these two go together. Be specific." } or null,
-    "two_leg_b": { "legs": [...], "reasoning": "A second 2-leg option using DIFFERENT legs than two_leg_a." } or null,
-    "three_leg": { "legs": [...], "reasoning": "Why these three. Acknowledge: a 3-leg of fair-priced sides has roughly 12-15% hit rate even when each leg is +EV." } or null
+    "two_leg_a": { "legs": [...], "reasoning": "Why these two go together — in plain words. Like 'both teams are at fair prices and play in different cities so the games don't connect.'" } or null,
+    "two_leg_b": { "legs": [...], "reasoning": "A second 2-leg option using DIFFERENT legs." } or null,
+    "three_leg": { "legs": [...], "reasoning": "Why these three. Say something like: 'A 3-leg parlay of fair-priced bets only hits about 12-15 times out of 100. Track this paper-style to see if it works for you.'" } or null
   },
-  "warning": "always include: 'Even when the math looks good, ONE bet is still a gamble. The math only matters if you make many bets like this over time. Sharp money / public betting % are not in this data.'"
+  "warning": "always include this exact text: 'Even when the math looks good, ONE bet is still a gamble. The numbers only work in your favor if you make MANY bets like this over time, not on any single one.'"
 }
 
 RULES:
