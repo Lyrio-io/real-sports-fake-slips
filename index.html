@@ -3141,6 +3141,9 @@ function renderSportChips() {
 
 /* ---------- render lines ---------- */
 function renderLines() {
+  // Preserve scroll position across re-renders so closing modals / picking lines
+  // doesn't snap the user back to the top of the Lines tab.
+  const __savedScrollY = window.scrollY || window.pageYOffset || 0;
   renderLedger();
   renderAiPreview();
   document.getElementById('api-warning').classList.toggle('hidden', !!state.apiKey);
@@ -3208,6 +3211,11 @@ function renderLines() {
   // After Lines render, populate any live ESPN scoreboards on visible game cards
   if (state.activeTab === 'lines') {
     setTimeout(() => populateLiveStates(), 50);
+  }
+  // Restore scroll position so re-renders don't snap the user back to the top.
+  // requestAnimationFrame waits until the new DOM is laid out before we re-scroll.
+  if (__savedScrollY > 0) {
+    requestAnimationFrame(() => { window.scrollTo({ top: __savedScrollY, behavior: 'auto' }); });
   }
 }
 
@@ -3489,7 +3497,11 @@ async function showAltPicker(gameId, sportKey, market) {
     const idx = state.slip.findIndex(l => l.gameId === pendingLeg.gameId && l.market === pendingLeg.market && l.outcome === pendingLeg.outcome && l.point === pendingLeg.point);
     if (idx >= 0) state.slip.splice(idx, 1); else state.slip.push(pendingLeg);
     close();
-    renderLines(); renderSlip(); renderParlay();
+    // Preserve scroll position across the re-render so the page doesn't jump
+    const sy = window.scrollY;
+    renderLines();
+    window.scrollTo({ top: sy, behavior: 'auto' });
+    renderSlip(); renderParlay();
     toast(idx >= 0 ? 'Removed from slip' : 'Added to slip');
   });
 
