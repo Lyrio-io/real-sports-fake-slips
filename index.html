@@ -1007,25 +1007,26 @@
   .live-extras { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-left: auto; }
   .live-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,0.06); color: #27272a; font-size: 11px; font-weight: 700; white-space: nowrap; }
   .poss-dot { display: inline-block; width: 6px; height: 6px; border-radius: 999px; background: #fbbf24; box-shadow: 0 0 6px #fbbf24; }
-  /* Baseball diamond (light theme) */
+  /* Baseball diamond — each base is a perfect square rotated 45° (matches ESPN/MLB widget) */
   .diamond {
-    position: relative; width: 28px; height: 28px;
-    display: inline-flex; align-items: center; justify-content: center;
-    transform: rotate(45deg);
+    position: relative; width: 32px; height: 32px;
+    display: inline-block;
     margin: 0 8px;
     flex-shrink: 0;
   }
   .diamond .base {
-    position: absolute; width: 9px; height: 9px;
+    position: absolute;
+    width: 11px; height: 11px;
     background: #ffffff;
-    border: 1.5px solid #d4d4d8;
-    border-radius: 2px;
+    border: 1.5px solid #cbd5e1;
+    transform: rotate(45deg);
+    box-sizing: border-box;
     transition: all 200ms ease;
   }
-  .diamond .base.on { background: #fbbf24; border-color: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,0.5); }
-  .diamond .first  { right: -2px; top: 50%; transform: translateY(-50%); }
-  .diamond .second { top: -2px; left: 50%; transform: translateX(-50%); }
-  .diamond .third  { left: -2px; top: 50%; transform: translateY(-50%); }
+  .diamond .base.on { background: #fbbf24; border-color: #d97706; box-shadow: 0 0 6px rgba(245,158,11,0.5); }
+  .diamond .second { top: 0; left: 50%; margin-left: -5.5px; }
+  .diamond .first  { top: 50%; right: 0; margin-top: -5.5px; }
+  .diamond .third  { top: 50%; left: 0; margin-top: -5.5px; }
   /* Home run flash — animated pill that appears when last play was a HR */
   .gc-hr-flash { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 900; color: #fff; background: linear-gradient(135deg, #f59e0b, #d97706); padding: 4px 9px; border-radius: 999px; margin-right: 8px; text-transform: uppercase; letter-spacing: 0.04em; animation: hrPulse 0.8s ease-in-out infinite alternate; box-shadow: 0 0 14px rgba(245,158,11,0.5); flex-shrink: 0; }
   @keyframes hrPulse { from { transform: scale(1); } to { transform: scale(1.05); box-shadow: 0 0 20px rgba(245,158,11,0.8); } }
