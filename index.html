@@ -3751,14 +3751,10 @@ function renderGameCard(g, sportKey, marketFilter) {
     const sign = payload.american > 0 ? 'pos' : 'neg';
     const data = JSON.stringify(payload).replace(/'/g, '&#39;');
     const sel = state.slip.some(l => l.gameId === payload.gameId && l.market === payload.market && l.outcome === payload.outcome && l.point === payload.point);
-    if (opensModal) {
-      return `<button class="gc-cell" data-gc-modal='${modalArgs}' data-selected="${sel}">
-        ${lineDisplay ? `<div class="gc-cell-line">${lineDisplay}</div>` : ''}
-        <div class="gc-cell-price ${sign}">${fmtAmerican(payload.american)}</div>
-      </button>`;
-    }
-    return `<button class="gc-cell" data-leg='${data}' data-selected="${sel}">
-      <div class="gc-cell-price ${sign}" style="font-size:16px;font-weight:800;color:${payload.american>0?'#00b86b':'#0a0a0a'}">${fmtAmerican(payload.american)}</div>
+    const attrs = opensModal ? `data-gc-modal='${modalArgs}'` : `data-leg='${data}'`;
+    return `<button class="gc-cell" ${attrs} data-selected="${sel}">
+      ${lineDisplay ? `<div class="gc-cell-line">${lineDisplay}</div>` : ''}
+      <div class="gc-cell-price ${sign}">${fmtAmerican(payload.american)}</div>
     </button>`;
   }
 
@@ -4015,22 +4011,6 @@ function renderGameCard(g, sportKey, marketFilter) {
     if (!shopBadge && !moveBadge) return '';
     return `<div class="shop-row"><span class="shop-label">${label}</span> ${shopBadge} ${moveBadge}</div>`;
   }
-  const shopFooter = (() => {
-    const rows = [
-      activeSpreadAway ? shopRow(`${_teamCode(away)} ${activeSpreadAway.point > 0 ? '+' : ''}${activeSpreadAway.point}`, 'spreads', away, activeSpreadAway.point, activeSpreadAway) : '',
-      activeSpreadHome ? shopRow(`${_teamCode(home)} ${activeSpreadHome.point > 0 ? '+' : ''}${activeSpreadHome.point}`, 'spreads', home, activeSpreadHome.point, activeSpreadHome) : '',
-      activeOver ? shopRow(`Over ${activeOver.point}`, 'totals', 'Over', activeOver.point, activeOver) : '',
-      activeUnder ? shopRow(`Under ${activeUnder.point}`, 'totals', 'Under', activeUnder.point, activeUnder) : '',
-      h2hAway ? shopRow(`${_teamCode(away)} ML`, 'h2h', away, null, h2hAway) : '',
-      h2hHome ? shopRow(`${_teamCode(home)} ML`, 'h2h', home, null, h2hHome) : '',
-    ].filter(Boolean);
-    if (!rows.length) return '';
-    return `<div class="shop-footer">
-      <div class="shop-footer-label">🛒 Line shop &amp; movement</div>
-      ${rows.join('')}
-    </div>`;
-  })();
-
   // Expanded view — chevron pinned to top-right corner of the card
   return `<article class="game-card gc expanded fade-in" data-game-id="${g.id}">
     <div class="gc-stripe left" style="background:${stripeColorAway}"></div>
@@ -4045,7 +4025,6 @@ function renderGameCard(g, sportKey, marketFilter) {
       ${rowFor(home, true)}
     </div>
     ${vigFooter}
-    ${shopFooter}
     ${extraButtons || extraSection ? `<div class="px-4 pb-4 -mt-1"><div class="flex gap-3 flex-wrap">${extraButtons}</div>${extraSection}</div>` : ''}
   </article>`;
 }
