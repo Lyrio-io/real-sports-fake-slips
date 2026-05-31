@@ -1007,24 +1007,36 @@
   .live-extras { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-left: auto; }
   .live-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,0.06); color: #27272a; font-size: 11px; font-weight: 700; white-space: nowrap; }
   .poss-dot { display: inline-block; width: 6px; height: 6px; border-radius: 999px; background: #fbbf24; box-shadow: 0 0 6px #fbbf24; }
-  /* Baseball diamond */
+  /* Baseball diamond (light theme) */
   .diamond {
     position: relative; width: 28px; height: 28px;
     display: inline-flex; align-items: center; justify-content: center;
     transform: rotate(45deg);
-    margin: 0 2px;
+    margin: 0 8px;
+    flex-shrink: 0;
   }
   .diamond .base {
-    position: absolute; width: 8px; height: 8px;
-    background: rgba(255,255,255,0.18);
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 1px;
+    position: absolute; width: 9px; height: 9px;
+    background: #ffffff;
+    border: 1.5px solid #d4d4d8;
+    border-radius: 2px;
     transition: all 200ms ease;
   }
-  .diamond .base.on { background: #00b86b; border-color: #00b86b; box-shadow: 0 0 8px #00b86b; }
+  .diamond .base.on { background: #fbbf24; border-color: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,0.5); }
   .diamond .first  { right: -2px; top: 50%; transform: translateY(-50%); }
   .diamond .second { top: -2px; left: 50%; transform: translateX(-50%); }
   .diamond .third  { left: -2px; top: 50%; transform: translateY(-50%); }
+  /* Per-period score breakdown (NBA Q1-Q4, MLB innings, NHL P1-P3) */
+  .gc-linescore { padding: 8px 18px 12px; }
+  .gc-linescore-table { display: grid; gap: 4px 6px; align-items: center; font-family: ui-monospace, "SF Mono", monospace; font-variant-numeric: tabular-nums; font-size: 11px; }
+  .gc-linescore-table .ls-h { font-size: 9px; color: #71717a; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 0; border-bottom: 1px solid #e4e4e7; }
+  .gc-linescore-table .ls-h.now { color: #b91c1c; background: #fef2f2; border-bottom-color: #fecaca; border-radius: 4px 4px 0 0; }
+  .gc-linescore-table .ls-team { font-size: 10px; font-weight: 800; color: #0a0a0a; padding: 3px 4px; }
+  .gc-linescore-table .ls-v { text-align: center; color: #0a0a0a; font-weight: 700; padding: 3px 0; }
+  .gc-linescore-table .ls-v.now { color: #b91c1c; font-weight: 900; background: #fef2f2; }
+  .gc-linescore-table .ls-v.empty { color: #d4d4d8; }
+  .gc-linescore-table .ls-total { font-weight: 900; color: #0a0a0a; padding-left: 8px; border-left: 1px solid #e4e4e7; text-align: right; }
+  .gc-linescore-table .ls-total.dim { color: #a1a1aa; }
   /* Live score row */
   .live-score-row {
     display: grid; grid-template-columns: minmax(0,1fr) auto auto auto minmax(0,1fr);
@@ -3943,6 +3955,7 @@ function renderGameCard(g, sportKey, marketFilter) {
         <div class="gc-team-name">${escapeHtml(_teamShortName(away))}</div>
         <div class="gc-team-meta-sub" data-record-slot="away">Loading…</div>
       </div>
+      <div data-diamond-slot="away" class="gc-diamond-slot"></div>
       <div class="gc-team-score empty" data-score-slot="away"></div>
     </div>
     <div class="gc-team-row" data-team-row="home" data-game-id="${g.id}" data-team="${escapeHtml(home)}" data-sport-key="${escapeHtml(sportKey)}">
@@ -3951,8 +3964,10 @@ function renderGameCard(g, sportKey, marketFilter) {
         <div class="gc-team-name">${escapeHtml(_teamShortName(home))}</div>
         <div class="gc-team-meta-sub" data-record-slot="home">Loading…</div>
       </div>
+      <div data-diamond-slot="home" class="gc-diamond-slot"></div>
       <div class="gc-team-score empty" data-score-slot="home"></div>
     </div>
+    <div data-linescore-slot="${g.id}" data-sport-key="${escapeHtml(sportKey)}" data-away="${escapeHtml(away)}" data-home="${escapeHtml(home)}"></div>
     ${sportKey === 'baseball_mlb' ? `<div class="gc-pitchers" data-pitcher-slot="${g.id}"></div>` : ''}`;
 
   if (!isExpanded) {
@@ -5374,6 +5389,64 @@ async function populateLiveStates() {
     }
     cardsTouched.add(row.dataset.gameId);
   }
+  // Fill base diamond for MLB (away row shows when away is batting, home row when home is batting)
+  document.querySelectorAll('[data-diamond-slot]').forEach(slot => {
+    const row = slot.closest('[data-team-row]'); if (!row) return;
+    const sk = row.dataset.sportKey; if (sk !== 'baseball_mlb') { slot.innerHTML = ''; return; }
+    const data = _liveCache[sk]?.data; if (!data) return;
+    const match = _findEspnEvent(data, row.parentElement.querySelector('[data-team-row="away"]')?.dataset.team, row.parentElement.querySelector('[data-team-row="home"]')?.dataset.team);
+    if (!match) { slot.innerHTML = ''; return; }
+    const sit = match.comp.situation || {};
+    const state = match.event.status?.type?.state;
+    if (state !== 'in') { slot.innerHTML = ''; return; }
+    const detail = (match.event.status?.type?.detail || '').toLowerCase();
+    const isBatting = (slot.dataset.diamondSlot === 'away' && detail.includes('top')) || (slot.dataset.diamondSlot === 'home' && detail.includes('bot'));
+    if (!isBatting) { slot.innerHTML = ''; return; }
+    const on1 = !!sit.onFirst, on2 = !!sit.onSecond, on3 = !!sit.onThird;
+    const label = [on1 ? '1st' : '', on2 ? '2nd' : '', on3 ? '3rd' : ''].filter(Boolean).join(', ') || 'Bases empty';
+    slot.innerHTML = `<div class="diamond" title="${label}"><span class="base second ${on2 ? 'on' : ''}"></span><span class="base first ${on1 ? 'on' : ''}"></span><span class="base third ${on3 ? 'on' : ''}"></span></div>`;
+  });
+  // Fill per-period linescore breakdown (NBA Q1-Q4, MLB innings, NHL P1-P3)
+  document.querySelectorAll('[data-linescore-slot]').forEach(slot => {
+    const sk = slot.dataset.sportKey; if (!ESPN_SPORT_PATH[sk]) return;
+    const data = _liveCache[sk]?.data; if (!data) return;
+    const match = _findEspnEvent(data, slot.dataset.away, slot.dataset.home);
+    if (!match) { slot.innerHTML = ''; return; }
+    const state = match.event.status?.type?.state;
+    if (state === 'pre') { slot.innerHTML = ''; return; }
+    const currentPeriod = match.event.status?.period || 1;
+    const away = match.away, home = match.home;
+    const awayLs = away.linescores || []; const homeLs = home.linescores || [];
+    if (!awayLs.length && !homeLs.length) { slot.innerHTML = ''; return; }
+    // Determine total period count to display (4 for basketball/football, 3 for hockey, 9 for baseball)
+    const maxPeriods = sk === 'baseball_mlb' ? 9 : sk === 'icehockey_nhl' ? 3 : 4;
+    const numPeriods = Math.max(awayLs.length, homeLs.length, currentPeriod, sk === 'baseball_mlb' ? 9 : 4);
+    const showPeriods = Math.min(numPeriods, sk === 'baseball_mlb' ? 9 : 4);
+    const periodLabel = sk === 'baseball_mlb' ? 'I' : sk === 'icehockey_nhl' ? 'P' : 'Q';
+    const headerCells = [];
+    for (let i = 1; i <= showPeriods; i++) {
+      const isNow = state === 'in' && i === currentPeriod;
+      headerCells.push(`<div class="ls-h ${isNow ? 'now' : ''}">${periodLabel}${i}</div>`);
+    }
+    function teamRow(teamName, ls, isWinner) {
+      const vals = [];
+      for (let i = 1; i <= showPeriods; i++) {
+        const v = ls[i - 1]?.value;
+        const isNow = state === 'in' && i === currentPeriod;
+        vals.push(`<div class="ls-v ${isNow ? 'now' : ''} ${v == null ? 'empty' : ''}">${v != null ? v : '—'}</div>`);
+      }
+      const total = (ls || []).reduce((a, x) => a + (parseInt(x.value, 10) || 0), 0);
+      return `<div class="ls-team">${escapeHtml(_teamShortName(teamName))}</div>${vals.join('')}<div class="ls-total ${isWinner ? '' : 'dim'}">${total}</div>`;
+    }
+    const awayTotal = (awayLs || []).reduce((a, x) => a + (parseInt(x.value, 10) || 0), 0);
+    const homeTotal = (homeLs || []).reduce((a, x) => a + (parseInt(x.value, 10) || 0), 0);
+    const gridCols = `48px ${'1fr '.repeat(showPeriods)}48px`;
+    slot.innerHTML = `<div class="gc-linescore"><div class="gc-linescore-table" style="grid-template-columns:${gridCols}">
+      <div></div>${headerCells.join('')}<div class="ls-h">T</div>
+      ${teamRow(slot.dataset.away, awayLs, awayTotal >= homeTotal)}
+      ${teamRow(slot.dataset.home, homeLs, homeTotal >= awayTotal)}
+    </div></div>`;
+  });
   // Fill pitcher info for MLB cards
   document.querySelectorAll('[data-pitcher-slot]').forEach(slot => {
     const row = document.querySelector(`[data-team-row][data-game-id="${slot.dataset.pitcherSlot}"]`);
