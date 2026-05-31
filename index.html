@@ -470,6 +470,23 @@
   .gc-stripe { position: absolute; top: 0; width: 64px; height: 64px; pointer-events: none; opacity: 0; }
   .gc-stripe.left { left: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
   .gc-stripe.right { right: 0; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+
+  /* === Look 15 single-column header + stacked team rows === */
+  .gc-meta-strip { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 8px; }
+  .gc-meta-left, .gc-meta-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .gc-league { font-size: 11px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; }
+  .gc-when { font-size: 11px; font-weight: 700; color: #0a0a0a; }
+  .gc-live-tag { font-size: 11px; font-weight: 800; color: #b91c1c; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 5px; }
+  .gc-live-tag .pulse-dot { width: 6px; height: 6px; }
+  .gc-team-row { display: flex; align-items: center; gap: 12px; padding: 8px 18px; }
+  .gc-team-row + .gc-team-row { padding-top: 4px; padding-bottom: 14px; }
+  .gc-team-info { flex: 1; min-width: 0; }
+  .gc-team-name { font-size: 16px; font-weight: 800; color: #0a0a0a; line-height: 1.15; letter-spacing: -0.015em; }
+  .gc-team-meta-sub { font-size: 11px; color: #71717a; font-weight: 500; margin-top: 2px; }
+  .gc-team-meta-sub .gc-team-split { color: #a1a1aa; }
+  /* Hide the legacy AWAY/HOME chips if any markup still references them */
+  .gc-team-position { display: none; }
+
   .gc-header { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; padding: 18px 18px 14px; align-items: center; position: relative; }
   .gc-team-side { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .gc-team-side.home { flex-direction: row-reverse; }
@@ -3763,29 +3780,28 @@ function renderGameCard(g, sportKey, marketFilter) {
   const liveSlotHtml = isLive ? `<div class="live-slot gc-live-slot" data-sport-key="${escapeHtml(sportKey || '')}" data-away="${escapeHtml(away)}" data-home="${escapeHtml(home)}"><div class="gc-live-loading">📺 Loading live score…</div></div>` : '';
 
   const headerHtml = `
-    <div class="gc-header">
-      <div class="gc-team-side away">
-        ${teamAvatarHTML(sportKey, away, stripeColorAway, 44)}
-        <div class="gc-team-meta">
-          <span class="gc-team-position away">AWAY</span>
-          <div class="gc-team-code">${_teamShortName(away)}</div>
-          <div class="gc-team-record">${_teamRecord(away, g.id)} <span class="gc-team-split">· ${_teamSplitRecord(away, g.id, false)} road</span></div>
-        </div>
+    <div class="gc-meta-strip">
+      <div class="gc-meta-left">
+        <span class="gc-league">${escapeHtml(sportTitle)}</span>
       </div>
-      <div class="gc-game-mid">
-        <div class="gc-game-time">${escapeHtml(startStr)}</div>
-        <div class="gc-game-extra">${dayStr ? escapeHtml(dayStr) + (isLive ? ' · ' : '') : ''}${isLive ? '<span class="text-danger-500 font-bold flex items-center gap-1"><span class="pulse-dot"></span>LIVE</span>' : ''}</div>
-      </div>
-      <div class="gc-team-side home">
-        ${teamAvatarHTML(sportKey, home, stripeColorHome, 44)}
-        <div class="gc-team-meta">
-          <span class="gc-team-position home">HOME</span>
-          <div class="gc-team-code">${_teamShortName(home)}</div>
-          <div class="gc-team-record">${_teamRecord(home, g.id)} <span class="gc-team-split">· ${_teamSplitRecord(home, g.id, true)} home</span></div>
-        </div>
+      <div class="gc-meta-right">
+        ${isLive ? '<span class="gc-live-tag"><span class="pulse-dot"></span> LIVE</span>' : `<span class="gc-when">${escapeHtml(dayStr ? dayStr + ' ' : '')}${escapeHtml(startStr)}</span>`}
       </div>
     </div>
-    ${liveSlotHtml}`;
+    <div class="gc-team-row">
+      ${teamAvatarHTML(sportKey, away, stripeColorAway, 44)}
+      <div class="gc-team-info">
+        <div class="gc-team-name">${escapeHtml(_teamShortName(away))}</div>
+        <div class="gc-team-meta-sub">${_teamRecord(away, g.id)} · Road · <span class="gc-team-split">${_teamSplitRecord(away, g.id, false)}</span></div>
+      </div>
+    </div>
+    <div class="gc-team-row">
+      ${teamAvatarHTML(sportKey, home, stripeColorHome, 44)}
+      <div class="gc-team-info">
+        <div class="gc-team-name">${escapeHtml(_teamShortName(home))}</div>
+        <div class="gc-team-meta-sub">${_teamRecord(home, g.id)} · Home · <span class="gc-team-split">${_teamSplitRecord(home, g.id, true)}</span></div>
+      </div>
+    </div>`;
 
   if (!isExpanded) {
     // Compact view — entire card is clickable to expand
@@ -3793,6 +3809,7 @@ function renderGameCard(g, sportKey, marketFilter) {
       <div class="gc-stripe left" style="background:${stripeColorAway}"></div>
       <div class="gc-stripe right" style="background:${stripeColorHome}"></div>
       ${headerHtml}
+      ${liveSlotHtml}
       ${summaryHtml}
     </article>`;
   }
@@ -3853,6 +3870,7 @@ function renderGameCard(g, sportKey, marketFilter) {
     <div class="gc-stripe right" style="background:${stripeColorHome}"></div>
     <button class="gc-chevron-corner" data-toggle-card="${g.id}" aria-label="Collapse">${chevSvg}</button>
     ${headerHtml}
+    ${liveSlotHtml}
     <div class="gc-grid">
       <div></div>
       ${headerCells}
