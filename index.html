@@ -756,14 +756,15 @@
   .gc-live-loading { color: #6b7280; font-size: 11px; font-style: italic; }
 
   /* Line-shopping + movement footer */
-  .shop-footer { padding: 8px 14px 12px; border-top: 1px dashed #e4e4e7; margin: 0 4px; }
-  .shop-footer-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; font-weight: 700; margin-bottom: 6px; }
-  .shop-row { font-size: 11px; padding: 3px 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .shop-row .shop-label { font-weight: 700; color: #cbd5e1; min-width: 90px; }
-  .shop-badge { background: rgba(0,184,107,0.1); color: #00b86b; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-family: ui-monospace, monospace; }
-  .move-badge { padding: 1px 6px; border-radius: 4px; font-weight: 700; font-family: ui-monospace, monospace; }
-  .move-badge.up { background: rgba(0,184,107,0.1); color: #00b86b; }
-  .move-badge.down { background: rgba(239,68,68,0.12); color: #ef4444; }
+  .shop-footer { padding: 12px 16px 14px; border-top: 1px solid #e4e4e7; margin: 0 4px; background: #fafafa; border-radius: 0 0 14px 14px; }
+  .shop-footer-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #52525b; font-weight: 800; margin-bottom: 8px; }
+  .shop-row { font-size: 12px; padding: 5px 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-top: 1px solid #ececef; }
+  .shop-row:first-of-type { border-top: 0; padding-top: 0; }
+  .shop-row .shop-label { font-weight: 700; color: #0a0a0a; min-width: 90px; }
+  .shop-badge { background: #ecfdf5; color: #047857; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; border: 1px solid #a7f3d0; }
+  .move-badge { padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; border: 1px solid transparent; }
+  .move-badge.up { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .move-badge.down { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
 
   /* Vig + fair-price footer (per-card "is this a sharp or juiced line?" callout) */
   .vig-footer { padding: 8px 14px 12px; border-top: 1px dashed #e4e4e7; margin: 0 4px; }
@@ -3866,11 +3867,38 @@ function renderGameCard(g, sportKey, marketFilter) {
   // Chevron SVG
   const chevSvg = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6"/></svg>';
 
-  // Compact summary pieces (when collapsed): show consensus spread / total / ML in 3 small chips
-  const sumSpreadPt = activeSpreadHome?.point ?? spreadPoint;
-  const sumSpreadPrice = activeSpreadHome?.american;
-  const sumTotalPt = activeTotal;
-  const sumTotalPrice = activeOver?.american;
+  // Summary picks: prefer the alt line whose price sits closest to -110 (a "fair" spread).
+  // Run-line / heavy spreads get hidden behind big +260 / -240 prices — find a more readable line.
+  const closestToEvenSpread = (() => {
+    if (!altDataLocal) return null;
+    let best = null;
+    for (const bm of altDataLocal.bookmakers || []) {
+      const m = (bm.markets || []).find(m => m.key === 'alternate_spreads'); if (!m) continue;
+      for (const o of m.outcomes || []) {
+        if (o.name !== home) continue;
+        const dist = Math.abs(americanToImplied(o.price) - 0.524); // 0.524 implied = -110
+        if (!best || dist < best.dist) best = { dist, american: o.price, point: o.point, book: bm.title };
+      }
+    }
+    return best;
+  })();
+  const closestToEvenTotal = (() => {
+    if (!altDataLocal) return null;
+    let best = null;
+    for (const bm of altDataLocal.bookmakers || []) {
+      const m = (bm.markets || []).find(m => m.key === 'alternate_totals'); if (!m) continue;
+      for (const o of m.outcomes || []) {
+        if (o.name !== 'Over') continue;
+        const dist = Math.abs(americanToImplied(o.price) - 0.524);
+        if (!best || dist < best.dist) best = { dist, american: o.price, point: o.point, book: bm.title };
+      }
+    }
+    return best;
+  })();
+  const sumSpreadPt = closestToEvenSpread?.point ?? activeSpreadHome?.point ?? spreadPoint;
+  const sumSpreadPrice = closestToEvenSpread?.american ?? activeSpreadHome?.american;
+  const sumTotalPt = closestToEvenTotal?.point ?? activeTotal;
+  const sumTotalPrice = closestToEvenTotal?.american ?? activeOver?.american;
   const sumMlAway = h2hAway?.american;
   const sumMlHome = h2hHome?.american;
 
@@ -3971,8 +3999,19 @@ function renderGameCard(g, sportKey, marketFilter) {
     if (!currentBest) return '';
     const gap = bestVsMedianGapCents(g, market, outcome, point);
     const mv = lineMoveSinceOpen(g.id, market, outcome, point, currentBest.american);
-    const shopBadge = gap && gap.gapCents > 0 ? `<span class="shop-badge">+${gap.gapCents}¢ at ${escapeHtml(gap.bestBook)} (${gap.nBooks} books)</span>` : '';
-    const moveBadge = mv ? `<span class="move-badge ${mv.deltaCents > 0 ? 'up' : 'down'}">${mv.deltaCents > 0 ? '▲' : '▼'} ${Math.abs(mv.deltaCents)}¢ since open (${fmtAmerican(mv.openAmerican)} → ${fmtAmerican(currentBest.american)})</span>` : '';
+    // Translate "+5¢" into something an amateur understands: dollars-per-$100-bet edge
+    // Worth a $100 bet → +5¢ ≈ $5 better than the median across books for the same outcome.
+    const shopBadge = gap && gap.gapCents >= 2 ?
+      `<span class="shop-badge" title="Best price across ${gap.nBooks} books">Best price at ${escapeHtml(gap.bestBook)} · ~$${gap.gapCents} extra per $100</span>` : '';
+    // Line movement: translate cents to "favored more" / "less favored"
+    const moveBadge = mv ? (() => {
+      const isFavored = currentBest.american < 0;
+      // For a favorite, line dropping (more negative) = market loves them more.
+      // For a dog, line rising (more positive) = market less confident.
+      const movedToward = mv.deltaCents > 0 ? 'cheaper to bet' : 'more expensive';
+      const direction = mv.deltaCents > 0 ? 'up' : 'down';
+      return `<span class="move-badge ${direction}" title="${fmtAmerican(mv.openAmerican)} → ${fmtAmerican(currentBest.american)}">Line ${movedToward} (was ${fmtAmerican(mv.openAmerican)}, now ${fmtAmerican(currentBest.american)})</span>`;
+    })() : '';
     if (!shopBadge && !moveBadge) return '';
     return `<div class="shop-row"><span class="shop-label">${label}</span> ${shopBadge} ${moveBadge}</div>`;
   }
