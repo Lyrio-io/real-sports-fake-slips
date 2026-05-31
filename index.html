@@ -335,6 +335,29 @@
   .streak-cold { background: #f4f4f5; color: #71717a; border-color: #e4e4e7; }
   .streak-cold .streak-flame { filter: grayscale(1); opacity: 0.5; }
 
+  /* Settle effects */
+  .bankroll-loss-flash { animation: bankrollLossFlash 700ms ease-out; }
+  @keyframes bankrollLossFlash {
+    0% { background-color: rgba(239,68,68,0); }
+    20% { background-color: rgba(239,68,68,0.25); }
+    100% { background-color: rgba(239,68,68,0); }
+  }
+  .bankroll-floater {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px; font-weight: 900;
+    color: #00b86b;
+    text-shadow: 0 4px 14px rgba(0,184,107,0.35);
+    z-index: 10000;
+    pointer-events: none;
+    opacity: 1;
+    transition: transform 1.2s cubic-bezier(0.2, 0.7, 0.3, 1), opacity 1.2s ease-out;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .bankroll-floater.rise { transform: translate(-50%, -180%); opacity: 0; }
+
   /* === PERIOD SECTION (F3 / F5 / F7 etc.) === */
   .period-section {
     background: linear-gradient(180deg, #fafafa 0%, #fafafa 100%);
@@ -5921,6 +5944,114 @@ function formatCountdown(ms) {
 }
 function manualSettle(betId, result) { const p=P(); if (!p) return; const b=p.bets.find(x=>x.id===betId); if (!b) return; b.legs.forEach(l => l.status = result==='push'?'push':result); finalizeBet(b, result); }
 function cancelBet(betId) { const p=P(); if (!p) return; const b=p.bets.find(x=>x.id===betId); if (!b) return; b.status='void'; b.payout=b.stake; b.settledAt=nowISO(); p.bankroll+=b.stake; persistProfiles(); renderOpenBets(); renderHeader(); renderHistory(); renderStats(); toast('Voided.'); }
+/* ===== Settle Animations + Haptics =====
+   Casino-feel feedback when bets settle: ascending tone + confetti for wins,
+   soft thud + brief red fade for losses. Configurable to off in Settings. */
+let _audioCtx = null;
+function _getAudio() {
+  if (_audioCtx) return _audioCtx;
+  try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch { _audioCtx = null; }
+  return _audioCtx;
+}
+function playTone(kind) {
+  if (P()?.settings?.muteEffects) return;
+  const ctx = _getAudio(); if (!ctx) return;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain); gain.connect(ctx.destination);
+  if (kind === 'win') {
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(620, now);
+    osc.frequency.exponentialRampToValueAtTime(1240, now + 0.18);
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    osc.start(now); osc.stop(now + 0.28);
+  } else if (kind === 'loss') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(110, now + 0.18);
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    osc.start(now); osc.stop(now + 0.25);
+  }
+}
+function triggerHaptic(kind) {
+  if (P()?.settings?.muteEffects) return;
+  if (!navigator.vibrate) return;
+  if (kind === 'win') navigator.vibrate([20, 40, 20]);
+  else if (kind === 'loss') navigator.vibrate(80);
+}
+function spawnConfetti() {
+  if (P()?.settings?.muteEffects) return;
+  let canvas = document.getElementById('confetti-canvas');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'confetti-canvas';
+    canvas.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999;';
+    document.body.appendChild(canvas);
+  }
+  const ctx2 = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr;
+  ctx2.scale(dpr, dpr);
+  const colors = ['#00b86b', '#34d399', '#fbbf24', '#3b82f6', '#a855f7'];
+  const parts = [];
+  for (let i = 0; i < 60; i++) {
+    parts.push({
+      x: window.innerWidth / 2 + (Math.random() - 0.5) * 120,
+      y: window.innerHeight / 3,
+      vx: (Math.random() - 0.5) * 8,
+      vy: -Math.random() * 9 - 4,
+      g: 0.35,
+      rot: Math.random() * Math.PI * 2,
+      vRot: (Math.random() - 0.5) * 0.3,
+      size: 6 + Math.random() * 5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      life: 1,
+    });
+  }
+  const startTs = performance.now();
+  function frame(ts) {
+    const dt = (ts - startTs) / 1000;
+    ctx2.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    let alive = 0;
+    for (const p of parts) {
+      p.x += p.vx; p.y += p.vy; p.vy += p.g; p.rot += p.vRot;
+      p.life = Math.max(0, 1 - dt / 1.0);
+      if (p.life > 0 && p.y < window.innerHeight + 20) alive++;
+      ctx2.save();
+      ctx2.globalAlpha = p.life;
+      ctx2.translate(p.x, p.y);
+      ctx2.rotate(p.rot);
+      ctx2.fillStyle = p.color;
+      ctx2.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.4);
+      ctx2.restore();
+    }
+    if (alive > 0 && dt < 1.5) requestAnimationFrame(frame);
+    else { ctx2.clearRect(0, 0, window.innerWidth, window.innerHeight); }
+  }
+  requestAnimationFrame(frame);
+}
+function flashBankrollLoss() {
+  document.querySelectorAll('[id*="bankroll"], [class*="bankroll"]').forEach(el => {
+    el.classList.add('bankroll-loss-flash');
+    setTimeout(() => el.classList.remove('bankroll-loss-flash'), 700);
+  });
+}
+function animateBankrollTickUp(amount) {
+  // Brief pulse + small upward shimmer on bankroll displays — the actual value
+  // already updates via renderHeader(). This adds a visual "+$X" floater.
+  const floater = document.createElement('div');
+  floater.className = 'bankroll-floater';
+  floater.textContent = '+' + fmt$(amount);
+  document.body.appendChild(floater);
+  requestAnimationFrame(() => { floater.classList.add('rise'); });
+  setTimeout(() => floater.remove(), 1400);
+}
+
 function finalizeBet(b, result) {
   const p=P(); if (!p) return;
   if (result==='won') { b.status='won'; b.payout=b.stake*b.decimal; }
@@ -5928,6 +6059,9 @@ function finalizeBet(b, result) {
   else if (result==='push') { b.status='push'; b.payout=b.stake; }
   b.settledAt=nowISO(); p.bankroll+=b.payout;
   persistProfiles();
+  // Settle effects (tone + haptic + confetti or red fade)
+  if (result === 'won') { playTone('win'); triggerHaptic('win'); spawnConfetti(); animateBankrollTickUp(b.payout - b.stake); }
+  else if (result === 'lost') { playTone('loss'); triggerHaptic('loss'); flashBankrollLoss(); }
   notifyResolution(b);
   // Lock-screen-ready OS notification (when permission granted)
   const pl = b.status === 'won' ? (b.payout - b.stake) : b.status === 'lost' ? -b.stake : 0;
