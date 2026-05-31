@@ -316,6 +316,25 @@
      button no longer serves any purpose. */
   .gc-chevron-corner { display: none !important; }
 
+  /* Performance Score + Discipline Streak chips (header) */
+  #perf-chip-host { display: flex; gap: 8px; align-items: center; }
+  .perf-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 50px; padding: 5px 10px; border-radius: 12px; border: 1.5px solid; cursor: pointer; transition: transform 140ms ease; }
+  .perf-chip:hover { transform: translateY(-1px); }
+  .perf-chip-num { font-weight: 900; font-size: 16px; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .perf-chip-lbl { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; margin-top: 2px; opacity: 0.85; }
+  .perf-chip-elite { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #047857; border-color: #00b86b; }
+  .perf-chip-good  { background: #ecfdf5; color: #059669; border-color: #6ee7b7; }
+  .perf-chip-avg   { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .perf-chip-low   { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
+  .streak-chip { display: flex; align-items: center; gap: 3px; padding: 5px 9px; border-radius: 12px; border: 1.5px solid; font-size: 12px; font-weight: 800; }
+  .streak-chip .streak-flame { font-size: 11px; }
+  .streak-chip .streak-num { font-variant-numeric: tabular-nums; }
+  .streak-chip .streak-lbl { font-size: 9px; font-weight: 700; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.04em; }
+  .streak-on { background: #fef3c7; color: #92400e; border-color: #fbbf24; }
+  .streak-warm { background: #fef9e7; color: #b45309; border-color: #fde68a; }
+  .streak-cold { background: #f4f4f5; color: #71717a; border-color: #e4e4e7; }
+  .streak-cold .streak-flame { filter: grayscale(1); opacity: 0.5; }
+
   /* === PERIOD SECTION (F3 / F5 / F7 etc.) === */
   .period-section {
     background: linear-gradient(180deg, #fafafa 0%, #fafafa 100%);
@@ -1254,6 +1273,7 @@
           </div>
         </div>
         <div class="flex items-center gap-1.5 flex-shrink-0">
+          <div id="perf-chip-host"></div>
           <button id="quick-swap-mobile" class="quick-swap" title="Swap profile" aria-label="Swap profile">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16l4-4-4-4"/><path d="M17 8l-4 4 4 4"/></svg>
             Swap
@@ -2688,6 +2708,80 @@ function lifetimeProfit(p) {
 function currentWeekPL(p) {
   if (!p) return 0;
   return p.bankroll - (p.bankrollCap || 0);
+}
+
+/* ===== Performance Score (0-100) ===== */
+/* Combo of CLV (35), ROI (30), Discipline (20), Risk-of-Ruin avoidance (15).
+   Watching this climb is the dopamine. */
+function computePerformanceScore(p) {
+  if (!p) return { score: 0, parts: { clv: 0, roi: 0, discipline: 0, ror: 0 } };
+  const settled = (p.bets || []).filter(b => b.status === 'won' || b.status === 'lost');
+  // CLV component (0-35) — % of legs that beat the close
+  let clvScore = 0;
+  const clvLegs = [];
+  for (const b of settled) for (const l of (b.legs || [])) {
+    if (l.closingLine == null) continue;
+    clvLegs.push(americanToDecimal(l.american) > americanToDecimal(l.closingLine) ? 1 : 0);
+  }
+  if (clvLegs.length >= 5) {
+    const beat = clvLegs.reduce((a, x) => a + x, 0) / clvLegs.length;
+    // 50% beat-the-close → 17.5 (neutral). 60% → 30. 65%+ → 35.
+    clvScore = Math.max(0, Math.min(35, (beat - 0.45) * 175));
+  }
+  // ROI component (0-30) — long-run edge over wagered
+  let roiScore = 0;
+  if (settled.length >= 10) {
+    const wagered = settled.reduce((a, b) => a + b.stake, 0);
+    const pl = settled.reduce((a, b) => a + (b.status === 'won' ? (b.payout - b.stake) : -b.stake), 0);
+    const roi = wagered > 0 ? pl / wagered : 0;
+    // -5% ROI → 0, 0% → 15, +5% ROI → 30 (elite)
+    roiScore = Math.max(0, Math.min(30, (roi + 0.05) * 300));
+  }
+  // Discipline component (0-20) — streak length capped
+  const streak = computeDisciplineStreak(p);
+  const discScore = Math.max(0, Math.min(20, streak));   // 1d = 1pt, 20d+ caps it
+  // Risk-of-ruin avoidance (0-15) — based on unit size (smaller = safer)
+  const unitPct = (p.settings?.unitSize || 0.02);
+  // 1% unit = 15, 2% = 12, 5% = 6, 10% = 0
+  const rorScore = Math.max(0, Math.min(15, 15 - (unitPct * 100) * 1.5));
+  const total = Math.round(clvScore + roiScore + discScore + rorScore);
+  return { score: total, parts: { clv: Math.round(clvScore), roi: Math.round(roiScore), discipline: Math.round(discScore), ror: Math.round(rorScore) } };
+}
+
+/* ===== Discipline streak ===== */
+/* Counts consecutive days where the user honored their guardrails (didn't hit
+   daily stoploss, didn't exceed audit unit size). Days without any bets DON'T
+   break the streak. */
+function computeDisciplineStreak(p) {
+  if (!p || !p.bets) return 0;
+  const s = p.settings || {};
+  // Group settled bets by local day
+  const byDay = {};
+  for (const b of p.bets) {
+    if (b.status !== 'won' && b.status !== 'lost') continue;
+    const day = b.settledAt ? new Date(b.settledAt).toISOString().slice(0, 10) : null;
+    if (!day) continue;
+    byDay[day] = byDay[day] || [];
+    byDay[day].push(b);
+  }
+  // Walk backwards from today, counting compliant days
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 60; i++) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const bets = byDay[key];
+    if (!bets) { if (i === 0) continue; else break; }   // no bets = neutral on today, break on past days
+    // Compute day P/L
+    const dayPL = bets.reduce((a, b) => a + (b.status === 'won' ? (b.payout - b.stake) : -b.stake), 0);
+    // Did the user hit the daily stoploss? If so, broke discipline.
+    if (s.dailyLossLimit && s.dailyLossLimit > 0 && dayPL <= -Math.abs(s.dailyLossLimit)) break;
+    // Did any bet exceed the audit threshold by >50%?
+    const tooBig = bets.some(b => s.betSizeAuditPct && b.stake > p.bankrollCap * s.betSizeAuditPct * 1.5);
+    if (tooBig) break;
+    streak++;
+  }
+  return streak;
 }
 function deleteProfile(name) { delete state.profiles[name]; persistProfiles(); if (state.currentProfile === name) { const r = Object.keys(state.profiles); state.currentProfile = r[0] || ''; save(LS.CURRENT, state.currentProfile); } }
 
@@ -6218,6 +6312,27 @@ function renderHeader() {
     av.style.background = profileColor(name); av.style.color = '#06070a'; av.textContent = profileInitial(name);
   });
   ['profile-name-rail','profile-name-mobile'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = name || '—'; });
+  // Performance Score + Discipline Streak chip in the header (the addictive number)
+  renderPerfChip();
+}
+
+function renderPerfChip() {
+  const host = document.getElementById('perf-chip-host'); if (!host) return;
+  const p = P(); if (!p) { host.innerHTML = ''; return; }
+  const { score, parts } = computePerformanceScore(p);
+  const streak = computeDisciplineStreak(p);
+  const cls = score >= 70 ? 'perf-chip-elite' : score >= 50 ? 'perf-chip-good' : score >= 30 ? 'perf-chip-avg' : 'perf-chip-low';
+  const streakCls = streak >= 7 ? 'streak-on' : streak >= 3 ? 'streak-warm' : 'streak-cold';
+  host.innerHTML = `
+    <div class="perf-chip ${cls}" data-perf-chip title="CLV ${parts.clv}/35 · ROI ${parts.roi}/30 · Discipline ${parts.discipline}/20 · Risk ${parts.ror}/15">
+      <span class="perf-chip-num">${score}</span>
+      <span class="perf-chip-lbl">SCORE</span>
+    </div>
+    <div class="streak-chip ${streakCls}" title="Discipline streak — break it by hitting daily stoploss or oversize betting">
+      <span class="streak-flame">🔥</span>
+      <span class="streak-num">${streak}</span>
+      <span class="streak-lbl">day${streak === 1 ? '' : 's'}</span>
+    </div>`;
 }
 
 /* settings */
