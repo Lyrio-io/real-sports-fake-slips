@@ -473,8 +473,9 @@
   .gc-header { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; padding: 18px 18px 14px; align-items: center; position: relative; }
   .gc-team-side { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .gc-team-side.home { flex-direction: row-reverse; }
-  .gc-team-avatar { width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; font-weight: 900; color: #06070a; font-size: 14px; flex-shrink: 0; box-shadow: 0 4px 10px -4px rgba(15,23,42,0.08), 0 0 0 2px rgba(255,255,255,0.05); position: relative; }
-  .gc-team-avatar::before { content: ""; position: absolute; left: 8%; right: 8%; top: 14%; height: 22%; background: rgba(255,255,255,0.18); border-radius: 999px 999px 0 0; pointer-events: none; }
+  .gc-team-avatar { width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; font-weight: 900; color: #0a0a0a; font-size: 14px; flex-shrink: 0; box-shadow: 0 2px 6px -2px rgba(15,23,42,0.08); position: relative; overflow: hidden; }
+  .gc-team-avatar.logo-img { border: 1px solid #f4f4f5; }
+  .gc-team-avatar.logo-img img { display: block; }
   .gc-team-meta { min-width: 0; }
   .gc-team-side.home .gc-team-meta { text-align: right; }
   .gc-team-code { font-weight: 800; font-size: 17px; letter-spacing: -0.02em; color: #0a0a0a; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
@@ -761,25 +762,24 @@
 
   /* CHIPS — bubble pills */
   .chip {
-    padding: 10px 18px;
+    padding: 8px 16px;
     border-radius: 999px;
-    background: linear-gradient(180deg, #f4f4f5 0%, #fafafa 100%);
-    border: 1.5px solid #e4e4e7;
-    color: #cfd4de;
+    background: #ffffff;
+    border: 1px solid #e4e4e7;
+    color: #52525b;
     font-size: 13px;
     font-weight: 600;
     white-space: nowrap;
-    transition: all 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 140ms ease;
     cursor: pointer;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset;
   }
-  .chip:hover { border-color: #3a4255; transform: translateY(-1px); }
+  .chip:hover { border-color: #d4d4d8; color: #0a0a0a; }
   .chip:active { transform: scale(0.96); }
   .chip[data-active="true"] {
-    background: linear-gradient(180deg, #34d399 0%, #8fe600 100%);
-    color: #06070a;
-    border-color: #00b86b;
-    box-shadow: 0 6px 20px -4px rgba(0,184,107,0.35), 0 1px 0 rgba(255,255,255,0.3) inset;
+    background: #0a0a0a;
+    color: #ffffff;
+    border-color: #0a0a0a;
+    box-shadow: none;
   }
 
   /* MULTIPLIER GLOW */
@@ -3268,13 +3268,13 @@ function showAltPicker(gameId, sportKey, market) {
   const colA = profileColor(away), colH = profileColor(home);
   const headerHtml = `<div class="alt-picker-game">
     <div class="flex items-center gap-2">
-      <div class="gc-team-avatar" style="background:${colA}; width:36px; height:36px; font-size:12px;">${_teamCode(away)}</div>
+      ${teamAvatarHTML(sportKey, away, colA, 36)}
       <div><div class="gc-team-code" style="font-size:14px;">${_teamCode(away)}</div><div class="gc-team-record">${_teamRecord(away, game.id)}</div></div>
     </div>
     <div style="text-align:center"><div class="gc-game-time" style="font-size:13px">${escapeHtml(startStr)}</div></div>
     <div class="flex items-center gap-2 justify-end">
       <div><div class="gc-team-code" style="font-size:14px; text-align:right">${_teamCode(home)}</div><div class="gc-team-record" style="text-align:right">${_teamRecord(home, game.id)}</div></div>
-      <div class="gc-team-avatar" style="background:${colH}; width:36px; height:36px; font-size:12px;">${_teamCode(home)}</div>
+      ${teamAvatarHTML(sportKey, home, colH, 36)}
     </div>
   </div>`;
 
@@ -3523,6 +3523,41 @@ function _teamCode(teamName) {
   return last.slice(0, 3).toUpperCase();
 }
 
+// ESPN team logo URL builder. Per-sport abbreviation map.
+const ESPN_TEAM_ABBR = {
+  basketball_nba: { 'Lakers':'lal','Celtics':'bos','Warriors':'gs','Heat':'mia','Knicks':'ny','Spurs':'sa','Nuggets':'den','Timberwolves':'min','Bucks':'mil','Suns':'phx','76ers':'phi','Mavericks':'dal','Clippers':'lac','Bulls':'chi','Cavaliers':'cle','Hawks':'atl','Hornets':'cha','Pistons':'det','Pacers':'ind','Grizzlies':'mem','Magic':'orl','Wizards':'wsh','Raptors':'tor','Trail Blazers':'por','Jazz':'utah','Kings':'sac','Rockets':'hou','Pelicans':'no','Nets':'bkn','Thunder':'okc' },
+  basketball_wnba: { 'Aces':'lv','Liberty':'ny','Lynx':'min','Storm':'sea','Mercury':'phx','Sun':'conn','Sky':'chi','Sparks':'la','Fever':'ind','Mystics':'wsh','Wings':'dal','Dream':'atl','Valkyries':'gv' },
+  baseball_mlb: { 'Yankees':'nyy','Red Sox':'bos','Dodgers':'lad','Padres':'sd','Astros':'hou','Brewers':'mil','Cubs':'chc','Cardinals':'stl','Mariners':'sea','Mets':'nym','Braves':'atl','Marlins':'mia','Rangers':'tex','Angels':'laa','Athletics':'ath','Twins':'min','Royals':'kc','Tigers':'det','Guardians':'cle','White Sox':'chw','Pirates':'pit','Reds':'cin','Blue Jays':'tor','Rays':'tb','Orioles':'bal','Phillies':'phi','Nationals':'wsh','Rockies':'col','Diamondbacks':'ari','Giants':'sf' },
+  americanfootball_nfl: { 'Chiefs':'kc','Bills':'buf','Cowboys':'dal','Eagles':'phi','49ers':'sf','Ravens':'bal','Bengals':'cin','Browns':'cle','Steelers':'pit','Texans':'hou','Colts':'ind','Jaguars':'jax','Titans':'ten','Broncos':'den','Raiders':'lv','Chargers':'lac','Patriots':'ne','Jets':'nyj','Dolphins':'mia','Giants':'nyg','Commanders':'wsh','Bears':'chi','Lions':'det','Packers':'gb','Vikings':'min','Falcons':'atl','Panthers':'car','Saints':'no','Buccaneers':'tb','Cardinals':'ari','Rams':'lar','Seahawks':'sea' },
+  icehockey_nhl: { 'Bruins':'bos','Maple Leafs':'tor','Lightning':'tb','Panthers':'fla','Penguins':'pit','Capitals':'wsh','Rangers':'nyr','Islanders':'nyi','Devils':'nj','Flyers':'phi','Hurricanes':'car','Senators':'ott','Sabres':'buf','Canadiens':'mtl','Red Wings':'det','Blue Jackets':'cbj','Predators':'nsh','Stars':'dal','Avalanche':'col','Blackhawks':'chi','Blues':'stl','Wild':'min','Jets':'wpg','Utah Hockey Club':'utah','Mammoth':'utah','Golden Knights':'vgk','Oilers':'edm','Flames':'cgy','Canucks':'van','Sharks':'sj','Kings':'lak','Ducks':'ana','Kraken':'sea' },
+};
+function _espnLogoSlug(sportKey, teamName) {
+  const map = ESPN_TEAM_ABBR[sportKey]; if (!map || !teamName) return null;
+  // Try exact last-word match first, then full team name
+  const parts = teamName.trim().split(/\s+/);
+  const last = parts.slice(-1)[0];
+  const twoLast = parts.slice(-2).join(' ');
+  return map[twoLast] || map[last] || map[teamName] || null;
+}
+function teamLogoUrl(sportKey, teamName) {
+  const slug = _espnLogoSlug(sportKey, teamName);
+  if (!slug) return null;
+  const sportPath = sportKey.startsWith('americanfootball_') ? 'nfl' : sportKey.startsWith('baseball_') ? 'mlb' : sportKey === 'basketball_nba' ? 'nba' : sportKey === 'basketball_wnba' ? 'wnba' : sportKey === 'icehockey_nhl' ? 'nhl' : null;
+  if (!sportPath) return null;
+  return `https://a.espncdn.com/i/teamlogos/${sportPath}/500/${slug}.png`;
+}
+// Avatar HTML: real ESPN logo if known, else colored circle fallback with team code
+function teamAvatarHTML(sportKey, teamName, fallbackBg, sizePx) {
+  const url = teamLogoUrl(sportKey, teamName);
+  const sz = sizePx || 44;
+  const fontSize = sz <= 36 ? 11 : sz <= 40 ? 12 : 14;
+  if (url) {
+    return `<div class="gc-team-avatar logo-img" style="background:#ffffff;width:${sz}px;height:${sz}px;padding:4px;"><img src="${url}" alt="${escapeHtml(teamName)}" onerror="this.parentElement.innerHTML='${_teamCode(teamName)}';this.parentElement.style.background='${fallbackBg}';this.parentElement.style.color='#0a0a0a';this.parentElement.style.fontSize='${fontSize}px';" style="width:100%;height:100%;object-fit:contain;" /></div>`;
+  }
+  return `<div class="gc-team-avatar" style="background:${fallbackBg}; width:${sz}px; height:${sz}px; font-size:${fontSize}px;">${_teamCode(teamName)}</div>`;
+}
+
+
 // Common team-name (city stripped, multi-word names preserved: "Red Sox", "Blue Jays", etc.)
 function _teamShortName(teamName) {
   if (!teamName) return '';
@@ -3730,7 +3765,7 @@ function renderGameCard(g, sportKey, marketFilter) {
   const headerHtml = `
     <div class="gc-header">
       <div class="gc-team-side away">
-        <div class="gc-team-avatar" style="background:${stripeColorAway}">${_teamCode(away)}</div>
+        ${teamAvatarHTML(sportKey, away, stripeColorAway, 44)}
         <div class="gc-team-meta">
           <span class="gc-team-position away">AWAY</span>
           <div class="gc-team-code">${_teamShortName(away)}</div>
@@ -3742,7 +3777,7 @@ function renderGameCard(g, sportKey, marketFilter) {
         <div class="gc-game-extra">${dayStr ? escapeHtml(dayStr) + (isLive ? ' · ' : '') : ''}${isLive ? '<span class="text-danger-500 font-bold flex items-center gap-1"><span class="pulse-dot"></span>LIVE</span>' : ''}</div>
       </div>
       <div class="gc-team-side home">
-        <div class="gc-team-avatar" style="background:${stripeColorHome}">${_teamCode(home)}</div>
+        ${teamAvatarHTML(sportKey, home, stripeColorHome, 44)}
         <div class="gc-team-meta">
           <span class="gc-team-position home">HOME</span>
           <div class="gc-team-code">${_teamShortName(home)}</div>
