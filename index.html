@@ -1092,30 +1092,57 @@
   }
 
   /* Bet placed confirmation — clean UI feedback, not a reward loop */
-  #bet-placed { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(15,23,42,0.4); backdrop-filter: blur(10px); animation: backdropIn 220ms ease; }
+  /* ===== Kalshi-style bet-placed ticket ===== */
+  #bet-placed { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; padding: 16px; animation: backdropIn 220ms ease; }
   #bet-placed.show { display: flex; }
   @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
-  .bet-placed-card {
-    background: linear-gradient(180deg, #f4f4f5 0%, #fafafa 100%);
-    border: 1.5px solid #2d6a14;
+  .bp-shade {
+    position: relative;
+    width: 100%; max-width: 380px;
+    padding: 36px 22px 26px;
+    background: linear-gradient(180deg, #34d399 0%, #059669 100%);
     border-radius: 28px;
-    padding: 28px 24px;
-    max-width: 360px;
-    width: 100%;
-    text-align: center;
-    box-shadow: 0 24px 80px -20px rgba(0,184,107,0.3), 0 0 0 1px rgba(0,184,107,0.3), 0 1px 0 rgba(255,255,255,0.06) inset;
+    box-shadow: 0 30px 80px -20px rgba(5,150,105,0.5);
     animation: cardIn 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  @keyframes cardIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
-  .check-circle { width: 72px; height: 72px; border-radius: 999px; background: linear-gradient(180deg, #00b86b 0%, #00b86b 100%); margin: 0 auto 16px; display: grid; place-items: center; box-shadow: 0 0 0 8px rgba(0,184,107,0.12); animation: pulseRing 600ms ease 200ms both; }
-  @keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(0,184,107,0.4); } 100% { box-shadow: 0 0 0 18px rgba(163,255,18,0); } }
-  .check-svg { width: 38px; height: 38px; stroke: #06070a; stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 30; stroke-dashoffset: 30; animation: drawCheck 360ms cubic-bezier(0.65, 0, 0.35, 1) 240ms forwards; }
-  @keyframes drawCheck { to { stroke-dashoffset: 0; } }
-  .bet-placed-title { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: #0a0a0a; margin-bottom: 4px; }
-  .bet-placed-subtitle { font-size: 13px; color: #52525b; margin-bottom: 18px; }
-  .bet-placed-stat { background: rgba(0,184,107,0.08); border-radius: 14px; padding: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-  .bet-placed-stat-label { font-size: 12px; color: #71717a; font-weight: 600; }
-  .bet-placed-stat-value { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; font-weight: 700; color: #0a0a0a; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  @keyframes cardIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .bp-ticket {
+    background: #ffffff;
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+  }
+  .bp-ticket-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 8px; }
+  .bp-status-pill { display: inline-block; padding: 4px 12px; border-radius: 999px; background: #ecfdf5; color: #047857; border: 1px solid #00b86b; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+  .bp-brand { font-size: 18px; font-weight: 900; color: #00b86b; letter-spacing: -0.02em; }
+  .bp-ticket-body { padding: 8px 22px 18px; }
+  .bp-league { font-size: 11px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; }
+  .bp-bet-title { font-size: 28px; font-weight: 900; color: #0a0a0a; letter-spacing: -0.025em; line-height: 1.05; margin-top: 4px; }
+  .bp-bet-sub { font-size: 13px; color: #71717a; font-weight: 500; margin-top: 4px; }
+  .bp-rows { margin-top: 16px; border-top: 1px solid #e4e4e7; padding-top: 12px; }
+  .bp-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 14px; color: #52525b; }
+  .bp-row .num { font-weight: 800; color: #0a0a0a; font-variant-numeric: tabular-nums; }
+  .bp-row-emph { padding: 8px 0; border-top: 1px dashed #e4e4e7; border-bottom: 1px dashed #e4e4e7; margin-top: 4px; }
+  .bp-row-emph .num { color: #00b86b; font-size: 18px; }
+  /* Perforated edge between ticket body and actions */
+  .bp-perforation { height: 18px; position: relative; margin: 0 6px; background: radial-gradient(circle at center, transparent 0 7px, #ffffff 8px) repeat-x; background-size: 18px 18px; background-position: center; }
+  .bp-perforation::before { content: ""; position: absolute; left: -16px; top: 0; bottom: 0; width: 12px; background: radial-gradient(circle at left center, transparent 0 9px, transparent 10px); }
+  .bp-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px 14px 14px; background: #ffffff; }
+  .bp-action { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px; border-radius: 12px; background: #f4f4f5; border: 1px solid #e4e4e7; cursor: pointer; transition: background 140ms ease, transform 140ms ease; color: #0a0a0a; }
+  .bp-action:hover { background: #e4e4e7; }
+  .bp-action:active { transform: scale(0.96); }
+  .bp-action svg { width: 20px; height: 20px; }
+  .bp-action span { font-size: 11px; font-weight: 700; }
+  .bp-action-share { background: #00b86b; color: #ffffff; border-color: #00b86b; }
+  .bp-action-share:hover { background: #059669; }
+  .bp-close { display: block; margin: 14px auto 0; padding: 8px 24px; border-radius: 999px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #ffffff; font-weight: 800; font-size: 13px; cursor: pointer; }
+  .bp-close:hover { background: rgba(255,255,255,0.25); }
+  /* When bet lost */
+  .bp-shade.lost { background: linear-gradient(180deg, #fb7185 0%, #be123c 100%); box-shadow: 0 30px 80px -20px rgba(190,18,60,0.45); }
+  .bp-shade.lost .bp-status-pill { background: #fef2f2; color: #b91c1c; border-color: #ef4444; }
+  .bp-shade.lost .bp-brand { color: #ef4444; }
+  .bp-shade.lost .bp-row-emph .num { color: #ef4444; }
+  .bp-shade.lost .bp-action-share { background: #ef4444; border-color: #ef4444; }
 
   /* Live game state panel — fed by ESPN's free scoreboard */
   .live-state {
@@ -2211,25 +2238,41 @@
   </div>
 </div>
 
-<!-- BET PLACED CONFIRMATION -->
+<!-- BET PLACED CONFIRMATION — Kalshi-style ticket with share actions -->
 <div id="bet-placed">
-  <div class="bet-placed-card">
-    <div class="check-circle">
-      <svg class="check-svg" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
-    </div>
-    <div class="bet-placed-title">Bet Placed</div>
-    <div class="bet-placed-subtitle" id="bp-subtitle">Single · NYY ML · -150</div>
-    <div class="bet-placed-stat">
-      <span class="bet-placed-stat-label">Stake</span>
-      <span class="bet-placed-stat-value" id="bp-stake">$10.00</span>
-    </div>
-    <div class="bet-placed-stat" style="background: rgba(163,255,18,0.16);">
-      <span class="bet-placed-stat-label" style="color: #d6e89b;">To win</span>
-      <span class="bet-placed-stat-value" id="bp-towin" style="color: #00b86b; font-size: 18px;">$6.67</span>
-    </div>
-    <div class="bet-placed-stat">
-      <span class="bet-placed-stat-label">New bankroll</span>
-      <span class="bet-placed-stat-value" id="bp-bankroll">$990.00</span>
+  <div class="bp-shade">
+    <div class="bp-ticket">
+      <div class="bp-ticket-head">
+        <div class="bp-status-pill" id="bp-status">Placed</div>
+        <div class="bp-brand">RSFS</div>
+      </div>
+      <div class="bp-ticket-body">
+        <div class="bp-league" id="bp-league">MLB</div>
+        <div class="bp-bet-title" id="bp-bet-title">Yankees ML</div>
+        <div class="bp-bet-sub" id="bp-bet-sub">vs Red Sox · Sun 7:05 PM</div>
+        <div class="bp-rows">
+          <div class="bp-row"><span>Odds</span><span class="num" id="bp-odds">-150</span></div>
+          <div class="bp-row"><span>Stake</span><span class="num" id="bp-stake">$10.00</span></div>
+          <div class="bp-row bp-row-emph"><span>To win</span><span class="num" id="bp-towin">$6.67</span></div>
+          <div class="bp-row"><span>Bankroll after</span><span class="num" id="bp-bankroll">$990.00</span></div>
+        </div>
+      </div>
+      <div class="bp-perforation"></div>
+      <div class="bp-actions">
+        <button class="bp-action" id="bp-copy-image" aria-label="Copy image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg>
+          <span>Copy image</span>
+        </button>
+        <button class="bp-action" id="bp-copy-link" aria-label="Copy link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          <span>Copy link</span>
+        </button>
+        <button class="bp-action bp-action-share" id="bp-share" aria-label="Share">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+          <span>Share</span>
+        </button>
+      </div>
+      <button class="bp-close" id="bp-close">Done</button>
     </div>
   </div>
 </div>
@@ -2853,75 +2896,149 @@ function currentWeekPL(p) {
   return p.bankroll - (p.bankrollCap || 0);
 }
 
-/* ===== Share Cards — canvas-rendered PNG of a settled bet ===== */
+/* ===== Copy bet image / link helpers ===== */
+async function copyBetImage(bet) {
+  try {
+    const blob = await renderBetCanvas(bet);
+    if (!blob) return toast('Could not render image');
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      toast('Image copied to clipboard');
+    } else {
+      // Fallback: download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `bet-${bet.id}.png`; a.click();
+      URL.revokeObjectURL(url);
+      toast('Image saved to downloads');
+    }
+  } catch (e) { console.error(e); toast('Copy failed — try Share instead'); }
+}
+async function copyBetLink(bet) {
+  // No real server-side shareable URL yet — copy a text summary so the bet can
+  // still be sent in a DM. Future: hash-route on Railway.
+  const url = window.location.origin + '/?bet=' + bet.id;
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('Link copied to clipboard');
+  } catch { toast('Link: ' + url); }
+}
+
+/* ===== Share Cards — canvas-rendered PNG of a bet (works pre- and post-settle) ===== */
+function renderBetCanvas(bet) {
+  return new Promise((resolve) => {
+    const status = bet.status;   // 'pending' | 'won' | 'lost' | 'push'
+    const pl = status === 'won' ? (bet.payout - bet.stake) : status === 'lost' ? -bet.stake : 0;
+    const W = 800, H = 1100;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    // Background: emerald gradient for placed / won, rose for lost (Kalshi-style)
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    if (status === 'lost') { grad.addColorStop(0, '#fb7185'); grad.addColorStop(1, '#be123c'); }
+    else { grad.addColorStop(0, '#34d399'); grad.addColorStop(1, '#059669'); }
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+    // White inner ticket card
+    const cardX = 40, cardY = 80, cardW = W - 80, cardH = H - 160;
+    function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r); ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath(); }
+    ctx.fillStyle = '#ffffff'; roundRect(cardX, cardY, cardW, cardH, 28); ctx.fill();
+    // Status pill + brand
+    const statusLabel = status === 'pending' ? 'PLACED' : status.toUpperCase();
+    const pillColor = status === 'lost' ? '#ef4444' : '#00b86b';
+    const pillBg = status === 'lost' ? '#fef2f2' : '#ecfdf5';
+    ctx.fillStyle = pillBg; roundRect(cardX + 32, cardY + 32, 130, 44, 22); ctx.fill();
+    ctx.strokeStyle = pillColor; ctx.lineWidth = 2; roundRect(cardX + 32, cardY + 32, 130, 44, 22); ctx.stroke();
+    ctx.fillStyle = pillColor; ctx.font = '900 18px -apple-system, system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.fillText(statusLabel, cardX + 97, cardY + 62);
+    ctx.fillStyle = '#00b86b'; ctx.font = '900 28px -apple-system';
+    ctx.textAlign = 'right'; ctx.fillText('RSFS', cardX + cardW - 32, cardY + 64);
+    // League
+    const firstLeg = bet.legs[0] || {};
+    ctx.fillStyle = '#71717a'; ctx.font = '800 16px -apple-system';
+    ctx.textAlign = 'left';
+    ctx.fillText((sportAbbr(firstLeg.sportKey || '') || 'BET').toUpperCase(), cardX + 36, cardY + 120);
+    // Title
+    ctx.fillStyle = '#0a0a0a'; ctx.font = '900 44px -apple-system';
+    const title = bet.type === 'single' ? (firstLeg.outcome || 'Bet') : `${bet.legs.length}-leg parlay`;
+    wrapText(ctx, title, cardX + 36, cardY + 168, cardW - 72, 50);
+    // Matchup subline
+    if (firstLeg.away && firstLeg.home) {
+      ctx.fillStyle = '#71717a'; ctx.font = '20px -apple-system';
+      ctx.fillText(`${firstLeg.away} @ ${firstLeg.home}`, cardX + 36, cardY + 220);
+    }
+    // Divider
+    ctx.strokeStyle = '#e4e4e7'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cardX + 36, cardY + 260); ctx.lineTo(cardX + cardW - 36, cardY + 260); ctx.stroke();
+    // Rows: Odds, Cost, Payout, Settled at
+    const rows = [
+      ['Odds', fmtAmerican(bet.american)],
+      ['Stake', '$' + bet.stake.toFixed(2)],
+      [status === 'won' ? 'Paid out' : status === 'lost' ? 'Paid out' : 'Payout if win', '$' + (status === 'won' ? bet.payout.toFixed(2) : status === 'lost' ? '0.00' : bet.toWin.toFixed(2))],
+    ];
+    let ry = cardY + 300;
+    for (const [k, v] of rows) {
+      ctx.fillStyle = '#71717a'; ctx.font = '24px -apple-system'; ctx.textAlign = 'left';
+      ctx.fillText(k, cardX + 36, ry);
+      ctx.fillStyle = '#0a0a0a'; ctx.font = '900 28px -apple-system'; ctx.textAlign = 'right';
+      ctx.fillText(v, cardX + cardW - 36, ry);
+      ry += 48;
+    }
+    // Big P/L
+    if (status === 'won' || status === 'lost') {
+      const plText = (pl >= 0 ? '+' : '') + '$' + Math.abs(pl).toFixed(2);
+      ctx.fillStyle = pl >= 0 ? '#00b86b' : '#ef4444';
+      ctx.font = '900 64px -apple-system'; ctx.textAlign = 'center';
+      ctx.fillText(plText, cardX + cardW/2, ry + 50);
+      ry += 90;
+    }
+    // Legs (parlay)
+    if (bet.legs.length > 1) {
+      ctx.fillStyle = '#71717a'; ctx.font = '800 14px -apple-system'; ctx.textAlign = 'left';
+      ctx.fillText('LEGS', cardX + 36, ry + 30);
+      ctx.fillStyle = '#0a0a0a'; ctx.font = '600 18px -apple-system';
+      let ly = ry + 60;
+      for (const l of bet.legs.slice(0, 5)) {
+        const txt = `• ${(l.outcome || '').slice(0, 28)}${l.point != null ? ' ' + (l.point > 0 ? '+' : '') + l.point : ''}  ${fmtAmerican(l.american)}`;
+        ctx.fillText(txt, cardX + 36, ly); ly += 28;
+      }
+      if (bet.legs.length > 5) ctx.fillText(`+ ${bet.legs.length - 5} more`, cardX + 36, ly);
+    }
+    // Footer: timestamp + watermark
+    ctx.fillStyle = '#a1a1aa'; ctx.font = '16px -apple-system'; ctx.textAlign = 'center';
+    const stampLabel = status === 'pending' ? 'Placed' : 'Settled';
+    ctx.fillText(`${stampLabel}: ${new Date(bet.settledAt || bet.placedAt).toLocaleString()}`, cardX + cardW/2, cardY + cardH - 60);
+    ctx.fillStyle = '#ffffff'; ctx.font = '800 14px -apple-system';
+    ctx.fillText('Real Sports Fake Slips · Practice, no real money', W/2, H - 32);
+    canvas.toBlob(blob => resolve(blob), 'image/png');
+  });
+}
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(' ');
+  let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, y); y += lineHeight; line = w;
+    } else line = test;
+  }
+  if (line) ctx.fillText(line, x, y);
+}
 async function shareBetCard(betId) {
   const p = P(); if (!p) return;
   const bet = (p.bets || []).find(x => x.id === betId); if (!bet) return;
+  const blob = await renderBetCanvas(bet);
+  if (!blob) return toast('Share failed');
   const status = bet.status;
   const pl = status === 'won' ? (bet.payout - bet.stake) : status === 'lost' ? -bet.stake : 0;
-  // Render to canvas
-  const W = 800, H = 1000;
-  const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-  // Background gradient
-  const grad = ctx.createLinearGradient(0, 0, 0, H);
-  if (status === 'won') { grad.addColorStop(0, '#ecfdf5'); grad.addColorStop(1, '#ffffff'); }
-  else if (status === 'lost') { grad.addColorStop(0, '#fef2f2'); grad.addColorStop(1, '#ffffff'); }
-  else { grad.addColorStop(0, '#fffbeb'); grad.addColorStop(1, '#ffffff'); }
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
-  // Header
-  ctx.fillStyle = '#0a0a0a'; ctx.font = 'bold 36px -apple-system, system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Real Sports Fake Slips', W/2, 70);
-  ctx.font = '20px -apple-system'; ctx.fillStyle = '#71717a';
-  ctx.fillText('Sandbox', W/2, 100);
-  // Status pill
-  const pillColor = status === 'won' ? '#00b86b' : status === 'lost' ? '#ef4444' : '#f59e0b';
-  ctx.fillStyle = pillColor;
-  ctx.beginPath(); ctx.roundRect(W/2 - 100, 150, 200, 60, 30); ctx.fill();
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 32px -apple-system';
-  ctx.fillText(status.toUpperCase(), W/2, 192);
-  // P/L
-  ctx.font = 'bold 72px -apple-system'; ctx.fillStyle = pillColor;
   const plText = (pl >= 0 ? '+' : '') + '$' + Math.abs(pl).toFixed(2);
-  ctx.fillText(plText, W/2, 290);
-  // Bet legs
-  ctx.font = 'bold 24px -apple-system'; ctx.fillStyle = '#0a0a0a';
-  ctx.textAlign = 'center';
-  let y = 360;
-  ctx.fillText(`${bet.type === 'parlay' ? bet.legs.length + '-leg parlay' : 'Single'} · ${fmtAmerican(bet.american)}`, W/2, y); y += 50;
-  ctx.font = '22px -apple-system'; ctx.fillStyle = '#27272a';
-  ctx.textAlign = 'left';
-  for (const l of bet.legs.slice(0, 4)) {
-    const txt = `${(l.outcome || '').slice(0, 24)}${l.point != null ? ' ' + (l.point > 0 ? '+' : '') + l.point : ''} (${fmtAmerican(l.american)})`;
-    ctx.fillText('• ' + txt, 80, y); y += 36;
-    ctx.font = '16px -apple-system'; ctx.fillStyle = '#71717a';
-    ctx.fillText(`   ${l.away} @ ${l.home}`, 80, y); y += 30;
-    ctx.font = '22px -apple-system'; ctx.fillStyle = '#27272a';
+  const file = new File([blob], `bet-${bet.id}.png`, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'My bet', text: status === 'pending' ? 'Just placed a bet on Real Sports Fake Slips' : `${status.toUpperCase()}: ${plText}` }); return; }
+    catch { /* fall through */ }
   }
-  if (bet.legs.length > 4) { ctx.fillText(`+ ${bet.legs.length - 4} more`, 80, y); y += 36; }
-  // Stake + result
-  y = H - 200;
-  ctx.font = '20px -apple-system'; ctx.fillStyle = '#71717a'; ctx.textAlign = 'center';
-  ctx.fillText(`Risked $${bet.stake.toFixed(2)} · ${new Date(bet.settledAt || bet.placedAt).toLocaleDateString()}`, W/2, y);
-  // Bottom watermark
-  ctx.font = 'bold 18px -apple-system'; ctx.fillStyle = '#a1a1aa';
-  ctx.fillText('Practice with fake money. Real lines.', W/2, H - 60);
-  // Convert and share
-  canvas.toBlob(async (blob) => {
-    if (!blob) { toast('Share failed'); return; }
-    const file = new File([blob], `bet-${bet.id}.png`, { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: 'My bet', text: `${status.toUpperCase()}: ${plText}` }); return; }
-      catch (e) { /* user cancelled or share failed; fall through to download */ }
-    }
-    // Fallback: download
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `bet-${bet.id}.png`; a.click();
-    URL.revokeObjectURL(url);
-    toast('Bet image saved');
-  }, 'image/png');
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `bet-${bet.id}.png`; a.click();
+  URL.revokeObjectURL(url);
+  toast('Bet image saved');
 }
 
 /* ===== Loss Recovery Coach =====
@@ -5542,27 +5659,42 @@ function animateBetToOpenBets() {
 
 function showBetPlaced(bet) {
   const overlay = document.getElementById('bet-placed');
-  const subtitle = bet.type === 'single'
-    ? `Single · ${legDescription(bet.legs[0])} · ${fmtAmerican(bet.american)}`
-    : `${bet.legs.length}-Leg Parlay · ${bet.decimal.toFixed(2)}x · ${fmtAmerican(bet.american)}`;
-  document.getElementById('bp-subtitle').textContent = subtitle;
+  const shade = overlay.querySelector('.bp-shade');
+  shade.classList.remove('lost');   // default is the "Placed" green ticket
+  const firstLeg = bet.legs[0] || {};
+  const league = sportAbbr(firstLeg.sportKey || '');
+  const matchup = firstLeg.away && firstLeg.home ? `${firstLeg.away} @ ${firstLeg.home}` : '';
+  const startTxt = firstLeg.start ? new Date(firstLeg.start).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+  const title = bet.type === 'single'
+    ? legDescription(firstLeg)
+    : `${bet.legs.length}-leg parlay`;
+  document.getElementById('bp-league').textContent = league + (bet.type === 'single' ? '' : ' · Parlay');
+  document.getElementById('bp-bet-title').textContent = title;
+  document.getElementById('bp-bet-sub').textContent = matchup + (startTxt ? ' · ' + startTxt : '');
+  document.getElementById('bp-odds').textContent = fmtAmerican(bet.american);
   document.getElementById('bp-stake').textContent = fmt$(bet.stake);
   document.getElementById('bp-towin').textContent = fmt$(bet.toWin);
   document.getElementById('bp-bankroll').textContent = fmt$(P()?.bankroll || 0);
   overlay.classList.add('show');
-  // Reset animations for replay
-  const card = overlay.querySelector('.bet-placed-card');
-  const ring = overlay.querySelector('.check-circle');
-  const check = overlay.querySelector('.check-svg');
-  [card, ring, check].forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
+  shade.style.animation = 'none'; void shade.offsetWidth; shade.style.animation = '';
+  // Wire share/copy actions every time so they target THIS bet
+  const copyImgBtn = document.getElementById('bp-copy-image');
+  const copyLinkBtn = document.getElementById('bp-copy-link');
+  const shareBtn = document.getElementById('bp-share');
+  const closeBtn = document.getElementById('bp-close');
+  if (copyImgBtn) copyImgBtn.onclick = () => copyBetImage(bet);
+  if (copyLinkBtn) copyLinkBtn.onclick = () => copyBetLink(bet);
+  if (shareBtn) shareBtn.onclick = () => shareBetCard(bet.id);
   const dismiss = () => {
     overlay.classList.remove('show');
-    overlay.removeEventListener('click', dismiss);
-    // After the modal fades out, fire the fly-to-open-bets animation
+    overlay.removeEventListener('click', onBackdrop);
     setTimeout(animateBetToOpenBets, 60);
   };
-  overlay.addEventListener('click', dismiss);
-  setTimeout(dismiss, 1800);
+  // Backdrop click dismisses; clicks inside the ticket are stopped
+  function onBackdrop(e) { if (e.target === overlay) dismiss(); }
+  overlay.addEventListener('click', onBackdrop);
+  if (closeBtn) closeBtn.onclick = dismiss;
+  // No auto-dismiss — let the user share or close manually
 }
 function placeParlay() {
   // Sync stake from parlay tab to slip then place
