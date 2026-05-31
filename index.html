@@ -358,6 +358,59 @@
   }
   .bankroll-floater.rise { transform: translate(-50%, -180%); opacity: 0; }
 
+  /* Achievement toast */
+  .achievement-toast {
+    position: fixed;
+    top: 70px; left: 50%;
+    transform: translate(-50%, -200%);
+    background: linear-gradient(180deg, #ecfdf5, #ffffff);
+    border: 1.5px solid #00b86b;
+    border-radius: 16px;
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 16px 40px -8px rgba(0,184,107,0.4), 0 1px 0 rgba(255,255,255,0.06) inset;
+    z-index: 10001;
+    max-width: calc(100vw - 32px);
+    opacity: 0;
+    transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease;
+  }
+  .achievement-toast.show { transform: translate(-50%, 0); opacity: 1; }
+  .achievement-toast .ach-icon { font-size: 32px; line-height: 1; }
+  .achievement-toast .ach-name { font-size: 10px; font-weight: 800; color: #047857; text-transform: uppercase; letter-spacing: 0.06em; }
+  .achievement-toast .ach-title { font-size: 16px; font-weight: 800; color: #0a0a0a; margin-top: 2px; }
+  .achievement-toast .ach-desc { font-size: 11px; color: #52525b; margin-top: 1px; }
+
+  /* Achievement Case tiles */
+  .ach-tile { padding: 12px 8px; border-radius: 12px; border: 1.5px solid; text-align: center; transition: transform 140ms ease; }
+  .ach-tile.got { background: #ecfdf5; border-color: #00b86b; }
+  .ach-tile.got:hover { transform: translateY(-2px); }
+  .ach-tile.locked { background: #f4f4f5; border-color: #e4e4e7; opacity: 0.55; filter: grayscale(0.6); }
+  .ach-tile-icon { font-size: 28px; line-height: 1; margin-bottom: 4px; }
+  .ach-tile.locked .ach-tile-icon { filter: grayscale(1); }
+  .ach-tile-name { font-size: 10px; font-weight: 800; color: #0a0a0a; line-height: 1.2; }
+  .ach-tile.locked .ach-tile-name { color: #71717a; }
+
+  /* Morning Ritual card */
+  .morning-ritual-card {
+    background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 70%);
+    border: 1px solid #a7f3d0;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 14px -6px rgba(0,184,107,0.15);
+    position: relative;
+  }
+  .mr-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .mr-greet { font-size: 18px; font-weight: 800; color: #0a0a0a; letter-spacing: -0.02em; }
+  .mr-dismiss { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.6); border: 1px solid #e4e4e7; color: #71717a; font-size: 18px; font-weight: 700; cursor: pointer; display: grid; place-items: center; line-height: 1; }
+  .mr-dismiss:hover { background: #f4f4f5; color: #0a0a0a; }
+  .mr-line { font-size: 13px; color: #27272a; line-height: 1.5; }
+  .mr-line strong { color: #047857; font-weight: 800; }
+  .mr-pitcher { color: #52525b; font-style: italic; margin-top: 4px; }
+  .mr-actions { margin-top: 10px; }
+  .mr-cta { background: #00b86b; color: #ffffff; font-weight: 800; font-size: 12px; padding: 6px 14px; border-radius: 999px; border: none; cursor: pointer; }
+  .mr-cta:hover { filter: brightness(1.06); }
+
   /* === PERIOD SECTION (F3 / F5 / F7 etc.) === */
   .period-section {
     background: linear-gradient(180deg, #fafafa 0%, #fafafa 100%);
@@ -1363,6 +1416,8 @@
             <span id="last-updated" class="text-ink-400">Never refreshed</span>
           </div>
 
+          <div id="morning-ritual"></div>
+
           <div id="lines-container" class="space-y-6">
             <div class="text-ink-400 text-sm bg-ink-900 border border-ink-700 rounded-2xl p-8 text-center">
               Hit <span class="text-white font-semibold">Refresh</span> to pull today's odds.
@@ -1528,6 +1583,17 @@
           <h2 class="display text-2xl font-bold mb-4">Performance</h2>
 
           <!-- Bankroll Plan: weekly reset + savings ledger + half-unit target -->
+          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-sm flex items-center gap-2">
+                <span class="text-gold-500">🏆</span> Achievement Case
+                <span class="text-[10px] text-ink-400 font-normal uppercase tracking-wider">Earn through skill</span>
+              </h3>
+              <span id="ach-count" class="text-[11px] text-ink-300 num"></span>
+            </div>
+            <div id="achievement-case" class="grid grid-cols-3 sm:grid-cols-4 gap-2"></div>
+          </div>
+
           <div id="bankroll-plan" class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
             <div class="flex items-center justify-between mb-3">
               <h3 class="font-semibold text-sm flex items-center gap-2">
@@ -2733,6 +2799,71 @@ function currentWeekPL(p) {
   return p.bankroll - (p.bankrollCap || 0);
 }
 
+/* ===== Achievement registry ===== */
+/* Real skill milestones — earned through behavior, not "you opened the app" */
+const ACHIEVEMENTS = [
+  { id: 'first_bet', name: 'First Bet', icon: '🎯', desc: 'Place your first bet', check: p => (p.bets || []).length >= 1 },
+  { id: 'first_win', name: 'First Win', icon: '🥇', desc: 'Win a bet', check: p => (p.bets || []).some(b => b.status === 'won') },
+  { id: 'ten_settled', name: 'Getting Serious', icon: '📊', desc: 'Grade 10 bets', check: p => (p.bets || []).filter(b => b.status === 'won' || b.status === 'lost').length >= 10 },
+  { id: 'beat_close_5', name: 'Sharper Than the Book', icon: '🔪', desc: 'Beat the closing line on 5 legs', check: p => {
+    let n = 0; for (const b of (p.bets || [])) for (const l of (b.legs || [])) {
+      if (l.closingLine != null && americanToDecimal(l.american) > americanToDecimal(l.closingLine)) n++;
+    } return n >= 5;
+  } },
+  { id: 'positive_clv_streak', name: 'Beat the Close 20', icon: '⚔️', desc: 'Beat the closing line 20 times total', check: p => {
+    let n = 0; for (const b of (p.bets || [])) for (const l of (b.legs || [])) {
+      if (l.closingLine != null && americanToDecimal(l.american) > americanToDecimal(l.closingLine)) n++;
+    } return n >= 20;
+  } },
+  { id: 'discipline_3', name: 'Three-Day Pro', icon: '🧘', desc: '3-day discipline streak', check: p => computeDisciplineStreak(p) >= 3 },
+  { id: 'discipline_7', name: 'Week of Discipline', icon: '🔥', desc: '7-day discipline streak', check: p => computeDisciplineStreak(p) >= 7 },
+  { id: 'discipline_30', name: 'Month of Discipline', icon: '👑', desc: '30-day discipline streak', check: p => computeDisciplineStreak(p) >= 30 },
+  { id: 'half_unit', name: 'Half-Unit Hit', icon: '💰', desc: 'Lifetime profit reaches $2,500', check: p => lifetimeProfit(p) >= 2500 },
+  { id: 'full_unit', name: 'Full Unit Hit', icon: '💎', desc: 'Lifetime profit reaches $5,000', check: p => lifetimeProfit(p) >= 5000 },
+  { id: 'no_parlay_week', name: 'No-Parlay Week', icon: '🛡️', desc: 'Place only singles for 7 days running', check: p => {
+    const cutoff = Date.now() - 7 * 24 * 3600 * 1000;
+    const recent = (p.bets || []).filter(b => new Date(b.placedAt).getTime() >= cutoff);
+    return recent.length >= 5 && recent.every(b => b.type === 'single');
+  } },
+  { id: 'centurion', name: 'Centurion', icon: '🏆', desc: 'Grade 100 bets with positive ROI', check: p => {
+    const s = (p.bets || []).filter(b => b.status === 'won' || b.status === 'lost');
+    if (s.length < 100) return false;
+    const w = s.reduce((a, b) => a + b.stake, 0);
+    const pl = s.reduce((a, b) => a + (b.status === 'won' ? b.payout - b.stake : -b.stake), 0);
+    return w > 0 && pl / w > 0;
+  } },
+  { id: 'perf_50', name: 'Above Average', icon: '⭐', desc: 'Performance Score >= 50', check: p => computePerformanceScore(p).score >= 50 },
+  { id: 'perf_70', name: 'Elite Tier', icon: '🌟', desc: 'Performance Score >= 70', check: p => computePerformanceScore(p).score >= 70 },
+];
+
+function checkNewAchievements(profileName) {
+  const p = state.profiles[profileName]; if (!p) return [];
+  p.earnedAchievements = p.earnedAchievements || [];
+  const earned = new Set(p.earnedAchievements);
+  const newly = [];
+  for (const a of ACHIEVEMENTS) {
+    if (earned.has(a.id)) continue;
+    try { if (a.check(p)) { earned.add(a.id); newly.push(a); } }
+    catch (e) { console.warn('achievement check failed', a.id, e); }
+  }
+  if (newly.length) {
+    p.earnedAchievements = Array.from(earned);
+    persistProfiles();
+  }
+  return newly;
+}
+
+function celebrateAchievement(a) {
+  // Slide-in toast + brief confetti — once per earned badge
+  const el = document.createElement('div');
+  el.className = 'achievement-toast';
+  el.innerHTML = `<div class="ach-icon">${a.icon}</div><div><div class="ach-name">Achievement unlocked</div><div class="ach-title">${escapeHtml(a.name)}</div><div class="ach-desc">${escapeHtml(a.desc)}</div></div>`;
+  document.body.appendChild(el);
+  spawnConfetti();
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 320); }, 3600);
+}
+
 /* ===== Performance Score (0-100) ===== */
 /* Combo of CLV (35), ROI (30), Discipline (20), Risk-of-Ruin avoidance (15).
    Watching this climb is the dopamine. */
@@ -3265,6 +3396,7 @@ function renderLines() {
   renderLedger();
   renderAiPreview();
   document.getElementById('api-warning').classList.toggle('hidden', !!state.apiKey);
+  renderMorningRitual();
   const container = document.getElementById('lines-container');
   const sportFilter = state.sportFilter;
   const marketFilter = document.getElementById('market-filter').value;
@@ -6062,6 +6194,9 @@ function finalizeBet(b, result) {
   // Settle effects (tone + haptic + confetti or red fade)
   if (result === 'won') { playTone('win'); triggerHaptic('win'); spawnConfetti(); animateBankrollTickUp(b.payout - b.stake); }
   else if (result === 'lost') { playTone('loss'); triggerHaptic('loss'); flashBankrollLoss(); }
+  // Check for newly earned achievements (after bankroll/state updates)
+  const newAchievements = checkNewAchievements(state.currentProfile);
+  newAchievements.forEach((a, i) => setTimeout(() => celebrateAchievement(a), 1200 + i * 4000));
   notifyResolution(b);
   // Lock-screen-ready OS notification (when permission granted)
   const pl = b.status === 'won' ? (b.payout - b.stake) : b.status === 'lost' ? -b.stake : 0;
@@ -6448,6 +6583,71 @@ function renderHeader() {
   ['profile-name-rail','profile-name-mobile'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = name || '—'; });
   // Performance Score + Discipline Streak chip in the header (the addictive number)
   renderPerfChip();
+}
+
+function renderAchievementCase() {
+  const el = document.getElementById('achievement-case'); if (!el) return;
+  const p = P(); if (!p) { el.innerHTML = ''; return; }
+  const earned = new Set(p.earnedAchievements || []);
+  const countEl = document.getElementById('ach-count');
+  if (countEl) countEl.textContent = `${earned.size} / ${ACHIEVEMENTS.length}`;
+  el.innerHTML = ACHIEVEMENTS.map(a => {
+    const got = earned.has(a.id);
+    return `<div class="ach-tile ${got ? 'got' : 'locked'}" title="${escapeHtml(a.desc)}">
+      <div class="ach-tile-icon">${a.icon}</div>
+      <div class="ach-tile-name">${escapeHtml(a.name)}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ===== Morning Ritual — daily 'today's read' banner on Lines tab ===== */
+function renderMorningRitual() {
+  const host = document.getElementById('morning-ritual'); if (!host) return;
+  const p = P(); if (!p) { host.innerHTML = ''; return; }
+  const today = new Date().toISOString().slice(0, 10);
+  const dismissedKey = `psb.morningRitual.${state.currentProfile}.${today}`;
+  if (localStorage.getItem(dismissedKey) === '1') { host.innerHTML = ''; return; }
+  const { score } = computePerformanceScore(p);
+  const streak = computeDisciplineStreak(p);
+  const wkPL = currentWeekPL(p);
+  const ltPL = lifetimeProfit(p);
+  // Count today's eligible MLB games with pitcher data
+  let pitcherEdge = '';
+  const mlbData = _liveCache?.baseball_mlb?.data;
+  if (mlbData?.events?.length) {
+    const todayEvents = mlbData.events.filter(e => (e.competitions?.[0]?.competitors || []).some(c => c.probables?.[0]?.athlete));
+    if (todayEvents.length) pitcherEdge = `${todayEvents.length} MLB game${todayEvents.length === 1 ? '' : 's'} with starting pitchers listed.`;
+  }
+  const wkCls = wkPL >= 0 ? 'text-neon-500' : 'text-danger-500';
+  const ltCls = ltPL >= 0 ? 'text-neon-500' : 'text-danger-500';
+  const greet = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Afternoon';
+    return 'Evening';
+  })();
+  host.innerHTML = `
+    <div class="morning-ritual-card">
+      <div class="mr-head">
+        <div class="mr-greet">${greet}, ${escapeHtml(state.currentProfile)}</div>
+        <button class="mr-dismiss" data-mr-dismiss aria-label="Dismiss">×</button>
+      </div>
+      <div class="mr-line">Performance Score: <strong>${score}/100</strong> · Streak: <strong>🔥 ${streak}d</strong></div>
+      <div class="mr-line">This week: <strong class="num ${wkCls}">${wkPL >= 0 ? '+' : ''}${fmt$(wkPL)}</strong> · Lifetime: <strong class="num ${ltCls}">${ltPL >= 0 ? '+' : ''}${fmt$(ltPL)}</strong></div>
+      ${pitcherEdge ? `<div class="mr-line mr-pitcher">${pitcherEdge} Check ERA gaps for value.</div>` : ''}
+      <div class="mr-actions">
+        <button class="mr-cta" data-mr-cta>View slate →</button>
+      </div>
+    </div>`;
+  host.querySelector('[data-mr-dismiss]').addEventListener('click', () => {
+    localStorage.setItem(dismissedKey, '1');
+    host.innerHTML = '';
+  });
+  host.querySelector('[data-mr-cta]').addEventListener('click', () => {
+    localStorage.setItem(dismissedKey, '1');
+    host.innerHTML = '';
+    document.querySelector('#lines-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 }
 
 function renderPerfChip() {
@@ -7848,7 +8048,7 @@ function switchTab(name) {
   if (name === 'lines') renderLedger();
   if (name === 'open') renderOpenBets();
   if (name === 'history') renderHistory();
-  if (name === 'stats') { renderStats(); renderGoals(); renderSportPerf(); renderParlayBreakdown(); renderBiasDetector(); renderMarketMastery(); renderClvPanel(); renderMonteCarlo(); renderVsCard(); }
+  if (name === 'stats') { renderStats(); renderGoals(); renderSportPerf(); renderParlayBreakdown(); renderBiasDetector(); renderMarketMastery(); renderClvPanel(); renderMonteCarlo(); renderAchievementCase(); renderVsCard(); }
   if (name === 'settings') renderSettings();
   if (name === 'parlay') renderParlay();
   if (name === 'analyst') renderAnalysis();
