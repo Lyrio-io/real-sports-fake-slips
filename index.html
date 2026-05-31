@@ -3818,11 +3818,11 @@ function renderGameCard(g, sportKey, marketFilter) {
   const stripeColorAway = profileColor(away);
   const stripeColorHome = profileColor(home);
 
-  // Build column headers (Spread / Total / Winner)
+  // Build column headers (Spread / Total / Moneyline)
   const cols = [];
   if (showSpreads) cols.push({ key: 'spread', label: 'Spread', arrow: !!altDataLocal });
   if (showTotals) cols.push({ key: 'total', label: 'Total', arrow: !!altDataLocal });
-  if (showH2H) cols.push({ key: 'winner', label: 'Winner', arrow: false });
+  if (showH2H) cols.push({ key: 'winner', label: 'Moneyline', arrow: false });
 
   function arrowSvg() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 14l5-5 5 5"/><path d="M7 10l5 5 5-5"/></svg>';
