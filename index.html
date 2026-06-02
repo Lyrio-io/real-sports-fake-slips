@@ -1679,6 +1679,27 @@
             <strong>Setup needed:</strong> Add your free Odds API key in <button class="underline" onclick="switchTab('settings')">Settings</button>.
           </div>
 
+          <!-- RESTORE BACKUP banner — shows on home when profile looks fresh -->
+          <div id="restore-banner" class="hidden mb-4">
+            <div class="rounded-2xl p-4 border border-emerald-300 shadow-sm" style="background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);">
+              <div class="flex items-start gap-3">
+                <div class="text-2xl">💾</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-sm text-zinc-900">Looks like a fresh start.</div>
+                  <div class="text-xs text-zinc-600 mt-0.5 mb-3">If you installed this on your home screen, your old bets are saved in your browser, not the app. Tap below to upload your JSON backup and pick up where you left off.</div>
+                  <div class="flex gap-2 flex-wrap">
+                    <label class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-sm cursor-pointer inline-flex items-center gap-2">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                      Upload backup file
+                      <input id="home-import-file" type="file" accept=".json,application/json" class="hidden" />
+                    </label>
+                    <button id="restore-banner-dismiss" class="bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-300 px-3 py-2 rounded-xl text-sm">Not now</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Quick filter chips -->
           <div class="flex gap-2 overflow-x-auto scrollbar-thin pb-2 mb-4 -mx-4 px-4 lg:mx-0 lg:px-0">
             <div id="sport-chips" class="flex gap-2"></div>
@@ -4176,6 +4197,7 @@ function renderLines() {
   renderLedger();
   renderAiPreview();
   document.getElementById('api-warning').classList.toggle('hidden', !!state.apiKey);
+  renderRestoreBanner();
   renderMorningRitual();
   const container = document.getElementById('lines-container');
   const sportFilter = state.sportFilter;
@@ -8356,8 +8378,14 @@ async function importAllData(file) {
     if (state.analysis) save(LS.ANALYSIS, state.analysis);
     // Ensure new bankroll-plan fields exist on imported profiles
     for (const n of Object.keys(state.profiles)) ensureProfile(n);
-    toast('Backup restored — refreshing');
+    // After restore, hide the home restore banner permanently
+    localStorage.setItem(RESTORE_BANNER_KEY, '1');
+    toast('Backup restored — fetching fresh lines');
     renderHeader(); renderSportChips(); renderLines(); renderOpenBets(); renderHistory(); renderStats(); renderSettings();
+    // Auto-refresh lines so the user immediately sees today's slate, not stale cache
+    if (state.apiKey || isDemoMode()) {
+      refreshLines(true).catch(e => console.error('post-restore refresh failed', e));
+    }
   } catch (e) {
     console.error(e);
     toast('Import failed: ' + e.message.slice(0, 80));
@@ -9524,6 +9552,36 @@ function init() {
 const SESSION_REFRESH_KEY = 'psb.sessionRefreshed';
 const AUTO_SETTLE_INTERVAL_MS = 5 * 60 * 1000; // every 5 min while there are pending bets
 let _autoSettleTimer = null;
+
+const RESTORE_BANNER_KEY = 'psb.restoreBannerDismissed';
+function renderRestoreBanner() {
+  const banner = document.getElementById('restore-banner');
+  if (!banner) return;
+  // Skip if user dismissed it
+  if (localStorage.getItem(RESTORE_BANNER_KEY) === '1') { banner.classList.add('hidden'); return; }
+  // Show when no profile has placed any bets — i.e. truly fresh storage
+  const profiles = state.profiles || {};
+  const hasAnyBets = Object.values(profiles).some(p => (p.bets || []).length > 0);
+  banner.classList.toggle('hidden', hasAnyBets);
+  // Wire upload (idempotent)
+  const input = document.getElementById('home-import-file');
+  if (input && !input.dataset.wired) {
+    input.dataset.wired = '1';
+    input.addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (f) importAllData(f);
+      e.target.value = '';
+    });
+  }
+  const dismissBtn = document.getElementById('restore-banner-dismiss');
+  if (dismissBtn && !dismissBtn.dataset.wired) {
+    dismissBtn.dataset.wired = '1';
+    dismissBtn.addEventListener('click', () => {
+      localStorage.setItem(RESTORE_BANNER_KEY, '1');
+      banner.classList.add('hidden');
+    });
+  }
+}
 
 function initSessionRefreshWidget() {
   const widget = document.getElementById('session-refresh');
