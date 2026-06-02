@@ -982,12 +982,24 @@
     .slip-mobile[data-empty="true"] { display: block !important; }
   }
 
+  /* Mobile header — pushes content below the iPhone status bar / notch when
+     installed as a PWA on home screen (viewport-fit=cover). Without this the
+     iOS clock / battery icons overlap our header content. */
+  .mobile-header {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+    padding-bottom: 12px;
+    padding-left: calc(env(safe-area-inset-left, 0px) + 16px);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 16px);
+  }
+
   /* BOTTOM NAV (mobile only) — always on top of slip peek */
   .bottom-nav {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
     background: rgba(255,255,255,0.97); backdrop-filter: blur(14px);
     border-top: 1px solid #e4e4e7;
     padding-bottom: var(--safe-bottom);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
     box-shadow: 0 -2px 16px -4px rgba(15,23,42,0.06);
   }
   .bottom-nav-btn { color: #71717a; }
@@ -1094,7 +1106,7 @@
   /* ===== Session-start refresh widget ===== */
   #session-refresh {
     position: fixed;
-    left: 50%; bottom: 92px;
+    left: 50%; bottom: calc(92px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
     z-index: 65;
     display: flex; align-items: center; gap: 6px;
@@ -1160,7 +1172,7 @@
   #session-refresh-x:hover { background: rgba(15,23,42,0.95); }
   #session-refresh-x:active { transform: scale(0.92); }
   @media (max-width: 640px) {
-    #session-refresh { bottom: 110px; }
+    #session-refresh { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
     #session-refresh-btn { padding: 10px 14px 10px 12px; gap: 10px; }
     #session-refresh-btn .sr-icon { width: 32px; height: 32px; }
     #session-refresh-btn .sr-title { font-size: 13px; }
@@ -1450,7 +1462,7 @@
     background: linear-gradient(90deg, color-mix(in srgb, var(--accent, #8b95a5) 14%, transparent) 0%, transparent 100%);
     border-left: 3px solid var(--accent, #8b95a5);
     border-radius: 4px 14px 14px 4px;
-    position: sticky; top: 64px; z-index: 5;
+    position: sticky; top: calc(env(safe-area-inset-top, 0px) + 64px); z-index: 5;
     backdrop-filter: blur(8px);
   }
   .date-group-header:first-child { margin-top: 4px; }
@@ -1489,8 +1501,8 @@
   .countdown-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: #e4e4e7; color: #52525b; font-size: 11px; font-weight: 600; }
 
   /* Bet resolution notifications — subtle, no sounds, no confetti */
-  #notify-stack { position: fixed; top: 16px; right: 16px; z-index: 60; display: flex; flex-direction: column; gap: 10px; max-width: 360px; pointer-events: none; }
-  @media (max-width: 1023px) { #notify-stack { top: 12px; right: 12px; left: 12px; max-width: none; } }
+  #notify-stack { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 16px); right: 16px; z-index: 60; display: flex; flex-direction: column; gap: 10px; max-width: 360px; pointer-events: none; }
+  @media (max-width: 1023px) { #notify-stack { top: calc(env(safe-area-inset-top, 0px) + 12px); right: 12px; left: 12px; max-width: none; } }
   .notify {
     pointer-events: auto;
     background: linear-gradient(180deg, #f4f4f5 0%, #fafafa 100%);
@@ -1618,7 +1630,7 @@
     <main class="flex-1 min-w-0 pb-24 lg:pb-6">
 
       <!-- MOBILE TOP BAR -->
-      <header class="lg:hidden sticky top-0 z-50 bg-ink-950/95 backdrop-blur border-b border-ink-800 px-4 py-3 flex items-center justify-between gap-2">
+      <header class="mobile-header lg:hidden sticky top-0 z-50 bg-ink-950/95 backdrop-blur border-b border-ink-800 px-4 flex items-center justify-between gap-2">
         <button id="header-home-btn" class="hidden flex-shrink-0 w-9 h-9 rounded-lg bg-ink-800 border border-ink-700 grid place-items-center" title="Back to Lines" aria-label="Back to Lines">
           <svg class="w-4 h-4 text-ink-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         </button>
