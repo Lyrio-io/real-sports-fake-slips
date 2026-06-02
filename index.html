@@ -4269,18 +4269,29 @@ async function refreshLines(force = false) {
     return;
   }
 
+  // Guard: nothing to query
+  if (!state.sports || state.sports.length === 0) {
+    toast('Pick at least one sport in Settings → Sports');
+    return;
+  }
+
   const btn = document.getElementById('refresh-btn'); const orig = btn.innerHTML;
   btn.innerHTML = '<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg> Refreshing'; btn.disabled = true;
-  let ok=0, fail=0;
+  let ok=0, fail=0, totalGames=0, firstError=null;
   for (const sport of state.sports) {
     try {
       const games = await apiOdds(sport);
       state.cache[sport] = { games, fetchedAt: nowISO() };
-      snapshotOpeningLines(games);   // capture opening lines on first sighting
-      snapshotClosingLines(sport, games);   // capture closing line for any open bet whose game just started (CLV tracking)
+      snapshotOpeningLines(games);
+      snapshotClosingLines(sport, games);
+      totalGames += (games || []).length;
       ok++;
     }
-    catch (e) { console.error(e); fail++; }
+    catch (e) {
+      console.error('apiOdds failed for', sport, e);
+      fail++;
+      if (!firstError) firstError = (e && e.message) || String(e);
+    }
   }
   save(LS.CACHE, state.cache);
   localStorage.setItem(LS.LAST_REFRESH, String(Date.now()));
@@ -4288,7 +4299,22 @@ async function refreshLines(force = false) {
   scanWatchlistAndAlert().catch(e => console.error('watchlist scan failed', e));
   // Then check if any open bets qualify for auto-hedge (opposing line crossed threshold)
   scanAutoHedgeAndExecute().catch(e => console.error('auto-hedge scan failed', e));
-  document.getElementById('last-updated').textContent = `Updated ${new Date().toLocaleTimeString()} · ${ok} ok${fail?', '+fail+' failed':''}`;
+
+  // Surface specific failure reasons to the user instead of silent "0 ok"
+  if (ok === 0 && fail > 0) {
+    let why = 'Lines could not load.';
+    if (firstError && /401|403/.test(firstError)) why = 'API key invalid or unauthorized. Re-check it in Settings → API keys.';
+    else if (firstError && /429/.test(firstError)) why = 'API quota exhausted for this month. Check usage at the-odds-api.com.';
+    else if (firstError && /5\d\d/.test(firstError)) why = 'The Odds API server is down. Try again in a minute.';
+    else if (firstError) why = 'Network error: ' + firstError;
+    toast(why, 5000);
+    document.getElementById('last-updated').textContent = why;
+  } else if (ok > 0 && totalGames === 0) {
+    toast('All sports returned 0 games (off-season or no upcoming games).', 4000);
+    document.getElementById('last-updated').textContent = `Updated ${new Date().toLocaleTimeString()} · no games available`;
+  } else {
+    document.getElementById('last-updated').textContent = `Updated ${new Date().toLocaleTimeString()} · ${totalGames} game${totalGames === 1 ? '' : 's'}${fail ? ' · ' + fail + ' sport failed' : ''}`;
+  }
   btn.innerHTML = orig; btn.disabled = false;
   renderSportChips();
   renderLines();
@@ -9609,8 +9635,19 @@ function init() {
   document.getElementById('save-key').addEventListener('click', async () => {
     state.apiKey = document.getElementById('api-key-input').value.trim();
     save(LS.KEY, state.apiKey);
+    // If a real key was saved, automatically leave demo mode so the
+    // refresh actually hits The Odds API instead of returning mock data
+    if (state.apiKey && isDemoMode()) {
+      setDemoMode(false);
+      document.getElementById('demo-banner')?.classList.add('hidden');
+    }
     toast('API key saved — fetching lines');
     if (state.apiKey && !state.sportsList.length) await reloadSports();
+    // Make sure there are sports to query
+    if (state.apiKey && (!state.sports || state.sports.length === 0)) {
+      state.sports = DEFAULT_SPORTS.slice();
+      save(LS.SPORTS, state.sports);
+    }
     // Switch to Lines tab and auto-refresh so the user sees games immediately
     if (state.apiKey) {
       switchTab('lines');
