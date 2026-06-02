@@ -1676,7 +1676,8 @@
           </div>
 
           <div id="api-warning" class="hidden bg-warn-500/15 border border-warn-500/40 text-warn-500 text-sm p-3 rounded-xl mb-4">
-            <strong>Setup needed:</strong> Add your free Odds API key in <button class="underline" onclick="switchTab('settings')">Settings</button>.
+            <strong>Setup needed:</strong> Add your free Odds API key in <button class="underline" onclick="switchTab('settings')">Settings</button> — or
+            <label class="underline cursor-pointer font-bold">upload your backup file<input id="api-warning-import" type="file" accept=".json,application/json" class="hidden" /></label>.
           </div>
 
           <!-- RESTORE BACKUP banner — shows on home when profile looks fresh -->
@@ -9557,22 +9558,29 @@ const RESTORE_BANNER_KEY = 'psb.restoreBannerDismissed';
 function renderRestoreBanner() {
   const banner = document.getElementById('restore-banner');
   if (!banner) return;
-  // Skip if user dismissed it
-  if (localStorage.getItem(RESTORE_BANNER_KEY) === '1') { banner.classList.add('hidden'); return; }
-  // Show when no profile has placed any bets — i.e. truly fresh storage
+  // Detect a "fresh install" state: no API key AND no bets anywhere.
+  // In that case, ignore prior dismissals — the user truly needs to restore.
   const profiles = state.profiles || {};
   const hasAnyBets = Object.values(profiles).some(p => (p.bets || []).length > 0);
-  banner.classList.toggle('hidden', hasAnyBets);
+  const fullyFresh = !state.apiKey && !hasAnyBets;
+  const partiallyFresh = !state.apiKey || !hasAnyBets;
+  const dismissed = localStorage.getItem(RESTORE_BANNER_KEY) === '1';
+  const show = fullyFresh || (partiallyFresh && !dismissed);
+  banner.classList.toggle('hidden', !show);
   // Wire upload (idempotent)
-  const input = document.getElementById('home-import-file');
-  if (input && !input.dataset.wired) {
-    input.dataset.wired = '1';
-    input.addEventListener('change', (e) => {
-      const f = e.target.files && e.target.files[0];
-      if (f) importAllData(f);
-      e.target.value = '';
-    });
-  }
+  const wireImport = (id) => {
+    const el = document.getElementById(id);
+    if (el && !el.dataset.wired) {
+      el.dataset.wired = '1';
+      el.addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (f) importAllData(f);
+        e.target.value = '';
+      });
+    }
+  };
+  wireImport('home-import-file');
+  wireImport('api-warning-import');
   const dismissBtn = document.getElementById('restore-banner-dismiss');
   if (dismissBtn && !dismissBtn.dataset.wired) {
     dismissBtn.dataset.wired = '1';
