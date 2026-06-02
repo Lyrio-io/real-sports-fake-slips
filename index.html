@@ -982,6 +982,38 @@
     .slip-mobile[data-empty="true"] { display: block !important; }
   }
 
+  /* Daily P&L toggle */
+  .daily-toggle { color: #71717a; }
+  .daily-toggle[data-active="true"] { background: #ffffff; color: #0a0a0a; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+  .daily-pill {
+    background: #ffffff; border: 1px solid #e4e4e7; border-radius: 12px;
+    padding: 10px 12px; text-align: center;
+  }
+  .daily-pill .lbl { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; }
+  .daily-pill .val { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; font-size: 20px; font-weight: 900; color: #0a0a0a; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 4px; }
+  .daily-pill .val.pos { color: #00b86b; }
+  .daily-pill .val.neg { color: #ef4444; }
+  .daily-row {
+    display: grid; grid-template-columns: minmax(72px, auto) 1fr minmax(72px, auto);
+    align-items: center; gap: 10px;
+    padding: 9px 6px; border-top: 1px solid #f4f4f5;
+  }
+  .daily-row:first-child { border-top: none; }
+  .daily-row .daily-date { font-size: 12px; font-weight: 700; color: #27272a; white-space: nowrap; }
+  .daily-row .daily-date small { display: block; font-size: 10px; font-weight: 500; color: #71717a; }
+  .daily-row .daily-bar {
+    height: 18px; border-radius: 4px; background: #f4f4f5; position: relative; overflow: hidden;
+  }
+  .daily-row .daily-bar .fill {
+    position: absolute; top: 0; bottom: 0;
+    background: linear-gradient(90deg, #34d399, #00b86b);
+  }
+  .daily-row .daily-bar .fill.neg { background: linear-gradient(90deg, #fca5a5, #ef4444); }
+  .daily-row .daily-val { text-align: right; font-family: "Onest", ui-sans-serif, system-ui, sans-serif; font-weight: 900; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .daily-row .daily-val.pos { color: #00b86b; }
+  .daily-row .daily-val.neg { color: #ef4444; }
+  .daily-row .daily-val.zero { color: #a1a1aa; }
+
   /* Live ticker — sticky banner showing in-progress bets, follows you between tabs */
   #live-ticker {
     position: sticky;
@@ -2000,6 +2032,22 @@
         <div class="px-4 lg:px-8 pt-4 lg:pt-8 max-w-5xl mx-auto">
           <h2 class="display text-2xl font-bold mb-4">Performance</h2>
 
+          <!-- Daily P&L — biggest, simplest thing first -->
+          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <h3 class="font-semibold text-sm flex items-center gap-2">
+                <span class="text-neon-500">📅</span> Daily Win / Loss
+                <span class="text-[10px] text-ink-400 font-normal uppercase tracking-wider">Last 14 days</span>
+              </h3>
+              <div class="flex items-center gap-1 bg-ink-800 border border-ink-700 rounded-full p-0.5" role="group" aria-label="Display mode">
+                <button data-daily-mode="money" class="daily-toggle px-3 py-1 rounded-full text-xs font-bold transition" data-active="true">$ Money</button>
+                <button data-daily-mode="units" class="daily-toggle px-3 py-1 rounded-full text-xs font-bold transition">Units</button>
+              </div>
+            </div>
+            <div id="daily-pnl-summary" class="grid grid-cols-3 gap-2 mb-3"></div>
+            <div id="daily-pnl-body" class="text-sm"></div>
+          </div>
+
           <!-- Bankroll Plan: weekly reset + savings ledger + half-unit target -->
           <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
             <div class="flex items-center justify-between mb-3">
@@ -2699,7 +2747,7 @@
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="fixed bottom-24 lg:bottom-6 right-4 hidden bg-ink-700 border border-ink-600 text-white px-4 py-2.5 rounded-xl shadow-2xl text-sm z-50 max-w-xs"></div>
+<div id="toast" class="fixed bottom-24 lg:bottom-6 right-4 hidden px-4 py-2.5 rounded-xl shadow-2xl text-sm z-50 max-w-xs" style="background:#18181b; color:#ffffff; border:1px solid #3f3f46;"></div>
 
 <!-- BET RESOLUTION NOTIFICATIONS -->
 <div id="notify-stack"></div>
@@ -3315,6 +3363,8 @@ const profit = (s, d) => s * (d - 1);
 const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
 const nowISO = () => new Date().toISOString();
 const escapeHtml = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// Turn machine tags like "high_vig" into readable "High vig"
+const humanize = s => String(s == null ? '' : s).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
 const prettyMarket = key => {
   const map = {
     h2h: 'Moneyline', spreads: 'Spread', totals: 'Total',
@@ -7625,8 +7675,88 @@ function renderBankrollPlan() {
 
 /* stats */
 let charts = {};
+/* ===== Daily P&L card — Stats tab headline ===== */
+const DAILY_MODE_KEY = 'psb.dailyMode'; // 'money' | 'units'
+function _dailyMode() { return localStorage.getItem(DAILY_MODE_KEY) === 'units' ? 'units' : 'money'; }
+function _setDailyMode(m) { localStorage.setItem(DAILY_MODE_KEY, m); }
+function _unitsFor(amount, bankroll, unitPct) {
+  const oneUnit = Math.max(1, bankroll * unitPct);
+  return amount / oneUnit;
+}
+function renderDailyPL() {
+  const p = P(); if (!p) return;
+  const mode = _dailyMode();
+  // Sync toggle pills
+  document.querySelectorAll('[data-daily-mode]').forEach(b => {
+    b.dataset.active = b.dataset.dailyMode === mode ? 'true' : 'false';
+    if (!b.dataset.wired) {
+      b.dataset.wired = '1';
+      b.addEventListener('click', () => { _setDailyMode(b.dataset.dailyMode); renderDailyPL(); });
+    }
+  });
+
+  const settled = (p.bets || []).filter(b => (b.status === 'won' || b.status === 'lost') && b.settledAt);
+  // Bucket by local day for the last 14 days
+  const days = [];
+  const today = new Date(); today.setHours(0,0,0,0);
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    days.push({ key: d.toISOString().slice(0,10), date: d, pl: 0, n: 0, w: 0, l: 0, wagered: 0 });
+  }
+  const idx = {};
+  days.forEach(d => { idx[d.key] = d; });
+  for (const b of settled) {
+    const k = new Date(b.settledAt).toISOString().slice(0,10);
+    const d = idx[k]; if (!d) continue;
+    const ch = b.status === 'won' ? (b.payout - b.stake) : -b.stake;
+    d.pl += ch; d.n++; d.wagered += b.stake;
+    if (b.status === 'won') d.w++; else d.l++;
+  }
+  // Conversion to units uses current bankroll + unit% setting
+  const bankroll = p.bankroll || p.starting || 1000;
+  const unitPct = (p.settings?.unitSize || 0.01);
+  const fmtVal = v => {
+    if (mode === 'units') {
+      const u = _unitsFor(v, bankroll, unitPct);
+      return (u > 0 ? '+' : '') + u.toFixed(2) + 'u';
+    }
+    return (v > 0 ? '+' : '') + fmt$(v);
+  };
+  // Summary pills: today, this week, last 14d
+  const weekStart = new Date(today); const dow = today.getDay(); weekStart.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+  const todayKey = today.toISOString().slice(0,10);
+  const todayPL = (idx[todayKey] || { pl: 0 }).pl;
+  const weekPL = days.filter(d => d.date >= weekStart).reduce((a,d) => a + d.pl, 0);
+  const fortnightPL = days.reduce((a,d) => a + d.pl, 0);
+  const cls = v => v > 0 ? 'pos' : v < 0 ? 'neg' : '';
+  document.getElementById('daily-pnl-summary').innerHTML = `
+    <div class="daily-pill"><div class="lbl">Today</div><div class="val ${cls(todayPL)}">${fmtVal(todayPL)}</div></div>
+    <div class="daily-pill"><div class="lbl">This week</div><div class="val ${cls(weekPL)}">${fmtVal(weekPL)}</div></div>
+    <div class="daily-pill"><div class="lbl">14 days</div><div class="val ${cls(fortnightPL)}">${fmtVal(fortnightPL)}</div></div>`;
+
+  // Per-day rows with horizontal bar
+  const maxAbs = Math.max(1, ...days.map(d => Math.abs(d.pl)));
+  const dowLabel = (d) => d.toLocaleDateString([], { weekday: 'short' });
+  const dateLabel = (d) => d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  const rows = days.slice().reverse().map(d => {
+    const v = d.pl;
+    const widthPct = (Math.abs(v) / maxAbs) * 100;
+    const isToday = d.key === todayKey;
+    const valCls = v > 0 ? 'pos' : v < 0 ? 'neg' : 'zero';
+    const barFillCls = v < 0 ? 'fill neg' : 'fill';
+    const barLeft = v >= 0 ? '50%' : (50 - widthPct/2) + '%';
+    return `<div class="daily-row">
+      <div class="daily-date">${escapeHtml(dowLabel(d.date))}${isToday ? ' · Today' : ''}<small>${escapeHtml(dateLabel(d.date))}${d.n ? ' · ' + d.n + ' bet' + (d.n === 1 ? '' : 's') : ''}</small></div>
+      <div class="daily-bar"><div class="${barFillCls}" style="left:${barLeft}; width:${widthPct/2}%"></div></div>
+      <div class="daily-val ${valCls}">${v === 0 && d.n === 0 ? '—' : fmtVal(v)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('daily-pnl-body').innerHTML = rows || '<div class="text-ink-400 text-xs">No settled bets in the last 14 days.</div>';
+}
+
 function renderStats() {
   const p = P(); if (!p) return;
+  renderDailyPL();
   renderBankrollPlan();
   const settled = p.bets.filter(b => b.status !== 'pending');
   const sorted = settled.slice().sort((a,b) => new Date(a.settledAt) - new Date(b.settledAt));
@@ -8210,7 +8340,7 @@ function renderAnalysis() {
     html += `<div class="pod-card">
       <div class="pod-header">
         <span class="pod-badge">⭐ Pick of the Day</span>
-        <span class="text-[11px] uppercase tracking-wider text-ink-300 font-bold">${escapeHtml(pod.edge_type || '').replace(/_/g,' ')} · ${escapeHtml(pod.strength || '')}</span>
+        <span class="text-[11px] uppercase tracking-wider text-ink-300 font-bold">${escapeHtml(humanize(pod.edge_type))} · ${escapeHtml(humanize(pod.strength))}</span>
       </div>
       <div class="pod-bet">${escapeHtml(pod.bet || '')} <span class="num">${pod.american != null ? fmtAmerican(pod.american) : ''}</span></div>
       <div class="pod-reasoning">${escapeHtml(pod.reasoning || '')}</div>
@@ -8239,7 +8369,7 @@ function renderAnalysis() {
               <div class="min-w-0 flex-1">
                 <div class="font-semibold text-sm mb-1">${escapeHtml(e.bet || '')} <span class="num text-ink-300">${e.american != null ? fmtAmerican(e.american) : ''}</span></div>
                 <div class="flex items-center gap-2 mb-1.5 flex-wrap">
-                  <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-neon-500/15 text-neon-500 font-bold">${escapeHtml(e.edge_type || 'edge')}</span>
+                  <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-neon-500/15 text-neon-500 font-bold">${escapeHtml(humanize(e.edge_type) || 'Edge')}</span>
                   <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full ${e.strength === 'strong' ? 'bg-neon-500/20 text-neon-400' : 'bg-ink-700 text-ink-300'} font-bold">${escapeHtml(e.strength || 'moderate')}</span>
                 </div>
                 <div class="text-xs text-ink-300">${escapeHtml(e.reasoning || '')}</div>
@@ -8262,7 +8392,7 @@ function renderAnalysis() {
         ${traps.map(t => `
           <div class="bg-ink-800 border border-ink-700 rounded-xl p-3">
             <div class="flex items-center gap-2 mb-1 flex-wrap">
-              <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-danger-500/15 text-danger-500 font-bold">${escapeHtml(t.trap_type || 'trap')}</span>
+              <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-danger-500/15 text-danger-500 font-bold">${escapeHtml(humanize(t.trap_type) || 'Trap')}</span>
             </div>
             <div class="font-semibold text-sm mb-1">${escapeHtml(t.bet || '')}</div>
             <div class="text-xs text-ink-300">${escapeHtml(t.reasoning || '')}</div>
@@ -9476,7 +9606,17 @@ function init() {
   document.getElementById('history-range').addEventListener('change', renderHistory);
   document.getElementById('export-btn').addEventListener('click', exportCSV);
 
-  document.getElementById('save-key').addEventListener('click', () => { state.apiKey = document.getElementById('api-key-input').value.trim(); save(LS.KEY, state.apiKey); toast('API key saved'); if (state.apiKey && !state.sportsList.length) reloadSports(); });
+  document.getElementById('save-key').addEventListener('click', async () => {
+    state.apiKey = document.getElementById('api-key-input').value.trim();
+    save(LS.KEY, state.apiKey);
+    toast('API key saved — fetching lines');
+    if (state.apiKey && !state.sportsList.length) await reloadSports();
+    // Switch to Lines tab and auto-refresh so the user sees games immediately
+    if (state.apiKey) {
+      switchTab('lines');
+      refreshLines(true).catch(e => console.error('post-save refresh failed', e));
+    }
+  });
   const forceBtn = document.getElementById('force-refresh-btn');
   if (forceBtn) forceBtn.addEventListener('click', () => {
     if (confirm('Force-refresh now? This will use API credits even if cached data is fresh.')) {
