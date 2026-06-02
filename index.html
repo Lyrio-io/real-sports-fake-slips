@@ -3254,14 +3254,26 @@ function setDemoMode(on) {
   document.getElementById('demo-banner').classList.toggle('hidden', !on);
 }
 function exitDemoMode() {
-  if (!confirm('Switch to live mode? This wipes mock data. You\'ll need to add a real Odds API key and refresh.')) return;
+  if (!confirm('Switch to live mode? This wipes mock data and pulls real lines from The Odds API.')) return;
   state.cache = {}; state.eventCache = {}; state.analysis = null;
   save(LS.CACHE, {}); save(LS.EVENT_CACHE, {});
   localStorage.removeItem(LS.ANALYSIS);
   setDemoMode(false);
+  // Make sure there are sports selected (a fresh / restored profile may have an empty list)
+  if (!state.sports || state.sports.length === 0) {
+    state.sports = DEFAULT_SPORTS.slice();
+    save(LS.SPORTS, state.sports);
+  }
   renderHeader(); renderSportChips(); renderLines(); renderAnalysis();
-  toast('Live mode — add API key in Settings');
-  switchTab('settings');
+  if (state.apiKey) {
+    // Already have a key saved — pull fresh lines immediately instead of dumping the user in Settings
+    switchTab('lines');
+    toast('Live mode — fetching today\'s lines');
+    refreshLines(true).catch(e => console.error('post-exitDemo refresh failed', e));
+  } else {
+    toast('Live mode — add API key in Settings');
+    switchTab('settings');
+  }
 }
 function reEnterDemoMode() {
   loadMockData();
@@ -4424,8 +4436,39 @@ function renderLines() {
         <button id="empty-load-demo" class="bg-warn-500 text-ink-950 font-bold px-4 py-2 rounded-xl text-sm hover:brightness-110">Load demo games</button>
       </div>`;
     } else {
-      html = `<div class="bg-ink-900 border border-ink-700 rounded-2xl p-8 text-center text-ink-400 text-sm">
-        ${state.apiKey ? 'No lines yet — click <span class="text-white font-semibold">Refresh</span>.' : 'Add an API key in Settings first.'}
+      // Full diagnostic empty-state — shows exactly what's missing so user knows what to fix
+      const keyOk = !!state.apiKey;
+      const sportsOk = state.sports && state.sports.length > 0;
+      const cacheKeys = Object.keys(state.cache || {});
+      const cacheGameCount = cacheKeys.reduce((a, k) => a + ((state.cache[k]?.games || []).length), 0);
+      const q = JSON.parse(localStorage.getItem(LS.QUOTA) || '{}');
+      const remaining = q.remaining != null ? q.remaining : null;
+      const used = q.used != null ? q.used : null;
+      const lastRefresh = parseInt(localStorage.getItem(LS.LAST_REFRESH) || '0', 10);
+      const lastTxt = lastRefresh ? new Date(lastRefresh).toLocaleTimeString() : 'never';
+      const sportsLabel = sportsOk ? state.sports.map(sportAbbr).join(', ') : 'none';
+      html = `<div class="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm">
+        <div class="font-bold text-base text-zinc-900 mb-1">No lines loaded</div>
+        <div class="text-xs text-zinc-500 mb-4">Here's what the app sees right now:</div>
+        <ul class="text-sm text-zinc-700 space-y-1.5 mb-4">
+          <li>${keyOk ? '✅' : '❌'} <strong>API key:</strong> ${keyOk ? 'saved' : 'not set'}</li>
+          <li>${sportsOk ? '✅' : '❌'} <strong>Sports picked:</strong> ${escapeHtml(sportsLabel)}</li>
+          <li>📊 <strong>API quota:</strong> ${remaining != null ? remaining + ' calls left' : used != null ? used + ' used (limit unknown)' : 'unknown — refresh to check'}</li>
+          <li>🕒 <strong>Last refresh:</strong> ${escapeHtml(lastTxt)}${cacheGameCount > 0 ? ` (${cacheGameCount} games in cache)` : ''}</li>
+        </ul>
+        <div class="flex flex-wrap gap-2">
+          ${keyOk && sportsOk ? `<button id="empty-refresh-btn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-sm inline-flex items-center gap-2">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+            Try refreshing now
+          </button>` : ''}
+          ${!keyOk ? `<button onclick="switchTab('settings')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-sm">Add API key</button>` : ''}
+          ${!sportsOk ? `<button onclick="switchTab('settings')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-sm">Pick sports</button>` : ''}
+          <label class="bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-300 font-bold px-4 py-2 rounded-xl text-sm cursor-pointer">
+            Upload backup
+            <input id="empty-import-file" type="file" accept=".json,application/json" class="hidden" />
+          </label>
+        </div>
+        ${cacheGameCount > 0 ? `<div class="mt-3 text-[11px] text-zinc-500">There are ${cacheGameCount} games in your cache but none matched your current filters (sport / search / market).</div>` : ''}
       </div>`;
     }
   }
@@ -4444,6 +4487,10 @@ function renderLines() {
   // pointless re-renders that caused tap-glitch flicker.
   const eld = document.getElementById('empty-load-demo');
   if (eld) eld.addEventListener('click', () => { loadMockData(); renderSportChips(); renderLines(); toast('Demo data loaded'); });
+  const erb = document.getElementById('empty-refresh-btn');
+  if (erb) erb.addEventListener('click', () => refreshLines(true));
+  const eim = document.getElementById('empty-import-file');
+  if (eim) eim.addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; if (f) importAllData(f); e.target.value = ''; });
   // After Lines render, populate any live ESPN scoreboards on visible game cards
   if (state.activeTab === 'lines') {
     setTimeout(() => populateLiveStates(), 50);
