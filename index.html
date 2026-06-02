@@ -1091,62 +1091,149 @@
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   }
 
-  /* Bet placed confirmation — clean UI feedback, not a reward loop */
-  /* ===== Kalshi-style bet-placed ticket ===== */
-  #bet-placed { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; padding: 16px; animation: backdropIn 220ms ease; }
+  /* ===== Premium receipt-style bet ticket ===== */
+  #bet-placed { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; padding: 16px; background: radial-gradient(circle at 50% 30%, rgba(5,150,105,0.35) 0%, rgba(0,0,0,0.62) 60%); animation: backdropIn 240ms ease; }
   #bet-placed.show { display: flex; }
   @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
   .bp-shade {
     position: relative;
     width: 100%; max-width: 380px;
-    padding: 36px 22px 26px;
-    background: linear-gradient(180deg, #34d399 0%, #059669 100%);
-    border-radius: 28px;
-    box-shadow: 0 30px 80px -20px rgba(5,150,105,0.5);
-    animation: cardIn 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 30px 18px 22px;
+    background: linear-gradient(155deg, #10b981 0%, #059669 55%, #047857 100%);
+    border-radius: 30px;
+    box-shadow: 0 40px 90px -22px rgba(5,150,105,0.55), inset 0 1px 0 rgba(255,255,255,0.22);
+    animation: cardIn 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: hidden;
   }
-  @keyframes cardIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  /* Animated holographic shimmer across the green frame */
+  .bp-shade::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.22) 50%, transparent 70%);
+    transform: translateX(-100%);
+    animation: bpShine 2.2s ease-in-out 0.4s 1 forwards;
+    pointer-events: none;
+  }
+  @keyframes bpShine { to { transform: translateX(100%); } }
+  @keyframes cardIn { from { opacity: 0; transform: scale(0.88) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
   .bp-ticket {
     background: #ffffff;
-    border-radius: 18px;
-    overflow: hidden;
+    border-radius: 20px;
     position: relative;
+    box-shadow: 0 10px 30px -8px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(0,0,0,0.04);
   }
-  .bp-ticket-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 8px; }
-  .bp-status-pill { display: inline-block; padding: 4px 12px; border-radius: 999px; background: #ecfdf5; color: #047857; border: 1px solid #00b86b; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+  /* Receipt header strip — looks like a real bookie's ticket */
+  .bp-receipt-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px;
+    background: linear-gradient(180deg, #f9fafb, #f4f4f5);
+    border-radius: 20px 20px 0 0;
+    border-bottom: 1px dashed #d4d4d8;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 10px; font-weight: 700; color: #71717a;
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .bp-receipt-id { color: #0a0a0a; }
+  .bp-ticket-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 6px; }
+  .bp-status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 999px; background: #ecfdf5; color: #047857; border: 1px solid #00b86b; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+  .bp-status-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #00b86b; box-shadow: 0 0 6px #00b86b; animation: bpDot 1.6s ease-in-out infinite; }
+  @keyframes bpDot { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
   .bp-brand { font-size: 18px; font-weight: 900; color: #00b86b; letter-spacing: -0.02em; }
-  .bp-ticket-body { padding: 8px 22px 18px; }
-  .bp-league { font-size: 11px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; }
-  .bp-bet-title { font-size: 28px; font-weight: 900; color: #0a0a0a; letter-spacing: -0.025em; line-height: 1.05; margin-top: 4px; }
-  .bp-bet-sub { font-size: 13px; color: #71717a; font-weight: 500; margin-top: 4px; }
-  .bp-rows { margin-top: 16px; border-top: 1px solid #e4e4e7; padding-top: 12px; }
-  .bp-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 14px; color: #52525b; }
+
+  .bp-ticket-body { padding: 4px 22px 16px; }
+  /* Team logos crest */
+  .bp-crests { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 6px 0 10px; }
+  .bp-crest { width: 52px; height: 52px; border-radius: 14px; background: #ffffff; border: 1px solid #e4e4e7; display: grid; place-items: center; padding: 6px; box-shadow: 0 4px 12px -6px rgba(0,0,0,0.12); }
+  .bp-crest img { width: 100%; height: 100%; object-fit: contain; }
+  .bp-crest-vs { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; font-size: 12px; font-weight: 900; color: #a1a1aa; letter-spacing: 0.1em; }
+  .bp-crests.hidden { display: none; }
+
+  .bp-league { font-size: 11px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.08em; text-align: center; }
+  .bp-bet-title { font-size: 26px; font-weight: 900; color: #0a0a0a; letter-spacing: -0.025em; line-height: 1.05; margin-top: 4px; text-align: center; }
+  .bp-bet-sub { font-size: 12px; color: #71717a; font-weight: 500; margin-top: 4px; text-align: center; }
+
+  /* Spotlight payout panel */
+  .bp-payout {
+    margin: 14px 0 10px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border-radius: 14px;
+    border: 1px solid rgba(0,184,107,0.25);
+    display: grid; grid-template-columns: 1fr auto; align-items: center;
+    position: relative; overflow: hidden;
+  }
+  .bp-payout::after { content: ""; position: absolute; right: -20px; top: -30px; width: 80px; height: 80px; border-radius: 50%; background: rgba(0,184,107,0.12); pointer-events: none; }
+  .bp-payout-label { font-size: 10px; font-weight: 800; color: #047857; letter-spacing: 0.12em; text-transform: uppercase; }
+  .bp-payout-val { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; font-size: 30px; font-weight: 900; color: #047857; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -0.02em; }
+  .bp-payout-sub { font-size: 11px; font-weight: 600; color: #059669; margin-top: 2px; }
+  .bp-payout-meta { text-align: right; }
+  .bp-payout-meta .lbl { font-size: 9px; font-weight: 800; color: #047857; letter-spacing: 0.1em; text-transform: uppercase; }
+  .bp-payout-meta .val { font-family: "Onest", ui-sans-serif, system-ui, sans-serif; font-size: 17px; font-weight: 900; color: #0a0a0a; font-variant-numeric: tabular-nums; }
+
+  .bp-rows { border-top: 1px dashed #e4e4e7; padding-top: 10px; }
+  .bp-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13px; color: #52525b; }
   .bp-row .num { font-weight: 800; color: #0a0a0a; font-variant-numeric: tabular-nums; }
-  .bp-row-emph { padding: 8px 0; border-top: 1px dashed #e4e4e7; border-bottom: 1px dashed #e4e4e7; margin-top: 4px; }
-  .bp-row-emph .num { color: #00b86b; font-size: 18px; }
-  /* Perforated edge between ticket body and actions */
-  .bp-perforation { height: 18px; position: relative; margin: 0 6px; background: radial-gradient(circle at center, transparent 0 7px, #ffffff 8px) repeat-x; background-size: 18px 18px; background-position: center; }
-  .bp-perforation::before { content: ""; position: absolute; left: -16px; top: 0; bottom: 0; width: 12px; background: radial-gradient(circle at left center, transparent 0 9px, transparent 10px); }
-  .bp-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px 14px 14px; background: #ffffff; }
-  .bp-action { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px; border-radius: 12px; background: #f4f4f5; border: 1px solid #e4e4e7; cursor: pointer; transition: background 140ms ease, transform 140ms ease; color: #0a0a0a; }
-  .bp-action:hover { background: #e4e4e7; }
+
+  /* Perforated edge — true ticket tear-off */
+  .bp-perforation {
+    height: 22px; position: relative;
+    background: radial-gradient(circle at center, transparent 0 6px, #ffffff 7px) repeat-x;
+    background-size: 14px 14px; background-position: center;
+  }
+  .bp-perforation::before, .bp-perforation::after {
+    content: ""; position: absolute; top: 50%; width: 18px; height: 18px;
+    background: #059669; border-radius: 50%; transform: translateY(-50%);
+  }
+  .bp-perforation::before { left: -9px; }
+  .bp-perforation::after  { right: -9px; }
+
+  /* Barcode strip — pure CSS bars */
+  .bp-barcode {
+    margin: 0 18px 6px;
+    padding: 8px 0 4px;
+    display: flex; align-items: flex-end; justify-content: center; gap: 2px;
+    height: 36px;
+  }
+  .bp-barcode span { display: block; width: 2px; background: #0a0a0a; height: 100%; }
+  .bp-barcode span.thin { width: 1px; }
+  .bp-barcode span.short { height: 70%; }
+  .bp-barcode-num { text-align: center; font-family: ui-monospace, "SF Mono", monospace; font-size: 10px; font-weight: 700; color: #71717a; letter-spacing: 0.18em; padding-bottom: 8px; }
+
+  .bp-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 4px 18px 16px; background: #ffffff; border-radius: 0 0 20px 20px; }
+  .bp-action { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 12px 6px; border-radius: 12px; background: #f4f4f5; border: 1px solid #e4e4e7; cursor: pointer; transition: background 140ms ease, transform 140ms ease, box-shadow 140ms ease; color: #0a0a0a; }
+  .bp-action:hover { background: #e4e4e7; transform: translateY(-1px); box-shadow: 0 4px 12px -6px rgba(0,0,0,0.18); }
   .bp-action:active { transform: scale(0.96); }
-  .bp-action svg { width: 20px; height: 20px; }
-  .bp-action span { font-size: 11px; font-weight: 700; }
-  .bp-action-share { background: #00b86b; color: #ffffff; border-color: #00b86b; }
-  .bp-action-share:hover { background: #059669; }
-  .bp-close { display: block; width: calc(100% - 20px); margin: 14px auto 0; padding: 14px 24px; border-radius: 14px; background: #ffffff; border: none; color: #0a0a0a; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 4px 14px -4px rgba(15,23,42,0.18); }
-  .bp-close:hover { background: #f4f4f5; }
+  .bp-action svg { width: 22px; height: 22px; }
+  .bp-action span { font-size: 11px; font-weight: 800; }
+  .bp-action-share { background: linear-gradient(135deg, #10b981, #00b86b); color: #ffffff; border-color: transparent; box-shadow: 0 6px 16px -6px rgba(0,184,107,0.55); }
+  .bp-action-share:hover { background: linear-gradient(135deg, #059669, #047857); transform: translateY(-1px); }
+  .bp-close { display: block; width: calc(100% - 22px); margin: 14px auto 4px; padding: 14px 24px; border-radius: 14px; background: #ffffff; border: none; color: #0a0a0a; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 6px 16px -6px rgba(0,0,0,0.25); letter-spacing: 0.02em; }
+  .bp-close:hover { background: #f4f4f5; transform: translateY(-1px); }
   .bp-close:active { transform: scale(0.98); }
-  .bp-x { position: absolute; top: 8px; right: 8px; width: 38px; height: 38px; border-radius: 50%; border: none; background: rgba(255,255,255,0.25); color: #ffffff; display: grid; place-items: center; cursor: pointer; z-index: 2; transition: background 140ms ease; }
-  .bp-x:hover { background: rgba(255,255,255,0.4); }
-  .bp-x:active { transform: scale(0.95); }
-  /* When bet lost */
-  .bp-shade.lost { background: linear-gradient(180deg, #fb7185 0%, #be123c 100%); box-shadow: 0 30px 80px -20px rgba(190,18,60,0.45); }
+  .bp-x { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; border: none; background: rgba(255,255,255,0.22); color: #ffffff; display: grid; place-items: center; cursor: pointer; z-index: 4; transition: background 140ms ease, transform 140ms ease; backdrop-filter: blur(8px); }
+  .bp-x:hover { background: rgba(255,255,255,0.4); transform: rotate(90deg); }
+  .bp-x:active { transform: rotate(90deg) scale(0.95); }
+
+  /* Confetti burst on appear */
+  .bp-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 30px; }
+  .bp-confetti i { position: absolute; top: 30%; left: 50%; width: 7px; height: 11px; opacity: 0; border-radius: 1px; animation: bpConfetti 1.4s ease-out forwards; }
+  @keyframes bpConfetti {
+    0% { opacity: 0; transform: translate(0,0) rotate(0deg) scale(0.4); }
+    10% { opacity: 1; }
+    100% { opacity: 0; transform: translate(var(--tx, 0), var(--ty, 0)) rotate(var(--tr, 360deg)) scale(1); }
+  }
+
+  /* When bet lost (used by other flows that reuse this overlay) */
+  .bp-shade.lost { background: linear-gradient(155deg, #fb7185 0%, #be123c 100%); box-shadow: 0 40px 90px -22px rgba(190,18,60,0.5); }
   .bp-shade.lost .bp-status-pill { background: #fef2f2; color: #b91c1c; border-color: #ef4444; }
+  .bp-shade.lost .bp-status-pill::before { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
   .bp-shade.lost .bp-brand { color: #ef4444; }
-  .bp-shade.lost .bp-row-emph .num { color: #ef4444; }
-  .bp-shade.lost .bp-action-share { background: #ef4444; border-color: #ef4444; }
+  .bp-shade.lost .bp-payout { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-color: rgba(239,68,68,0.25); }
+  .bp-shade.lost .bp-payout-label, .bp-shade.lost .bp-payout-val { color: #b91c1c; }
+  .bp-shade.lost .bp-payout-sub { color: #ef4444; }
+  .bp-shade.lost .bp-payout::after { background: rgba(239,68,68,0.12); }
+  .bp-shade.lost .bp-perforation::before, .bp-shade.lost .bp-perforation::after { background: #be123c; }
+  .bp-shade.lost .bp-action-share { background: linear-gradient(135deg, #f87171, #ef4444); box-shadow: 0 6px 16px -6px rgba(239,68,68,0.5); }
 
   /* Live game state panel — fed by ESPN's free scoreboard */
   .live-state {
@@ -2242,29 +2329,50 @@
   </div>
 </div>
 
-<!-- BET PLACED CONFIRMATION — Kalshi-style ticket with share actions -->
+<!-- BET PLACED CONFIRMATION — premium receipt ticket -->
 <div id="bet-placed">
   <div class="bp-shade">
     <button class="bp-x" id="bp-x" aria-label="Close">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M6 18L18 6"/></svg>
     </button>
+    <div class="bp-confetti" id="bp-confetti"></div>
     <div class="bp-ticket">
+      <div class="bp-receipt-head">
+        <span>Ticket #<span class="bp-receipt-id" id="bp-ticket-id">000000</span></span>
+        <span id="bp-placed-at">--:-- --</span>
+      </div>
       <div class="bp-ticket-head">
         <div class="bp-status-pill" id="bp-status">Placed</div>
         <div class="bp-brand">RSFS</div>
       </div>
       <div class="bp-ticket-body">
+        <div class="bp-crests hidden" id="bp-crests">
+          <div class="bp-crest" id="bp-crest-away"></div>
+          <div class="bp-crest-vs">VS</div>
+          <div class="bp-crest" id="bp-crest-home"></div>
+        </div>
         <div class="bp-league" id="bp-league">MLB</div>
         <div class="bp-bet-title" id="bp-bet-title">Yankees ML</div>
         <div class="bp-bet-sub" id="bp-bet-sub">vs Red Sox · Sun 7:05 PM</div>
+        <div class="bp-payout">
+          <div>
+            <div class="bp-payout-label">To win</div>
+            <div class="bp-payout-val" id="bp-towin">$6.67</div>
+            <div class="bp-payout-sub" id="bp-payout-total">Pays $16.67 total</div>
+          </div>
+          <div class="bp-payout-meta">
+            <div class="lbl">Line</div>
+            <div class="val" id="bp-odds">-150</div>
+          </div>
+        </div>
         <div class="bp-rows">
-          <div class="bp-row"><span>Line you took</span><span class="num" id="bp-odds">-150</span></div>
           <div class="bp-row"><span>Stake</span><span class="num" id="bp-stake">$10.00</span></div>
-          <div class="bp-row bp-row-emph"><span>To win</span><span class="num" id="bp-towin">$6.67</span></div>
           <div class="bp-row"><span>Bankroll after</span><span class="num" id="bp-bankroll">$990.00</span></div>
         </div>
       </div>
       <div class="bp-perforation"></div>
+      <div class="bp-barcode" id="bp-barcode"></div>
+      <div class="bp-barcode-num" id="bp-barcode-num">RSFS-000000</div>
       <div class="bp-actions">
         <button class="bp-action" id="bp-copy-image" aria-label="Copy image">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg>
@@ -2279,8 +2387,8 @@
           <span>Share</span>
         </button>
       </div>
-      <button class="bp-close" id="bp-close">Done</button>
     </div>
+    <button class="bp-close" id="bp-close">Done</button>
   </div>
 </div>
 
@@ -5705,6 +5813,62 @@ function showBetPlaced(bet) {
   document.getElementById('bp-stake').textContent = fmt$(bet.stake);
   document.getElementById('bp-towin').textContent = fmt$(bet.toWin);
   document.getElementById('bp-bankroll').textContent = fmt$(P()?.bankroll || 0);
+  const payoutTotal = (Number(bet.stake) || 0) + (Number(bet.toWin) || 0);
+  document.getElementById('bp-payout-total').textContent = `Pays ${fmt$(payoutTotal)} total`;
+
+  // Receipt header: ticket id + placed time
+  const ticketId = String(bet.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase().padStart(6, '0');
+  document.getElementById('bp-ticket-id').textContent = ticketId;
+  document.getElementById('bp-barcode-num').textContent = `RSFS-${ticketId}`;
+  const placedDate = bet.placedAt ? new Date(bet.placedAt) : new Date();
+  document.getElementById('bp-placed-at').textContent = placedDate.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+  // Crests: only for single-leg bets with real logos
+  const crests = document.getElementById('bp-crests');
+  const crestAway = document.getElementById('bp-crest-away');
+  const crestHome = document.getElementById('bp-crest-home');
+  crests.classList.add('hidden');
+  if (bet.type === 'single' && firstLeg.sportKey && firstLeg.away && firstLeg.home) {
+    const awayUrl = teamLogoUrl(firstLeg.sportKey, firstLeg.away);
+    const homeUrl = teamLogoUrl(firstLeg.sportKey, firstLeg.home);
+    if (awayUrl && homeUrl) {
+      crestAway.innerHTML = `<img src="${awayUrl}" alt="${escapeHtml(firstLeg.away)}" onerror="this.parentElement.style.display='none'" />`;
+      crestHome.innerHTML = `<img src="${homeUrl}" alt="${escapeHtml(firstLeg.home)}" onerror="this.parentElement.style.display='none'" />`;
+      crests.classList.remove('hidden');
+    }
+  }
+
+  // Barcode: randomized but deterministic bar pattern based on ticket id
+  const barcode = document.getElementById('bp-barcode');
+  if (barcode && !barcode.dataset.builtFor || barcode.dataset.builtFor !== ticketId) {
+    let seed = 0; for (let i = 0; i < ticketId.length; i++) seed = (seed * 31 + ticketId.charCodeAt(i)) & 0xffff;
+    const bars = [];
+    for (let i = 0; i < 46; i++) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      const thin = (seed & 1) === 0;
+      const short = ((seed >> 2) & 3) === 0;
+      bars.push(`<span class="${thin ? 'thin' : ''}${short ? ' short' : ''}"></span>`);
+    }
+    barcode.innerHTML = bars.join('');
+    barcode.dataset.builtFor = ticketId;
+  }
+
+  // Confetti burst
+  const confetti = document.getElementById('bp-confetti');
+  if (confetti) {
+    const colors = ['#fbbf24', '#10b981', '#ffffff', '#34d399', '#f59e0b'];
+    const pieces = [];
+    for (let i = 0; i < 26; i++) {
+      const c = colors[i % colors.length];
+      const tx = (Math.random() * 320 - 160).toFixed(0) + 'px';
+      const ty = (Math.random() * 280 + 80).toFixed(0) + 'px';
+      const tr = (Math.random() * 720 - 360).toFixed(0) + 'deg';
+      const delay = (Math.random() * 0.3).toFixed(2) + 's';
+      pieces.push(`<i style="background:${c};--tx:${tx};--ty:${ty};--tr:${tr};animation-delay:${delay}"></i>`);
+    }
+    confetti.innerHTML = pieces.join('');
+  }
+
   overlay.classList.add('show');
   shade.style.animation = 'none'; void shade.offsetWidth; shade.style.animation = '';
   // Wire share/copy actions every time so they target THIS bet
