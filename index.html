@@ -1135,8 +1135,12 @@
   .bp-action span { font-size: 11px; font-weight: 700; }
   .bp-action-share { background: #00b86b; color: #ffffff; border-color: #00b86b; }
   .bp-action-share:hover { background: #059669; }
-  .bp-close { display: block; margin: 14px auto 0; padding: 8px 24px; border-radius: 999px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #ffffff; font-weight: 800; font-size: 13px; cursor: pointer; }
-  .bp-close:hover { background: rgba(255,255,255,0.25); }
+  .bp-close { display: block; width: calc(100% - 20px); margin: 14px auto 0; padding: 14px 24px; border-radius: 14px; background: #ffffff; border: none; color: #0a0a0a; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 4px 14px -4px rgba(15,23,42,0.18); }
+  .bp-close:hover { background: #f4f4f5; }
+  .bp-close:active { transform: scale(0.98); }
+  .bp-x { position: absolute; top: 8px; right: 8px; width: 38px; height: 38px; border-radius: 50%; border: none; background: rgba(255,255,255,0.25); color: #ffffff; display: grid; place-items: center; cursor: pointer; z-index: 2; transition: background 140ms ease; }
+  .bp-x:hover { background: rgba(255,255,255,0.4); }
+  .bp-x:active { transform: scale(0.95); }
   /* When bet lost */
   .bp-shade.lost { background: linear-gradient(180deg, #fb7185 0%, #be123c 100%); box-shadow: 0 30px 80px -20px rgba(190,18,60,0.45); }
   .bp-shade.lost .bp-status-pill { background: #fef2f2; color: #b91c1c; border-color: #ef4444; }
@@ -2241,6 +2245,9 @@
 <!-- BET PLACED CONFIRMATION — Kalshi-style ticket with share actions -->
 <div id="bet-placed">
   <div class="bp-shade">
+    <button class="bp-x" id="bp-x" aria-label="Close">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M6 18L18 6"/></svg>
+    </button>
     <div class="bp-ticket">
       <div class="bp-ticket-head">
         <div class="bp-status-pill" id="bp-status">Placed</div>
@@ -2251,7 +2258,7 @@
         <div class="bp-bet-title" id="bp-bet-title">Yankees ML</div>
         <div class="bp-bet-sub" id="bp-bet-sub">vs Red Sox · Sun 7:05 PM</div>
         <div class="bp-rows">
-          <div class="bp-row"><span>Odds</span><span class="num" id="bp-odds">-150</span></div>
+          <div class="bp-row"><span>Line you took</span><span class="num" id="bp-odds">-150</span></div>
           <div class="bp-row"><span>Stake</span><span class="num" id="bp-stake">$10.00</span></div>
           <div class="bp-row bp-row-emph"><span>To win</span><span class="num" id="bp-towin">$6.67</span></div>
           <div class="bp-row"><span>Bankroll after</span><span class="num" id="bp-bankroll">$990.00</span></div>
@@ -5705,18 +5712,24 @@ function showBetPlaced(bet) {
   const copyLinkBtn = document.getElementById('bp-copy-link');
   const shareBtn = document.getElementById('bp-share');
   const closeBtn = document.getElementById('bp-close');
+  const xBtn = document.getElementById('bp-x');
   if (copyImgBtn) copyImgBtn.onclick = () => copyBetImage(bet);
   if (copyLinkBtn) copyLinkBtn.onclick = () => copyBetLink(bet);
   if (shareBtn) shareBtn.onclick = () => shareBetCard(bet.id);
   const dismiss = () => {
     overlay.classList.remove('show');
     overlay.removeEventListener('click', onBackdrop);
+    document.removeEventListener('keydown', onEsc);
     setTimeout(animateBetToOpenBets, 60);
   };
   // Backdrop click dismisses; clicks inside the ticket are stopped
   function onBackdrop(e) { if (e.target === overlay) dismiss(); }
+  // Escape key dismisses (desktop)
+  function onEsc(e) { if (e.key === 'Escape') dismiss(); }
   overlay.addEventListener('click', onBackdrop);
+  document.addEventListener('keydown', onEsc);
   if (closeBtn) closeBtn.onclick = dismiss;
+  if (xBtn) xBtn.onclick = dismiss;
   // No auto-dismiss — let the user share or close manually
 }
 function placeParlay() {
@@ -6366,9 +6379,20 @@ function renderBetCard(b) {
 
   const legsHtml = b.legs.map(l => {
     const lc = { pending:'bg-ink-700 text-ink-200', won:'bg-neon-500/20 text-neon-500', lost:'bg-danger-500/20 text-danger-500', push:'bg-warn-500/20 text-warn-500', void:'bg-ink-700 text-ink-300' }[l.status] || '';
-    return `<li class="text-xs flex justify-between gap-2 py-1.5 border-t border-ink-800 first:border-0">
-      <span class="min-w-0 truncate"><span class="text-ink-400 text-[10px] mr-1.5 font-semibold">${escapeHtml(prettyMarket(l.market))}</span>${escapeHtml(legDescription(l))} <span class="text-ink-500">· ${escapeHtml(l.away)} @ ${escapeHtml(l.home)}</span></span>
-      <span class="num text-ink-200 shrink-0">${fmtAmerican(l.american)} <span class="ml-1 px-2 py-0.5 rounded-full text-[10px] ${lc} font-semibold capitalize">${l.status}</span></span>
+    const priceCls = l.american > 0 ? 'text-neon-500' : 'text-ink-100';
+    const bookTag = l.book ? `<span class="text-[10px] text-ink-400">· ${escapeHtml(l.book)}</span>` : '';
+    return `<li class="flex flex-col gap-1 py-2 border-t border-ink-800 first:border-0">
+      <div class="flex justify-between items-start gap-2">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[10px] uppercase tracking-wider text-ink-400 font-bold">${escapeHtml(prettyMarket(l.market))}</span>
+            <span class="text-sm font-bold text-ink-100">${escapeHtml(legDescription(l))}</span>
+            <span class="num font-bold ${priceCls}">${fmtAmerican(l.american)}</span>
+          </div>
+          <div class="text-[11px] text-ink-300 mt-0.5 truncate">${escapeHtml(l.away)} @ ${escapeHtml(l.home)} ${bookTag}</div>
+        </div>
+        <span class="px-2 py-0.5 rounded-full text-[10px] ${lc} font-bold capitalize shrink-0">${l.status}</span>
+      </div>
     </li>`;
   }).join('');
   const actions = b.status === 'pending' ? `
