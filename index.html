@@ -982,6 +982,106 @@
     .slip-mobile[data-empty="true"] { display: block !important; }
   }
 
+  /* Live ticker — sticky banner showing in-progress bets, follows you between tabs */
+  #live-ticker {
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 56px); /* sits right below mobile header */
+    z-index: 49;
+    background: linear-gradient(180deg, #0a0a0a 0%, #18181b 100%);
+    color: #ffffff;
+    border-bottom: 1px solid #27272a;
+    box-shadow: 0 4px 16px -8px rgba(15,23,42,0.18);
+    overflow: hidden;
+  }
+  #live-ticker.hidden { display: none; }
+  @media (min-width: 1024px) {
+    #live-ticker { top: 0; }
+  }
+  .lt-strip {
+    display: flex; align-items: center; gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 0;
+  }
+  .lt-strip::-webkit-scrollbar { display: none; }
+  .lt-pill {
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer;
+    min-width: 0;
+    transition: background 140ms ease;
+  }
+  .lt-pill:last-child { border-right: none; }
+  .lt-pill:hover { background: rgba(255,255,255,0.06); }
+  .lt-pill:active { background: rgba(255,255,255,0.12); }
+  .lt-pill .live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #ef4444; box-shadow: 0 0 8px #ef4444;
+    animation: ltPulse 1.4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes ltPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .lt-pill .lt-teams {
+    font-family: "Onest", ui-sans-serif, system-ui, sans-serif;
+    font-size: 12px; font-weight: 700; color: #fafafa;
+    display: flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+  }
+  .lt-pill .lt-team-logo {
+    width: 18px; height: 18px; border-radius: 4px;
+    background: #ffffff; padding: 1px;
+    display: grid; place-items: center;
+  }
+  .lt-pill .lt-team-logo img { width: 100%; height: 100%; object-fit: contain; }
+  .lt-pill .lt-score {
+    font-family: "Onest", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 900; font-size: 14px; color: #fafafa;
+    font-variant-numeric: tabular-nums;
+    min-width: 22px; text-align: center;
+  }
+  .lt-pill .lt-clock {
+    font-size: 10px; font-weight: 700;
+    color: #fbbf24;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 2px 6px; border-radius: 4px;
+    background: rgba(251,191,36,0.12);
+    white-space: nowrap;
+  }
+  .lt-pill .lt-bet {
+    display: flex; flex-direction: column; align-items: flex-start;
+    line-height: 1.15;
+    padding-left: 10px;
+    border-left: 1px solid rgba(255,255,255,0.12);
+    margin-left: 4px;
+  }
+  .lt-pill .lt-bet-label {
+    font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+    color: #a1a1aa;
+  }
+  .lt-pill .lt-bet-pick {
+    font-size: 12px; font-weight: 800;
+    color: #fafafa;
+    margin-top: 1px;
+  }
+  .lt-pill .lt-bet-status {
+    font-size: 10px; font-weight: 800;
+    padding: 1px 6px; border-radius: 999px;
+    margin-top: 2px;
+  }
+  .lt-pill .lt-bet-status.winning { background: rgba(0,184,107,0.2); color: #34d399; }
+  .lt-pill .lt-bet-status.losing  { background: rgba(239,68,68,0.18); color: #fca5a5; }
+  .lt-pill .lt-bet-status.tied    { background: rgba(255,255,255,0.1); color: #d4d4d8; }
+  @media (max-width: 640px) {
+    .lt-pill { padding: 8px 12px; gap: 7px; }
+    .lt-pill .lt-teams { font-size: 11px; }
+    .lt-pill .lt-score { font-size: 13px; min-width: 20px; }
+    .lt-pill .lt-clock { font-size: 9px; padding: 2px 5px; }
+    .lt-pill .lt-bet-pick { font-size: 11px; }
+  }
+
   /* Mobile header — pushes content below the iPhone status bar / notch when
      installed as a PWA on home screen (viewport-fit=cover). Without this the
      iOS clock / battery icons overlap our header content. */
@@ -1653,6 +1753,9 @@
           </button>
         </div>
       </header>
+
+      <!-- LIVE TICKER — sticky bar with your in-progress bets, updates every 30s -->
+      <div id="live-ticker" class="hidden" aria-live="polite"></div>
 
       <!-- LINES TAB -->
       <div class="tab-content fade-in" data-tab-content="lines" data-active="true">
@@ -6705,10 +6808,127 @@ async function populateLiveStates() {
 function startLiveRefreshLoop() {
   if (_liveRefreshTimer) return;
   _liveRefreshTimer = setInterval(() => {
-    // Refresh on tabs that show live game state: Lines (game cards), Open (bet cards)
+    // Live ticker updates regardless of active tab (it follows you across tabs)
+    refreshLiveTicker().catch(e => console.error('live ticker tick failed', e));
+    // Game cards / bet cards only refresh on tabs that show them
     if (state.activeTab !== 'open' && state.activeTab !== 'lines') return;
     populateLiveStates();
   }, LIVE_CACHE_TTL);
+}
+
+/* ===== Live ticker — sticky bar of in-progress bets, persists across tabs ===== */
+const _liveScoreSnapshot = {}; // betLegId -> { home, away } for change-detection notifications
+
+function _findEspnEventByGameId(scoreboard, gameId, home, away) {
+  if (!scoreboard) return null;
+  for (const ev of scoreboard.events || []) {
+    const comp = ev.competitions?.[0]; if (!comp) continue;
+    const competitors = comp.competitors || [];
+    const homeC = competitors.find(c => c.homeAway === 'home');
+    const awayC = competitors.find(c => c.homeAway === 'away');
+    const homeName = homeC?.team?.displayName || homeC?.team?.name || '';
+    const awayName = awayC?.team?.displayName || awayC?.team?.name || '';
+    if (home && away && (homeName.includes(home) || home.includes(homeName)) && (awayName.includes(away) || away.includes(awayName))) {
+      return { event: ev, comp, homeC, awayC };
+    }
+  }
+  return null;
+}
+
+function _isWinningLive(leg, hs, as, homeName) {
+  if (leg.market === 'h2h') {
+    if (hs === as) return 'tied';
+    if (leg.outcome === homeName) return hs > as ? 'winning' : 'losing';
+    return as > hs ? 'winning' : 'losing';
+  }
+  if (leg.market === 'spreads' || leg.market === 'alternate_spreads') {
+    if (leg.point == null) return 'tied';
+    const margin = leg.outcome === homeName ? (hs + leg.point) - as : (as + leg.point) - hs;
+    if (margin > 0) return 'winning';
+    if (margin < 0) return 'losing';
+    return 'tied';
+  }
+  if (leg.market === 'totals' || leg.market === 'alternate_totals') {
+    const total = hs + as;
+    if (leg.outcome === 'Over') return total > (leg.point || 0) ? 'winning' : 'losing';
+    return total < (leg.point || 0) ? 'winning' : 'losing';
+  }
+  return 'tied';
+}
+
+async function refreshLiveTicker() {
+  const ticker = document.getElementById('live-ticker');
+  if (!ticker) return;
+  const p = P();
+  if (!p) { ticker.classList.add('hidden'); ticker.innerHTML = ''; return; }
+  const pendingSingles = (p.bets || []).filter(b => b.status === 'pending' && b.legs && b.legs.length);
+  if (!pendingSingles.length) { ticker.classList.add('hidden'); ticker.innerHTML = ''; return; }
+
+  // Fetch ESPN scoreboards for each sport that has a pending bet
+  const sports = [...new Set(pendingSingles.flatMap(b => b.legs.map(l => l.sportKey)))].filter(sk => ESPN_SPORT_PATH[sk]);
+  for (const sk of sports) { try { await _fetchEspn(sk); } catch (e) { /* swallow */ } }
+
+  const pills = [];
+  for (const bet of pendingSingles) {
+    for (const leg of bet.legs) {
+      if (leg.status !== 'pending') continue;
+      if (!ESPN_SPORT_PATH[leg.sportKey]) continue;
+      const board = _liveCache[leg.sportKey]?.data;
+      if (!board) continue;
+      const match = _findEspnEventByGameId(board, leg.gameId, leg.home, leg.away);
+      if (!match) continue;
+      const state2 = match.event.status?.type?.state;
+      if (state2 !== 'in') continue; // only in-progress
+      const hs = parseInt(match.homeC?.score || '0', 10);
+      const as = parseInt(match.awayC?.score || '0', 10);
+      const homeName = match.homeC?.team?.displayName || leg.home;
+      const awayName = match.awayC?.team?.displayName || leg.away;
+      const homeLogo = teamLogoUrl(leg.sportKey, homeName);
+      const awayLogo = teamLogoUrl(leg.sportKey, awayName);
+      const clockTxt = _buildLiveStateCompact(leg.sportKey, match) || 'LIVE';
+      const status = _isWinningLive(leg, hs, as, homeName);
+      const statusTxt = status === 'winning' ? 'Winning' : status === 'losing' ? 'Losing' : 'Tied';
+      const pickTxt = `${leg.outcome}${leg.point != null ? ' ' + (leg.point > 0 ? '+' : '') + leg.point : ''}`;
+
+      // Detect score change since last tick — fire a notification if score moved
+      const key = bet.id + '|' + leg.gameId;
+      const prev = _liveScoreSnapshot[key];
+      if (prev && (prev.h !== hs || prev.a !== as)) {
+        pushNotify({
+          title: `${_teamCode(awayName)} ${as} — ${_teamCode(homeName)} ${hs}`,
+          body: `${pickTxt} · ${clockTxt} · ${statusTxt}`,
+          tag: 'live-' + bet.id, // same tag replaces previous notification on lock screen
+          url: '/?tab=open',
+        });
+      }
+      _liveScoreSnapshot[key] = { h: hs, a: as };
+
+      const logoHtml = (url, name) => url
+        ? `<span class="lt-team-logo"><img src="${url}" alt="${escapeHtml(name)}" onerror="this.style.display='none'"/></span>`
+        : '';
+      pills.push(`<div class="lt-pill" data-bet-id="${escapeHtml(bet.id)}">
+        <span class="live-dot"></span>
+        <span class="lt-teams">
+          ${logoHtml(awayLogo, awayName)}<span class="lt-score">${as}</span>
+          <span style="opacity:0.5">–</span>
+          <span class="lt-score">${hs}</span>${logoHtml(homeLogo, homeName)}
+        </span>
+        <span class="lt-clock">${escapeHtml(clockTxt)}</span>
+        <span class="lt-bet">
+          <span class="lt-bet-label">Your bet</span>
+          <span class="lt-bet-pick">${escapeHtml(pickTxt)}</span>
+          <span class="lt-bet-status ${status}">${statusTxt}</span>
+        </span>
+      </div>`);
+    }
+  }
+
+  if (!pills.length) { ticker.classList.add('hidden'); ticker.innerHTML = ''; return; }
+  ticker.innerHTML = `<div class="lt-strip">${pills.join('')}</div>`;
+  ticker.classList.remove('hidden');
+  ticker.querySelectorAll('.lt-pill[data-bet-id]').forEach(el => {
+    el.addEventListener('click', () => switchTab('open'));
+  });
 }
 function stopLiveRefreshLoop() {
   if (_liveRefreshTimer) { clearInterval(_liveRefreshTimer); _liveRefreshTimer = null; }
@@ -6855,6 +7075,7 @@ function renderOpenBets() {
   // Async: enrich with ESPN live state where available
   populateLiveStates();
   startLiveRefreshLoop();
+  refreshLiveTicker().catch(e => console.error('initial ticker render failed', e));
 }
 function renderHistory() {
   const c = document.getElementById('history-container');
@@ -9545,6 +9766,10 @@ function init() {
 
   // Session-start refresh widget — appears once per session, dismisses on tap
   initSessionRefreshWidget();
+
+  // Kick off live ticker + its refresh loop so in-progress games update across tabs
+  refreshLiveTicker().catch(e => console.error('boot ticker failed', e));
+  startLiveRefreshLoop();
 
   // Auto-settle loop — re-checks pending bets every few minutes so settles happen
   // automatically. Runs only when there are pending bets and the tab is visible.
