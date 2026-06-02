@@ -1304,6 +1304,45 @@
     .live-extras { gap: 4px; }
   }
 
+  /* Categorized Settings accordions */
+  .set-section { background: #18181b; border: 1px solid #27272a; border-radius: 18px; margin-bottom: 12px; overflow: hidden; }
+  .set-section[open] { background: #161618; }
+  .set-summary {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; cursor: pointer;
+    list-style: none; /* hide default disclosure triangle */
+    user-select: none;
+  }
+  .set-summary::-webkit-details-marker { display: none; }
+  .set-summary::marker { display: none; content: ''; }
+  .set-summary:hover { background: rgba(255,255,255,0.02); }
+  .set-emoji { font-size: 22px; line-height: 1; width: 32px; text-align: center; flex-shrink: 0; }
+  .set-titles { flex: 1; min-width: 0; }
+  .set-title { font-weight: 800; font-size: 15px; color: #fafafa; line-height: 1.2; }
+  .set-sub { font-size: 12px; color: #a1a1aa; margin-top: 2px; line-height: 1.3; }
+  .set-chevron { color: #71717a; transition: transform 180ms ease; flex-shrink: 0; }
+  details[open] .set-chevron { transform: rotate(180deg); }
+  .set-body { padding: 0 16px 16px; border-top: 1px solid #27272a; padding-top: 14px; }
+  .set-body .help { font-size: 12px; color: #a1a1aa; line-height: 1.45; margin: 0 0 10px; }
+  .set-row {
+    background: #1f1f23; border-radius: 12px; padding: 12px; margin-bottom: 10px;
+  }
+  .set-row-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .set-row-label { font-weight: 700; font-size: 14px; color: #fafafa; }
+  .set-row-help { font-size: 11px; color: #a1a1aa; margin-top: 2px; line-height: 1.4; }
+  .set-row-input { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .set-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+  .set-pill-ok { background: rgba(0,184,107,0.16); color: #34d399; border: 1px solid rgba(0,184,107,0.35); }
+  .set-pill-warn { background: rgba(245,158,11,0.16); color: #fbbf24; border: 1px solid rgba(245,158,11,0.35); }
+  .set-pill-need { background: rgba(239,68,68,0.16); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35); }
+  @media (max-width: 640px) {
+    .set-summary { padding: 12px 14px; gap: 10px; }
+    .set-emoji { font-size: 20px; width: 26px; }
+    .set-title { font-size: 14px; }
+    .set-row-head { flex-direction: column; align-items: stretch; gap: 8px; }
+    .set-row-input { justify-content: flex-start; }
+  }
+
   /* Date group headers in Open Bets / History */
   .date-group-header {
     display: flex; justify-content: space-between; align-items: center;
@@ -1852,313 +1891,414 @@
       <!-- SETTINGS -->
       <div class="tab-content" data-tab-content="settings" data-active="false">
         <div class="px-4 lg:px-8 pt-4 lg:pt-8 max-w-3xl mx-auto">
-          <h2 class="display text-2xl font-bold mb-4">Settings</h2>
+          <h2 class="display text-2xl font-bold mb-1">Settings</h2>
+          <p class="text-sm text-ink-300 mb-4">Tap any section to open it. Most people only ever touch <strong>Money</strong> and <strong>Notifications</strong>.</p>
 
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-2">Odds API Key <span class="text-xs text-ink-400 font-normal">(shared across profiles)</span></h3>
-            <p class="text-sm text-ink-300 mb-3">Free key at <a class="underline text-neon-500" href="https://the-odds-api.com/" target="_blank" rel="noreferrer">the-odds-api.com</a> · 500 reqs/mo free.</p>
-            <div class="flex gap-2 flex-wrap">
-              <input id="api-key-input" type="text" placeholder="paste API key" class="flex-1 min-w-[240px] bg-ink-800 border border-ink-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-neon-500 num" />
-              <button id="save-key" class="bg-neon-500 text-ink-950 font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-neon-400">Save</button>
-            </div>
-            <div id="quota" class="text-xs text-ink-400 mt-2"></div>
-
-            <div class="mt-3 p-3 bg-ink-800 border border-ink-700 rounded-xl">
-              <div id="credit-counter"></div>
-            </div>
-
-            <div class="mt-3 flex items-start gap-2 p-3 bg-ink-800/60 border border-ink-700 rounded-xl">
-              <svg class="w-4 h-4 text-neon-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h0"/></svg>
-              <div class="text-[12px] text-ink-300 leading-snug">
-                <div class="font-semibold text-ink-100 mb-0.5">Refresh is throttled to once per 10 minutes.</div>
-                Spamming refresh wastes credits and doesn't change picks — lines barely move minute-to-minute. Use <button id="force-refresh-btn" class="underline text-neon-500 font-semibold">Force refresh now</button> only when you actually need fresh data (e.g., right before tip-off).
+          <!-- 1. MONEY -->
+          <details class="set-section" open>
+            <summary class="set-summary">
+              <span class="set-emoji">💰</span>
+              <div class="set-titles">
+                <div class="set-title">Money</div>
+                <div class="set-sub">Your bankroll, weekly cap, savings.</div>
               </div>
-            </div>
-          </div>
-
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-2">Anthropic API Key <span class="text-xs text-ink-400 font-normal">(for Slate Analyst)</span></h3>
-            <p class="text-sm text-ink-300 mb-3">Get a key at <a class="underline text-neon-500" href="https://console.anthropic.com/" target="_blank" rel="noreferrer">console.anthropic.com</a> · pay-as-you-go · stored locally only.</p>
-            <div class="flex gap-2 flex-wrap">
-              <input id="anthropic-key-input" type="password" placeholder="sk-ant-..." class="flex-1 min-w-[240px] bg-ink-800 border border-ink-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-neon-500 num" />
-              <button id="save-anthropic-key" class="bg-neon-500 text-ink-950 font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-neon-400">Save</button>
-            </div>
-            <p class="text-[11px] text-ink-400 mt-2">Sent directly from your browser to Anthropic with your key. Never touches my servers (this app has no server).</p>
-          </div>
-
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-2">Tier</h3>
-            <div class="flex items-center gap-3 flex-wrap">
-              <label class="flex items-center gap-2 text-sm bg-ink-800 px-3 py-2 rounded-xl border border-ink-700 cursor-pointer">
-                <input type="radio" name="tier" value="free" class="accent-neon-500" />
-                <span>Free</span>
-              </label>
-              <label class="flex items-center gap-2 text-sm bg-ink-800 px-3 py-2 rounded-xl border border-ink-700 cursor-pointer">
-                <input type="radio" name="tier" value="paid" class="accent-neon-500" />
-                <span>Paid ($30+/mo) — alt lines</span>
-              </label>
-            </div>
-            <p class="text-xs text-ink-400 mt-2">Self-attested. If "paid" but you haven't actually upgraded, alt-line requests will error.</p>
-          </div>
-
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="font-semibold">Sports</h3>
-              <button id="reload-sports" class="text-xs text-neon-500 hover:underline">Reload from API</button>
-            </div>
-            <p class="text-sm text-ink-300 mb-3">Each sport = 1 API call per refresh.</p>
-            <div id="sport-toggles" class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm"></div>
-          </div>
-
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-2">This profile's bankroll</h3>
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="text-sm">Starting:</span>
-              <input id="starting-bankroll" type="number" inputmode="decimal" step="100" class="bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm w-32 num focus:outline-none focus:border-neon-500" />
-              <button id="reset-bankroll" class="bg-danger-600 hover:bg-danger-500 text-white px-3 py-2 rounded-xl text-sm">Reset Profile</button>
-            </div>
-          </div>
-
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-2">Profiles</h3>
-            <div id="manage-list" class="space-y-2 mb-3"></div>
-            <div class="border-t border-ink-700 pt-3">
-              <p class="text-xs text-ink-400 mb-2 uppercase tracking-wider">Add new profile</p>
-              <div class="flex gap-2">
-                <input id="manage-new-name" type="text" placeholder="Name" maxlength="20" class="flex-1 bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-neon-500" />
-                <button id="manage-add" class="bg-neon-500 text-ink-950 font-bold px-3 py-2 rounded-xl text-sm">Add</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-3">Discipline & Guardrails <span class="text-xs text-ink-300 font-normal">(per profile)</span></h3>
-            <div class="space-y-3 text-sm">
-
-              <div class="bg-ink-800 rounded-xl p-3">
-                <label class="block">
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="font-semibold">Unit size</span>
-                    <span class="num text-ink-200" id="unit-size-display">1.0%</span>
-                  </div>
-                  <input id="setting-unit-size" type="range" min="0.5" max="10" step="0.1" value="1" class="w-full accent-neon-500" />
-                  <div class="text-[11px] text-ink-300 mt-1">% of bankroll per 1 unit. <span id="unit-warn" class="hidden text-warn-500 font-bold">⚠ Above 3% = bankroll blowup risk.</span></div>
-                </label>
-                <label class="block mt-3">
-                  <span class="font-semibold">Max units per bet</span>
-                  <input id="setting-max-units" type="number" inputmode="decimal" min="1" max="20" step="1" class="mt-1 w-24 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1 num" />
-                </label>
-              </div>
-
-              <div class="bg-ink-800 rounded-xl p-3">
-                <label class="flex items-center justify-between gap-2 mb-2">
+              <svg class="set-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="set-body">
+              <div class="set-row">
+                <div class="set-row-head">
                   <div>
-                    <div class="font-semibold">Bet-size audit</div>
-                    <div class="text-[11px] text-ink-300">Confirm dialog on bets above X% of bankroll.</div>
+                    <div class="set-row-label">Starting bankroll</div>
+                    <div class="set-row-help">How much fake money you started this profile with.</div>
                   </div>
-                  <input id="setting-audit-pct" type="number" inputmode="decimal" min="0" max="50" step="1" class="w-20 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1 num text-right" />
-                  <span class="text-ink-300">%</span>
-                </label>
-              </div>
-
-              <div class="bg-ink-800 rounded-xl p-3">
-                <label class="flex items-center justify-between gap-2 mb-2">
-                  <div>
-                    <div class="font-semibold">Tilt cooldown</div>
-                    <div class="text-[11px] text-ink-300">Lock betting for X min after any loss. 0 = off.</div>
+                  <div class="set-row-input">
+                    <span class="text-ink-300 text-sm">$</span>
+                    <input id="starting-bankroll" type="number" inputmode="decimal" step="100" class="w-28 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1.5 num text-right" />
                   </div>
-                  <input id="setting-tilt-min" type="number" inputmode="decimal" min="0" max="240" step="5" class="w-20 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1 num text-right" />
-                  <span class="text-ink-300">min</span>
-                </label>
-              </div>
-
-              <div class="bg-ink-800 rounded-xl p-3">
-                <div class="font-semibold mb-1">Loss-streak cooldown</div>
-                <div class="text-[11px] text-ink-300 mb-2">After N losses in a row, lock for X min. Insisted on for chasers.</div>
-                <div class="flex gap-2 items-center">
-                  <input id="setting-streak-limit" type="number" inputmode="decimal" min="0" max="10" step="1" class="w-20 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1 num text-right" />
-                  <span class="text-ink-300 text-xs">losses,</span>
-                  <input id="setting-streak-min" type="number" inputmode="decimal" min="0" max="240" step="5" class="w-20 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1 num text-right" />
-                  <span class="text-ink-300 text-xs">min cooldown</span>
                 </div>
               </div>
 
-              <div class="bg-ink-800 rounded-xl p-3">
-                <label class="flex items-center justify-between gap-2">
+              <div class="set-row">
+                <div class="set-row-head">
                   <div>
-                    <div class="font-semibold">Pre-place cooling timer</div>
-                    <div class="text-[11px] text-ink-300">60s pause + cancel option before placement. 0 = off.</div>
+                    <div class="set-row-label">Weekly bankroll cap</div>
+                    <div class="set-row-help">Every Monday your bankroll resets to this. Anything above sweeps to Savings.</div>
                   </div>
-                  <input id="setting-preplace-sec" type="number" inputmode="decimal" min="0" max="180" step="10" class="w-20 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1 num text-right" />
-                  <span class="text-ink-300">sec</span>
+                  <div class="set-row-input">
+                    <span class="text-ink-300 text-sm">$</span>
+                    <input id="bankroll-cap-input" type="number" inputmode="decimal" placeholder="1000" class="w-28 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1.5 num text-right" />
+                    <button id="save-bankroll-cap" class="bg-neon-500 text-ink-950 font-bold px-3 py-1.5 rounded-lg text-xs">Save</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-2 mt-3">
+                <button id="manual-reset-now" class="bg-ink-700 hover:bg-ink-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Reset bankroll now</button>
+                <button id="deposit-to-savings" class="bg-ink-700 hover:bg-ink-600 text-white text-xs font-bold px-3 py-2 rounded-lg">+ Add to Savings</button>
+                <button id="reset-bankroll" class="bg-danger-600 hover:bg-danger-500 text-white text-xs font-bold px-3 py-2 rounded-lg ml-auto">Wipe this profile</button>
+              </div>
+              <p class="text-[11px] text-ink-400 mt-2">Goal: $2,500 = half unit at standard sizing.</p>
+            </div>
+          </details>
+
+          <!-- 2. NOTIFICATIONS -->
+          <details class="set-section" open>
+            <summary class="set-summary">
+              <span class="set-emoji">🔔</span>
+              <div class="set-titles">
+                <div class="set-title">Notifications</div>
+                <div class="set-sub">Bet results + auto-hedge alerts on your iPhone lock screen.</div>
+              </div>
+              <svg class="set-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="set-body">
+              <div id="ios-install-banner" class="hidden mb-3 p-3 rounded-xl bg-ink-800 border border-ink-700">
+                <div class="text-xs font-bold text-neon-500 mb-1">📱 iPhone setup (one time)</div>
+                <ol class="text-[12px] text-ink-200 leading-relaxed list-decimal pl-4 space-y-0.5">
+                  <li>Tap the <strong>Share</strong> icon at the bottom of Safari.</li>
+                  <li>Scroll down, tap <strong>"Add to Home Screen"</strong>.</li>
+                  <li>Open the app from the new home-screen icon.</li>
+                  <li>Tap <strong>Enable notifications</strong> below.</li>
+                </ol>
+              </div>
+              <div id="ios-installed-banner" class="hidden mb-3 p-3 rounded-xl bg-neon-500/10 border border-neon-500/30 text-[12px] text-neon-500">✓ App is installed. Tap Enable notifications.</div>
+              <div class="flex flex-wrap gap-2 items-center">
+                <button id="enable-notifs" class="bg-neon-500 hover:bg-neon-400 text-ink-950 font-bold px-4 py-2 rounded-xl text-sm">Enable notifications</button>
+                <button id="test-notif" class="bg-ink-700 hover:bg-ink-600 text-white text-sm font-bold px-4 py-2 rounded-xl hidden">Send test</button>
+                <span id="notif-status" class="text-xs text-ink-300"></span>
+              </div>
+            </div>
+          </details>
+
+          <!-- 3. SAFETY NETS / GUARDRAILS -->
+          <details class="set-section">
+            <summary class="set-summary">
+              <span class="set-emoji">🛡</span>
+              <div class="set-titles">
+                <div class="set-title">Safety nets</div>
+                <div class="set-sub">Auto-hedge, cool-downs, max bet size — keeps you out of trouble.</div>
+              </div>
+              <svg class="set-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="set-body">
+
+              <div class="set-row">
+                <div class="set-row-label mb-1">🛡 Auto-hedge</div>
+                <p class="text-[11px] text-ink-300 leading-relaxed mb-2">When the opposite team's line drifts to your trigger, we automatically place a hedge that locks in profit. (Singles only.)</p>
+                <label class="flex items-center gap-2 text-sm cursor-pointer mb-2">
+                  <input id="setting-auto-hedge" type="checkbox" class="accent-neon-500 w-4 h-4" />
+                  <span>Turn on auto-hedge</span>
+                </label>
+                <div class="flex items-center gap-2 ml-6">
+                  <span class="text-xs text-ink-300">Trigger at</span>
+                  <span class="text-ink-300 text-sm">+</span>
+                  <input id="auto-hedge-threshold" type="number" inputmode="numeric" min="100" step="50" placeholder="300" class="w-20 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1.5 text-sm num text-right" />
+                  <span class="text-xs text-ink-300">or higher on the other side</span>
+                </div>
+              </div>
+
+              <div class="set-row">
+                <div class="set-row-label mb-1">📐 Standard bet size</div>
+                <p class="text-[11px] text-ink-300 mb-2">1 unit = this percent of your bankroll. Most pros use 1–2%.</p>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs text-ink-300">Unit size</span>
+                  <span class="num text-ink-100 text-sm font-bold" id="unit-size-display">1.0%</span>
+                </div>
+                <input id="setting-unit-size" type="range" min="0.5" max="10" step="0.1" value="1" class="w-full accent-neon-500" />
+                <div class="text-[11px] text-warn-500 font-bold mt-1 hidden" id="unit-warn">⚠ Above 3% can wipe your bankroll fast.</div>
+                <div class="flex items-center justify-between mt-3">
+                  <span class="text-xs text-ink-300">Max units per bet</span>
+                  <input id="setting-max-units" type="number" inputmode="decimal" min="1" max="20" step="1" class="w-20 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1.5 text-sm num text-right" />
+                </div>
+              </div>
+
+              <div class="set-row">
+                <div class="set-row-head">
+                  <div>
+                    <div class="set-row-label">⚠️ Big bet warning</div>
+                    <div class="set-row-help">Pop up a "you sure?" when a bet is over this % of bankroll.</div>
+                  </div>
+                  <div class="set-row-input">
+                    <input id="setting-audit-pct" type="number" inputmode="decimal" min="0" max="50" step="1" class="w-16 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1.5 text-sm num text-right" />
+                    <span class="text-ink-300 text-sm">%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="set-row">
+                <div class="set-row-head">
+                  <div>
+                    <div class="set-row-label">⏳ Cool down after a loss</div>
+                    <div class="set-row-help">Lock new bets for X minutes after any loss. 0 turns it off.</div>
+                  </div>
+                  <div class="set-row-input">
+                    <input id="setting-tilt-min" type="number" inputmode="decimal" min="0" max="240" step="5" class="w-16 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1.5 text-sm num text-right" />
+                    <span class="text-ink-300 text-sm">min</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="set-row">
+                <div class="set-row-label mb-1">🛑 Stop me after a losing streak</div>
+                <p class="text-[11px] text-ink-300 mb-2">After this many losses in a row, lock betting for this long. Saves you from chasing.</p>
+                <div class="flex gap-2 items-center">
+                  <input id="setting-streak-limit" type="number" inputmode="decimal" min="0" max="10" step="1" class="w-16 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1.5 text-sm num text-right" />
+                  <span class="text-ink-300 text-xs">losses,</span>
+                  <input id="setting-streak-min" type="number" inputmode="decimal" min="0" max="240" step="5" class="w-16 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1.5 text-sm num text-right" />
+                  <span class="text-ink-300 text-xs">min lockout</span>
+                </div>
+              </div>
+
+              <div class="set-row">
+                <div class="set-row-head">
+                  <div>
+                    <div class="set-row-label">⏱ Wait before placing</div>
+                    <div class="set-row-help">Forces you to wait X seconds (with a cancel button) before any bet goes in. 0 = off.</div>
+                  </div>
+                  <div class="set-row-input">
+                    <input id="setting-preplace-sec" type="number" inputmode="decimal" min="0" max="180" step="10" class="w-16 bg-ink-700 border border-ink-600 rounded-lg px-2 py-1.5 text-sm num text-right" />
+                    <span class="text-ink-300 text-sm">sec</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="set-row">
+                <label class="flex items-start gap-2 cursor-pointer">
+                  <input id="setting-allow-sgp" type="checkbox" class="accent-neon-500 w-4 h-4 mt-0.5" />
+                  <div>
+                    <div class="set-row-label">Allow same-game parlays</div>
+                    <div class="set-row-help">Multiple legs from one game. Realistic but high vig — books love these.</div>
+                  </div>
                 </label>
               </div>
 
-              <div class="bg-ink-800 rounded-xl p-3">
-                <label class="flex items-center gap-2">
-                  <input id="setting-allow-sgp" type="checkbox" class="accent-neon-500 w-4 h-4" />
+              <button id="save-guardrails" class="w-full bg-neon-500 text-ink-950 font-bold py-2.5 rounded-xl hover:bg-neon-400 mt-2">Save safety nets</button>
+            </div>
+          </details>
+
+          <!-- 4. LOOK & FEEL -->
+          <details class="set-section">
+            <summary class="set-summary">
+              <span class="set-emoji">🎨</span>
+              <div class="set-titles">
+                <div class="set-title">Look &amp; feel</div>
+                <div class="set-sub">Accent color + sounds.</div>
+              </div>
+              <svg class="set-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="set-body">
+              <div class="set-row">
+                <div class="set-row-label mb-2">Accent color</div>
+                <div class="flex gap-2 flex-wrap">
+                  <button class="accent-swatch" data-accent="emerald" style="background:#00b86b"></button>
+                  <button class="accent-swatch" data-accent="blue" style="background:#3b82f6"></button>
+                  <button class="accent-swatch" data-accent="violet" style="background:#8b5cf6"></button>
+                  <button class="accent-swatch" data-accent="red" style="background:#ef4444"></button>
+                  <button class="accent-swatch" data-accent="amber" style="background:#f59e0b"></button>
+                </div>
+              </div>
+              <div class="set-row">
+                <label class="flex items-start gap-2 cursor-pointer">
+                  <input id="setting-mute-effects" type="checkbox" class="accent-neon-500 w-4 h-4 mt-0.5" />
                   <div>
-                    <div class="font-semibold">Allow same-game parlays</div>
-                    <div class="text-[11px] text-ink-300">Realistic but high-vig. Always shown with warning.</div>
+                    <div class="set-row-label">Mute confetti + sounds</div>
+                    <div class="set-row-help">Turns off the win/loss tone, confetti, and phone vibration.</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </details>
+
+          <!-- 5. CONNECT APIS -->
+          <details class="set-section">
+            <summary class="set-summary">
+              <span class="set-emoji">🔑</span>
+              <div class="set-titles">
+                <div class="set-title">API keys</div>
+                <div class="set-sub">For real odds + AI gut-check. One-time setup.</div>
+              </div>
+              <svg class="set-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="set-body">
+              <div class="set-row">
+                <div class="set-row-label">Odds API key</div>
+                <p class="text-[11px] text-ink-300 mb-2">Free key at <a class="underline text-neon-500" href="https://the-odds-api.com/" target="_blank" rel="noreferrer">the-odds-api.com</a>. 500 calls/month free.</p>
+                <div class="flex gap-2 flex-wrap">
+                  <input id="api-key-input" type="text" placeholder="paste API key" class="flex-1 min-w-[200px] bg-ink-700 border border-ink-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neon-500 num" />
+                  <button id="save-key" class="bg-neon-500 text-ink-950 font-bold px-4 py-2 rounded-lg text-sm">Save</button>
+                </div>
+                <div id="quota" class="text-[11px] text-ink-400 mt-2"></div>
+                <div class="mt-2 p-2 bg-ink-800 border border-ink-700 rounded-lg">
+                  <div id="credit-counter" class="text-[11px]"></div>
+                </div>
+                <div class="mt-2 text-[11px] text-ink-300 leading-snug">
+                  Refresh is throttled to once per 10 minutes — spamming wastes credits. Use <button id="force-refresh-btn" class="underline text-neon-500 font-semibold">Force refresh now</button> only when you need fresh data right before tip-off.
+                </div>
+              </div>
+
+              <div class="set-row">
+                <div class="set-row-label">Anthropic AI key (optional)</div>
+                <p class="text-[11px] text-ink-300 mb-2">For the AI gut-check + analyst. Get one at <a class="underline text-neon-500" href="https://console.anthropic.com/" target="_blank" rel="noreferrer">console.anthropic.com</a>. Stored only on your device.</p>
+                <div class="flex gap-2 flex-wrap">
+                  <input id="anthropic-key-input" type="password" placeholder="sk-ant-..." class="flex-1 min-w-[200px] bg-ink-700 border border-ink-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neon-500 num" />
+                  <button id="save-anthropic-key" class="bg-neon-500 text-ink-950 font-bold px-4 py-2 rounded-lg text-sm">Save</button>
+                </div>
+              </div>
+
+              <div class="set-row">
+                <div class="set-row-label mb-2">Tier</div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <label class="flex items-center gap-2 text-sm bg-ink-700 px-3 py-1.5 rounded-lg border border-ink-600 cursor-pointer">
+                    <input type="radio" name="tier" value="free" class="accent-neon-500" />
+                    <span>Free</span>
+                  </label>
+                  <label class="flex items-center gap-2 text-sm bg-ink-700 px-3 py-1.5 rounded-lg border border-ink-600 cursor-pointer">
+                    <input type="radio" name="tier" value="paid" class="accent-neon-500" />
+                    <span>Paid ($30+/mo, unlocks alt lines)</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <!-- 6. SPORTS -->
+          <details class="set-section">
+            <summary class="set-summary">
+              <span class="set-emoji">🏟</span>
+              <div class="set-titles">
+                <div class="set-title">Sports I follow</div>
+                <div class="set-sub">Pick which leagues show up. Each one = 1 API call per refresh.</div>
+              </div>
+              <svg class="set-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="set-body">
+              <div class="flex items-center justify-end mb-2">
+                <button id="reload-sports" class="text-xs text-neon-500 hover:underline">Reload sports list</button>
+              </div>
+              <div id="sport-toggles" class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm"></div>
+            </div>
+          </details>
+
+          <!-- 7. PROFILES -->
+          <details class="set-section">
+            <summary class="set-summary">
+              <span class="set-emoji">👥</span>
+              <div class="set-titles">
+                <div class="set-title">Profiles</div>
+                <div class="set-sub">Switch between you, Ricky, Chuck. Each has its own bankroll + bets.</div>
+              </div>
+              <svg class="set-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="set-body">
+              <div id="manage-list" class="space-y-2 mb-3"></div>
+              <div class="border-t border-ink-700 pt-3">
+                <p class="text-xs text-ink-300 mb-2">Add a new profile</p>
+                <div class="flex gap-2">
+                  <input id="manage-new-name" type="text" placeholder="Name" maxlength="20" class="flex-1 bg-ink-700 border border-ink-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neon-500" />
+                  <button id="manage-add" class="bg-neon-500 text-ink-950 font-bold px-3 py-2 rounded-lg text-sm">Add</button>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <!-- 8. CALCULATORS -->
+          <details class="set-section">
+            <summary class="set-summary">
+              <span class="set-emoji">🧮</span>
+              <div class="set-titles">
+                <div class="set-title">Calculators</div>
+                <div class="set-sub">Vig + Kelly. Quick math tools.</div>
+              </div>
+              <svg class="set-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="set-body">
+              <div class="set-row">
+                <div class="set-row-label">Vig calculator</div>
+                <p class="text-[11px] text-ink-300 mb-2">Type two American prices. Under 103% = sharp · 103–106% = avg · 106%+ = juiced.</p>
+                <div class="flex gap-3 flex-wrap">
+                  <label class="block">
+                    <span class="text-[11px] text-ink-300 block mb-1">Side A</span>
+                    <input id="vig-a" type="number" inputmode="decimal" placeholder="-150" class="w-28 bg-ink-700 border border-ink-600 rounded-lg px-3 py-2 text-sm num focus:outline-none focus:border-neon-500" />
+                  </label>
+                  <label class="block">
+                    <span class="text-[11px] text-ink-300 block mb-1">Side B</span>
+                    <input id="vig-b" type="number" inputmode="decimal" placeholder="+130" class="w-28 bg-ink-700 border border-ink-600 rounded-lg px-3 py-2 text-sm num focus:outline-none focus:border-neon-500" />
+                  </label>
+                </div>
+                <div id="vig-result" class="mt-3"></div>
+              </div>
+              <div class="set-row">
+                <div class="set-row-label">Kelly calculator</div>
+                <p class="text-[11px] text-ink-300 mb-2">Tells you the best size for a bet given your edge. Use half-Kelly in real life.</p>
+                <div class="grid grid-cols-2 gap-3">
+                  <label class="block">
+                    <span class="text-[11px] text-ink-300 block mb-1">Win probability (%)</span>
+                    <input id="kelly-prob" type="number" inputmode="decimal" placeholder="55" min="0" max="100" step="0.1" class="w-full bg-ink-700 border border-ink-600 rounded-lg px-3 py-2 text-sm num focus:outline-none focus:border-neon-500" />
+                  </label>
+                  <label class="block">
+                    <span class="text-[11px] text-ink-300 block mb-1">American odds</span>
+                    <input id="kelly-odds" type="number" inputmode="decimal" placeholder="-110" class="w-full bg-ink-700 border border-ink-600 rounded-lg px-3 py-2 text-sm num focus:outline-none focus:border-neon-500" />
+                  </label>
+                </div>
+                <div id="kelly-result" class="mt-3"></div>
+              </div>
+            </div>
+          </details>
+
+          <!-- 9. ADVANCED -->
+          <details class="set-section">
+            <summary class="set-summary">
+              <span class="set-emoji">⚙️</span>
+              <div class="set-titles">
+                <div class="set-title">Advanced</div>
+                <div class="set-sub">Backup, demo, admin, exports.</div>
+              </div>
+              <svg class="set-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="set-body">
+              <div class="set-row">
+                <div class="set-row-label">Backup &amp; Export</div>
+                <p class="text-[11px] text-ink-300 mb-2">Your data lives only in this browser. Export before clearing cache. JSON restores everything.</p>
+                <div class="flex gap-2 flex-wrap">
+                  <button id="export-csv" class="bg-neon-500 hover:bg-neon-400 text-ink-950 font-bold px-3 py-2 rounded-lg text-xs">Export bets (CSV)</button>
+                  <button id="export-all" class="bg-ink-700 hover:bg-ink-600 text-white font-bold px-3 py-2 rounded-lg text-xs">Full backup (JSON)</button>
+                  <label class="bg-ink-700 hover:bg-ink-600 text-white font-bold px-3 py-2 rounded-lg text-xs cursor-pointer">
+                    Restore from JSON
+                    <input id="import-file" type="file" accept=".json,application/json" class="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="set-row">
+                <div class="set-row-label">Demo mode</div>
+                <p class="text-[11px] text-ink-300 mb-2">Show fake data so you can poke around without burning API credits.</p>
+                <div class="flex gap-2 flex-wrap">
+                  <button id="reload-demo-btn" class="bg-warn-500 text-ink-950 font-bold px-3 py-2 rounded-lg text-xs hover:brightness-110">Reload demo data</button>
+                  <button id="settings-exit-demo-btn" class="bg-ink-700 hover:bg-ink-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Switch to live mode</button>
+                </div>
+              </div>
+
+              <div class="set-row">
+                <label class="flex items-start gap-2 cursor-pointer">
+                  <input id="admin-mode-toggle" type="checkbox" class="accent-neon-500 w-4 h-4 mt-0.5" />
+                  <div>
+                    <div class="set-row-label">Admin mode</div>
+                    <div class="set-row-help">Shows the Admin tab — system-wide view across all profiles. Turn off when someone else uses the device.</div>
                   </div>
                 </label>
               </div>
 
-              <button id="save-guardrails" class="w-full bg-neon-500 text-ink-950 font-bold py-2.5 rounded-xl hover:bg-neon-400">Save Guardrails</button>
-            </div>
-          </div>
-
-          <!-- Customization -->
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-1">Customization</h3>
-            <p class="text-xs text-ink-300 mb-3">Personalize the app. Saved to your profile.</p>
-            <div class="mb-3">
-              <label class="text-[11px] uppercase tracking-wider text-ink-200 font-bold block mb-2">Accent color</label>
-              <div class="flex gap-2 flex-wrap">
-                <button class="accent-swatch" data-accent="emerald" style="background:#00b86b"></button>
-                <button class="accent-swatch" data-accent="blue" style="background:#3b82f6"></button>
-                <button class="accent-swatch" data-accent="violet" style="background:#8b5cf6"></button>
-                <button class="accent-swatch" data-accent="red" style="background:#ef4444"></button>
-                <button class="accent-swatch" data-accent="amber" style="background:#f59e0b"></button>
+              <div class="set-row">
+                <div class="set-row-label">What's NOT included</div>
+                <ul class="text-[12px] text-ink-200 list-disc pl-5 space-y-1 mt-2">
+                  <li>Live in-game props (worst vig, not in cheap tiers)</li>
+                  <li>Player props (paid tier — say the word and I'll wire it up)</li>
+                  <li>F3 inning markets (not on The Odds API; F5 is supported)</li>
+                </ul>
               </div>
             </div>
-            <div class="mb-3">
-              <label class="text-[11px] uppercase tracking-wider text-ink-200 font-bold block mb-2">Effects</label>
-              <label class="flex items-center gap-2 text-sm cursor-pointer">
-                <input id="setting-mute-effects" type="checkbox" class="accent-neon-500" />
-                <span>Mute confetti + tone + haptics on bet settle</span>
-              </label>
-            </div>
-          </div>
+          </details>
 
-          <!-- Notifications + PWA install -->
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-1">Notifications &amp; lock screen</h3>
-            <p class="text-xs text-ink-300 mb-2">Get bet results, line-improvement alerts, and auto-hedge confirmations on your iPhone lock screen.</p>
-            <div id="ios-install-banner" class="hidden mb-3 p-3 rounded-xl bg-ink-800 border border-ink-700">
-              <div class="text-xs font-bold text-neon-500 mb-1">iPhone setup (one time)</div>
-              <ol class="text-[12px] text-ink-200 leading-relaxed list-decimal pl-4 space-y-0.5">
-                <li>Tap the <strong>Share</strong> icon at the bottom of Safari.</li>
-                <li>Scroll down, tap <strong>"Add to Home Screen"</strong>.</li>
-                <li>Open the app from the new home-screen icon.</li>
-                <li>Tap <strong>Enable notifications</strong> below.</li>
-              </ol>
-            </div>
-            <div id="ios-installed-banner" class="hidden mb-3 p-3 rounded-xl bg-neon-500/10 border border-neon-500/30 text-[12px] text-neon-500">App is installed. Tap Enable notifications.</div>
-            <div class="flex flex-wrap gap-2 items-center">
-              <button id="enable-notifs" class="bg-neon-500 hover:bg-neon-400 text-ink-950 font-bold px-4 py-2 rounded-xl text-sm">Enable notifications</button>
-              <button id="test-notif" class="bg-ink-700 hover:bg-ink-600 text-white text-sm font-bold px-4 py-2 rounded-xl hidden">Send test</button>
-              <span id="notif-status" class="text-xs text-ink-300"></span>
-            </div>
-          </div>
-
-          <!-- Auto-hedge -->
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-1">Auto-hedge</h3>
-            <p class="text-xs text-ink-300 mb-3">When the opposing line drifts to your threshold, we automatically place a break-even hedge so profit is locked either way. Singles only. You'll get a notification and a popup when it fires.</p>
-            <label class="flex items-center gap-2 text-sm cursor-pointer mb-3">
-              <input id="setting-auto-hedge" type="checkbox" class="accent-neon-500" />
-              <span>Enable auto-hedge</span>
-            </label>
-            <label class="block">
-              <span class="text-xs text-ink-300 block mb-1">Trigger when opposing line is at or above</span>
-              <div class="flex items-center gap-2">
-                <span class="text-ink-300 text-sm">+</span>
-                <input id="auto-hedge-threshold" type="number" inputmode="numeric" min="100" step="50" placeholder="300" class="flex-1 max-w-[120px] bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm num focus:outline-none focus:border-neon-500" />
-                <span class="text-xs text-ink-300">American odds (e.g. +300)</span>
-              </div>
-            </label>
-          </div>
-
-          <!-- Bankroll Plan settings: cap + manual reset -->
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-1">Bankroll Plan</h3>
-            <p class="text-xs text-ink-300 mb-3">Your bankroll <strong>auto-resets every Monday</strong>. Profits sweep to <strong>Savings</strong> (locked, can't bet). Losing weeks top up from Savings if available. Goal: $2,500 = half unit.</p>
-            <label class="block mb-3">
-              <span class="text-xs text-ink-300 block mb-1">Bankroll cap (resets to this every Monday)</span>
-              <div class="flex items-center gap-2">
-                <span class="text-ink-300 text-sm">$</span>
-                <input id="bankroll-cap-input" type="number" inputmode="decimal" placeholder="1000" class="flex-1 max-w-[160px] bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm num focus:outline-none focus:border-neon-500" />
-                <button id="save-bankroll-cap" class="bg-neon-500 text-ink-950 font-bold px-4 py-2 rounded-xl text-sm hover:bg-neon-400">Save</button>
-              </div>
-            </label>
-            <div class="flex gap-2 flex-wrap">
-              <button id="manual-reset-now" class="bg-ink-700 hover:bg-ink-600 text-white text-sm font-bold px-4 py-2 rounded-xl">Force reset now</button>
-              <button id="deposit-to-savings" class="bg-ink-700 hover:bg-ink-600 text-white text-sm font-bold px-4 py-2 rounded-xl">+ Add to Savings</button>
-            </div>
-          </div>
-
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-2">Backup &amp; Export</h3>
-            <p class="text-sm text-ink-300 mb-3">Your data lives only in this browser. Export it to a file before clearing your cache. CSV opens in Excel/Sheets · JSON restores everything (profiles, settings, bets) on import.</p>
-            <div class="flex gap-2 flex-wrap">
-              <button id="export-csv" class="bg-neon-500 hover:bg-neon-400 text-ink-950 font-bold px-4 py-2 rounded-xl text-sm">Export Bets (CSV)</button>
-              <button id="export-all" class="bg-ink-700 hover:bg-ink-600 text-white font-bold px-4 py-2 rounded-xl text-sm">Full Backup (JSON)</button>
-              <label class="bg-ink-700 hover:bg-ink-600 text-white font-bold px-4 py-2 rounded-xl text-sm cursor-pointer">
-                Restore from JSON
-                <input id="import-file" type="file" accept=".json,application/json" class="hidden" />
-              </label>
-            </div>
-          </div>
-
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-2">Vig Calculator</h3>
-            <p class="text-sm text-ink-300 mb-3">Type two American prices to see the book's vig (cut). Sub-103% = sharp · 103–106% = average · 106%+ = juiced.</p>
-            <div class="flex gap-3 flex-wrap">
-              <label class="block">
-                <span class="text-xs text-ink-300 block mb-1">Side A</span>
-                <input id="vig-a" type="number" inputmode="decimal" placeholder="-150" class="w-32 bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm num focus:outline-none focus:border-neon-500" />
-              </label>
-              <label class="block">
-                <span class="text-xs text-ink-300 block mb-1">Side B</span>
-                <input id="vig-b" type="number" inputmode="decimal" placeholder="+130" class="w-32 bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm num focus:outline-none focus:border-neon-500" />
-              </label>
-            </div>
-            <div id="vig-result" class="mt-3"></div>
-          </div>
-
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-2">Kelly Calculator</h3>
-            <p class="text-sm text-ink-300 mb-3">Given your edge, what's the optimal bet size? Half-Kelly is the recommended default for sports — full Kelly is too aggressive for real-life variance.</p>
-            <div class="grid grid-cols-2 gap-3">
-              <label class="block">
-                <span class="text-xs text-ink-300 block mb-1">Your win probability (%)</span>
-                <input id="kelly-prob" type="number" inputmode="decimal" placeholder="55" min="0" max="100" step="0.1" class="w-full bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm num focus:outline-none focus:border-neon-500" />
-              </label>
-              <label class="block">
-                <span class="text-xs text-ink-300 block mb-1">American odds</span>
-                <input id="kelly-odds" type="number" inputmode="decimal" placeholder="-110" class="w-full bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm num focus:outline-none focus:border-neon-500" />
-              </label>
-            </div>
-            <div id="kelly-result" class="mt-3"></div>
-          </div>
-
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-2">Demo mode</h3>
-            <p class="text-sm text-ink-300 mb-3">Show mock data so you can preview the app without burning API quota.</p>
-            <div class="flex gap-2 flex-wrap">
-              <button id="reload-demo-btn" class="bg-warn-500 text-ink-950 font-bold px-3 py-2 rounded-xl text-sm hover:brightness-110">Reload demo data</button>
-              <button id="settings-exit-demo-btn" class="bg-ink-700 hover:bg-ink-600 px-3 py-2 rounded-xl text-sm">Switch to live mode</button>
-            </div>
-          </div>
-
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
-            <h3 class="font-semibold mb-2">Admin Mode <span class="text-xs text-ink-300 font-normal">(shows Admin tab)</span></h3>
-            <p class="text-sm text-ink-300 mb-3">Turn on to see the Admin tab with a system-wide dashboard across all profiles. Turn off when someone else uses the device.</p>
-            <label class="flex items-center gap-3 cursor-pointer bg-ink-800 rounded-xl p-3">
-              <input id="admin-mode-toggle" type="checkbox" class="accent-neon-500 w-5 h-5" />
-              <span class="text-sm font-bold">Show Admin tab</span>
-            </label>
-          </div>
-
-          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4">
-            <h3 class="font-semibold mb-2">What's NOT included</h3>
-            <ul class="text-sm text-ink-200 list-disc pl-5 space-y-1.5">
-              <li>Live in-game props (worst vig, not in cheap tiers)</li>
-              <li>Player props (paid tier only — say the word and I'll wire it up)</li>
-              <li>F3 inning markets (not on The Odds API; F5 is supported)</li>
-            </ul>
-          </div>
         </div>
       </div>
 
@@ -3967,16 +4107,8 @@ function renderLines() {
     e.stopPropagation();
     const [sk, eid, mode] = b.dataset.expand.split('|'); expandGame(sk, eid, mode);
   }));
-  // Toggle expand/collapse on whole card (collapsed) or chevron (expanded)
-  container.querySelectorAll('[data-toggle-card]').forEach(el => {
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const gid = el.dataset.toggleCard;
-      if (state.expandedCards.has(gid)) state.expandedCards.delete(gid);
-      else state.expandedCards.add(gid);
-      renderLines();
-    });
-  });
+  // Cards are always expanded — collapse/toggle behavior removed to prevent
+  // pointless re-renders that caused tap-glitch flicker.
   const eld = document.getElementById('empty-load-demo');
   if (eld) eld.addEventListener('click', () => { loadMockData(); renderSportChips(); renderLines(); toast('Demo data loaded'); });
   // After Lines render, populate any live ESPN scoreboards on visible game cards
@@ -4664,7 +4796,6 @@ function renderGameCard(g, sportKey, marketFilter) {
   const isExpanded = true;
 
   // Chevron SVG
-  const chevSvg = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6"/></svg>';
 
   // Summary picks: prefer the alt line whose price sits closest to -110 (a "fair" spread).
   // Run-line / heavy spreads get hidden behind big +260 / -240 prices — find a more readable line.
@@ -4722,7 +4853,6 @@ function renderGameCard(g, sportKey, marketFilter) {
         <span class="gc-ml-row"><span class="gc-ml-team">${_teamCode(home)}</span><span class="gc-ml-price ${sumMlHome != null && sumMlHome > 0 ? 'pos' : ''}">${sumMlHome != null ? fmtAmerican(sumMlHome) : '—'}</span></span>
       </div>
     </div>
-    <button class="gc-chevron" data-toggle-card="${g.id}" aria-label="${isExpanded ? 'Collapse' : 'Expand'}">${chevSvg}</button>
   `;
 
   // Live ESPN scoreboard slot — fills in with score / period / clock / last play
