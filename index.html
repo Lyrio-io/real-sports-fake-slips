@@ -6,6 +6,10 @@
 <meta name="theme-color" content="#ffffff" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<!-- Force iOS / browsers to always fetch a fresh index.html so new deploys reach the user without manual cache-busting -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <link rel="manifest" href="manifest.json" />
 <title>Real Sports Fake Slips</title>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -2733,6 +2737,10 @@
         <svg class="w-6 h-6 text-warn-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
         <div><div class="font-bold text-sm">Admin</div><div class="text-[11px] text-ink-300">Owner dashboard</div></div>
       </button>
+      <button id="more-hard-reload" class="more-item bg-ink-800 hover:bg-ink-700 active:scale-95 transition rounded-2xl p-4 text-left flex items-center gap-3">
+        <svg class="w-6 h-6 text-emerald-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        <div><div class="font-bold text-sm">Force reload (latest version)</div><div class="text-[11px] text-ink-300">Wipes cache + reloads to pick up new code</div></div>
+      </button>
     </div>
     <button id="more-close-btn" class="w-full mt-3 bg-ink-700 hover:bg-ink-600 text-white font-semibold py-3 rounded-2xl">Close</button>
   </div>
@@ -4055,8 +4063,35 @@ async function ensureServiceWorker() {
   if (!('serviceWorker' in navigator)) return null;
   try {
     const reg = await navigator.serviceWorker.register('sw.js', { scope: '/' });
+    // Reload the page once when a new SW takes control — picks up the latest deploy automatically
+    let didReload = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (didReload) return; didReload = true;
+      console.log('New service worker took control — reloading for latest version');
+      window.location.reload();
+    });
+    // Force an update check on every page load
+    try { reg.update(); } catch (_) {}
     return reg;
   } catch (e) { console.warn('SW register failed', e); return null; }
+}
+
+// Manually wipe all caches + force-reload — gives the user an emergency "I'm stuck on old code" escape hatch
+async function hardReloadApp() {
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  } catch (e) { console.warn('cache wipe failed', e); }
+  // Cache-bust the URL to defeat HTTP cache too
+  const u = new URL(window.location.href);
+  u.searchParams.set('v', Date.now().toString());
+  window.location.href = u.toString();
 }
 // Clean, compact notification — short title + one-line body, no emoji clutter
 async function pushNotify({ title, body, tag, url }) {
@@ -9742,6 +9777,10 @@ function init() {
       item.addEventListener('click', () => { closeMoreSheet(); });
     });
   }
+  const hardReloadBtn = document.getElementById('more-hard-reload');
+  if (hardReloadBtn) hardReloadBtn.addEventListener('click', () => {
+    if (confirm('Wipe local cache and reload to the latest version?')) hardReloadApp();
+  });
 
   // Demo mode controls
   const eb = document.getElementById('exit-demo-btn'); if (eb) eb.addEventListener('click', exitDemoMode);
