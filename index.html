@@ -2034,11 +2034,40 @@
           <!-- Notifications + PWA install -->
           <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
             <h3 class="font-semibold mb-1">Notifications &amp; lock screen</h3>
-            <p class="text-xs text-ink-300 mb-3">Get bet results and line-improvement alerts on your lock screen. On iPhone: tap the share icon in Safari → "Add to Home Screen", then enable notifications below. Android: tap the install icon in your browser bar.</p>
+            <p class="text-xs text-ink-300 mb-2">Get bet results, line-improvement alerts, and auto-hedge confirmations on your iPhone lock screen.</p>
+            <div id="ios-install-banner" class="hidden mb-3 p-3 rounded-xl bg-ink-800 border border-ink-700">
+              <div class="text-xs font-bold text-neon-500 mb-1">iPhone setup (one time)</div>
+              <ol class="text-[12px] text-ink-200 leading-relaxed list-decimal pl-4 space-y-0.5">
+                <li>Tap the <strong>Share</strong> icon at the bottom of Safari.</li>
+                <li>Scroll down, tap <strong>"Add to Home Screen"</strong>.</li>
+                <li>Open the app from the new home-screen icon.</li>
+                <li>Tap <strong>Enable notifications</strong> below.</li>
+              </ol>
+            </div>
+            <div id="ios-installed-banner" class="hidden mb-3 p-3 rounded-xl bg-neon-500/10 border border-neon-500/30 text-[12px] text-neon-500">App is installed. Tap Enable notifications.</div>
             <div class="flex flex-wrap gap-2 items-center">
               <button id="enable-notifs" class="bg-neon-500 hover:bg-neon-400 text-ink-950 font-bold px-4 py-2 rounded-xl text-sm">Enable notifications</button>
+              <button id="test-notif" class="bg-ink-700 hover:bg-ink-600 text-white text-sm font-bold px-4 py-2 rounded-xl hidden">Send test</button>
               <span id="notif-status" class="text-xs text-ink-300"></span>
             </div>
+          </div>
+
+          <!-- Auto-hedge -->
+          <div class="bg-ink-900 border border-ink-700 rounded-2xl p-4 mb-4">
+            <h3 class="font-semibold mb-1">Auto-hedge</h3>
+            <p class="text-xs text-ink-300 mb-3">When the opposing line drifts to your threshold, we automatically place a break-even hedge so profit is locked either way. Singles only. You'll get a notification and a popup when it fires.</p>
+            <label class="flex items-center gap-2 text-sm cursor-pointer mb-3">
+              <input id="setting-auto-hedge" type="checkbox" class="accent-neon-500" />
+              <span>Enable auto-hedge</span>
+            </label>
+            <label class="block">
+              <span class="text-xs text-ink-300 block mb-1">Trigger when opposing line is at or above</span>
+              <div class="flex items-center gap-2">
+                <span class="text-ink-300 text-sm">+</span>
+                <input id="auto-hedge-threshold" type="number" inputmode="numeric" min="100" step="50" placeholder="300" class="flex-1 max-w-[120px] bg-ink-800 border border-ink-700 rounded-xl px-3 py-2 text-sm num focus:outline-none focus:border-neon-500" />
+                <span class="text-xs text-ink-300">American odds (e.g. +300)</span>
+              </div>
+            </label>
           </div>
 
           <!-- Bankroll Plan settings: cap + manual reset -->
@@ -2823,6 +2852,7 @@ const DEFAULT_PROFILE_SETTINGS = {
   preplaceTimerSec: 0,      // 0 = off, 60 = on
   allowSGP: true,           // same-game parlays
   sources: [],              // [{name, category}]
+  autoHedge: { enabled: false, thresholdAmerican: 300 }, // auto-place hedge when opposing side hits +300+
 };
 const SOURCE_CATEGORIES = ['paid', 'free', 'podcast', 'friend', 'gut', 'model'];
 
@@ -3706,6 +3736,72 @@ function hedgeForBet(bet) {
   };
 }
 
+/* ===== Auto-hedge ===== */
+// When the opposing line hits the user's threshold (default +300), automatically place
+// a break-even hedge so profit is locked regardless of outcome.
+async function scanAutoHedgeAndExecute() {
+  const p = P(); if (!p) return;
+  const cfg = S().autoHedge || { enabled: false, thresholdAmerican: 300 };
+  if (!cfg.enabled) return;
+  const threshold = Math.max(100, Number(cfg.thresholdAmerican) || 300);
+  const pending = (p.bets || []).filter(b => b.status === 'pending' && !b.autoHedged && b.type === 'single');
+  let placedAny = false;
+  for (const bet of pending) {
+    const h = hedgeForBet(bet);
+    if (!h) continue;
+    if (h.oppAmerican < threshold) continue;
+    if (h.lockedProfit <= 0) continue; // never auto-place a guaranteed-loss hedge
+    if (h.hedgeStakeBreakeven > p.bankroll) continue; // can't cover it
+    const hedgeBet = {
+      id: uid(), placedAt: nowISO(),
+      type: 'single',
+      legs: [{ ...h.hedgeLeg, status: 'pending' }],
+      stake: +h.hedgeStakeBreakeven.toFixed(2),
+      decimal: h.hedgeDec,
+      american: h.hedgeLeg.american,
+      toWin: profit(h.hedgeStakeBreakeven, h.hedgeDec),
+      status: 'pending', settledAt: null, payout: 0,
+      reason: `Auto-hedge of bet ${bet.id}`,
+      source: 'auto-hedge',
+      units: 0,
+      isAutoHedge: true,
+      hedgesBetId: bet.id,
+    };
+    p.bets.push(hedgeBet);
+    p.bankroll -= hedgeBet.stake;
+    bet.autoHedged = { hedgeBetId: hedgeBet.id, placedAt: nowISO(), lockedProfit: h.lockedProfit, hedgeAmerican: h.oppAmerican };
+    placedAny = true;
+    // Notify both in-app and OS
+    toast(`Auto-hedge placed: locked ${fmt$(h.lockedProfit)} profit on ${h.leg.outcome}`);
+    pushNotify({
+      title: `Profit locked: +${fmt$(h.lockedProfit)}`,
+      body: `Auto-hedged ${h.leg.outcome} with ${fmt$(hedgeBet.stake)} on ${h.oppName} at ${fmtAmerican(h.oppAmerican)}.`,
+      tag: 'auto-hedge-' + bet.id,
+    });
+    showAutoHedgePlaced(bet, hedgeBet, h);
+  }
+  if (placedAny) { persistProfiles(); renderOpenBets(); renderHeader(); }
+}
+
+function showAutoHedgePlaced(origBet, hedgeBet, h) {
+  // Reuse the bet-placed overlay with a custom title
+  const overlay = document.getElementById('bet-placed');
+  if (!overlay) return;
+  // Build a synthetic "bet" so the existing showBetPlaced renders the hedge ticket
+  const display = {
+    ...hedgeBet,
+    type: 'single',
+  };
+  showBetPlaced(display);
+  // Override title with profit-lock language
+  const title = document.getElementById('bp-bet-title');
+  const sub = document.getElementById('bp-bet-sub');
+  const status = document.getElementById('bp-status');
+  if (title) title.textContent = `Profit locked +${fmt$(h.lockedProfit)}`;
+  if (sub) sub.textContent = `Auto-hedge on ${h.leg.outcome} · ${h.oppName} ${fmtAmerican(h.oppAmerican)}`;
+  if (status) status.textContent = 'Auto-Hedged';
+}
+
 /* refresh */
 async function refreshLines(force = false) {
   if (isDemoMode()) {
@@ -3744,6 +3840,8 @@ async function refreshLines(force = false) {
   localStorage.setItem(LS.LAST_REFRESH, String(Date.now()));
   // After fresh data, check watchlist for line improvements
   scanWatchlistAndAlert().catch(e => console.error('watchlist scan failed', e));
+  // Then check if any open bets qualify for auto-hedge (opposing line crossed threshold)
+  scanAutoHedgeAndExecute().catch(e => console.error('auto-hedge scan failed', e));
   document.getElementById('last-updated').textContent = `Updated ${new Date().toLocaleTimeString()} · ${ok} ok${fail?', '+fail+' failed':''}`;
   btn.innerHTML = orig; btn.disabled = false;
   renderSportChips();
@@ -8967,15 +9065,30 @@ function init() {
   document.getElementById('reload-sports').addEventListener('click', reloadSports);
   document.getElementById('starting-bankroll').addEventListener('change', (e) => { const p = P(); if (!p) return; p.starting = parseFloat(e.target.value) || 1000; persistProfiles(); renderHeader(); });
 
-  // Notifications
+  // Notifications + iOS install detection
   const enableNotifs = document.getElementById('enable-notifs');
   const notifStatus = document.getElementById('notif-status');
+  const testNotif = document.getElementById('test-notif');
+  const iosInstallBanner = document.getElementById('ios-install-banner');
+  const iosInstalledBanner = document.getElementById('ios-installed-banner');
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   function refreshNotifStatus() {
     if (!notifStatus) return;
-    if (!('Notification' in window)) { notifStatus.textContent = '✗ Not supported in this browser'; return; }
+    if (!('Notification' in window)) {
+      notifStatus.textContent = isIOS && !isStandalone ? 'Add to Home Screen first to enable notifications on iPhone.' : 'Not supported in this browser';
+      notifStatus.className = 'text-xs text-ink-300';
+      return;
+    }
     const p = Notification.permission;
-    notifStatus.textContent = p === 'granted' ? '✓ Enabled · alerts will appear on lock screen' : p === 'denied' ? '✗ Denied — re-enable in browser settings' : '◯ Not enabled';
+    notifStatus.textContent = p === 'granted' ? '✓ Enabled — alerts appear on your lock screen' : p === 'denied' ? '✗ Denied — re-enable in iPhone Settings → RSFS → Notifications' : 'Not enabled yet';
     notifStatus.className = `text-xs ${p === 'granted' ? 'text-neon-500' : p === 'denied' ? 'text-danger-500' : 'text-ink-300'}`;
+    if (testNotif) testNotif.classList.toggle('hidden', p !== 'granted');
+  }
+  // Show the right iPhone banner
+  if (isIOS && iosInstallBanner && iosInstalledBanner) {
+    if (!isStandalone) iosInstallBanner.classList.remove('hidden');
+    else iosInstalledBanner.classList.remove('hidden');
   }
   refreshNotifStatus();
   if (enableNotifs) enableNotifs.addEventListener('click', async () => {
@@ -8983,10 +9096,45 @@ function init() {
     const perm = await ensureNotifyPermission();
     refreshNotifStatus();
     if (perm === 'granted') {
-      pushNotify({ title: 'Real Sports Fake Slips', body: 'Notifications enabled. You\'ll get alerts when bets settle and lines improve.', tag: 'welcome' });
+      pushNotify({ title: 'Real Sports Fake Slips', body: "Notifications enabled. You'll get alerts when bets settle, lines improve, and auto-hedge fires.", tag: 'welcome' });
     } else if (perm === 'denied') {
-      toast('Denied. Re-enable in your browser/iOS settings → Notifications.');
+      toast('Denied. Re-enable in iPhone Settings → RSFS → Notifications.');
+    } else if (isIOS && !isStandalone) {
+      toast('On iPhone, first tap Share → Add to Home Screen, then open from the home icon.');
     }
+  });
+  if (testNotif) testNotif.addEventListener('click', () => {
+    pushNotify({
+      title: 'Test notification',
+      body: 'If you see this on your lock screen, you are good to go.',
+      tag: 'test-' + Date.now(),
+    });
+  });
+
+  // Auto-hedge settings
+  const autoHedgeToggle = document.getElementById('setting-auto-hedge');
+  const autoHedgeThreshold = document.getElementById('auto-hedge-threshold');
+  function syncAutoHedgeUI() {
+    const cfg = S().autoHedge || { enabled: false, thresholdAmerican: 300 };
+    if (autoHedgeToggle) autoHedgeToggle.checked = !!cfg.enabled;
+    if (autoHedgeThreshold) autoHedgeThreshold.value = cfg.thresholdAmerican || 300;
+  }
+  syncAutoHedgeUI();
+  if (autoHedgeToggle) autoHedgeToggle.addEventListener('change', () => {
+    const p = P(); if (!p) return;
+    const cur = p.settings.autoHedge || { enabled: false, thresholdAmerican: 300 };
+    p.settings.autoHedge = { ...cur, enabled: !!autoHedgeToggle.checked };
+    persistProfiles();
+    toast(autoHedgeToggle.checked ? 'Auto-hedge on. We will lock profit when lines drift.' : 'Auto-hedge off.');
+  });
+  if (autoHedgeThreshold) autoHedgeThreshold.addEventListener('change', () => {
+    const p = P(); if (!p) return;
+    const cur = p.settings.autoHedge || { enabled: false, thresholdAmerican: 300 };
+    const val = Math.max(100, parseInt(autoHedgeThreshold.value, 10) || 300);
+    p.settings.autoHedge = { ...cur, thresholdAmerican: val };
+    persistProfiles();
+    autoHedgeThreshold.value = val;
+    toast(`Auto-hedge triggers at +${val} or better.`);
   });
 
   // Customization: accent swatches + mute checkbox
