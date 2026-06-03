@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- BUILD: 2026-06-03T01:46Z -->
+<!-- BUILD: 2026-06-03T02:19Z -->
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -1872,7 +1872,7 @@
           </div>
 
           <!-- Always-visible build stamp so we can confirm cache state in any view -->
-          <div class="text-[10px] text-zinc-400 font-mono mb-2">App build: 2026-06-03T01:46Z</div>
+          <div class="text-[10px] text-zinc-400 font-mono mb-2">App build: 2026-06-03T02:19Z</div>
 
           <div id="morning-ritual"></div>
 
@@ -3386,7 +3386,7 @@ const fmtAmerican = a => (a > 0 ? '+' : '') + a;
 const profit = (s, d) => s * (d - 1);
 const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
 const nowISO = () => new Date().toISOString();
-const APP_BUILD = '2026-06-03T01:46Z';
+const APP_BUILD = '2026-06-03T02:19Z';
 const escapeHtml = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Turn machine tags like "high_vig" into readable "High vig"
 const humanize = s => String(s == null ? '' : s).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
@@ -9520,7 +9520,7 @@ function switchTab(name) {
   if (homeBtn) homeBtn.classList.toggle('hidden', name === 'lines');
   // Scroll to top when switching tabs (so user doesn't land mid-page)
   try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) {}
-  if (name === 'lines') renderLedger();
+  if (name === 'lines') { renderLedger(); renderLines(); }
   if (name === 'open') renderOpenBets();
   if (name === 'history') renderHistory();
   if (name === 'stats') { renderStats(); renderGoals(); renderSportPerf(); renderParlayBreakdown(); renderBiasDetector(); renderMarketMastery(); renderClvPanel(); renderMonteCarlo(); renderAchievementCase(); renderWeeklyRecap(); renderVsCard(); }
@@ -9705,6 +9705,11 @@ function init() {
     }
   }, 800);
 
+  // If user has a real API key saved (e.g. restored from backup), force-disable
+  // demo mode so refreshLines actually hits the API instead of loading mocks.
+  if (state.apiKey && isDemoMode()) {
+    setDemoMode(false);
+  }
   // Demo mode: ALWAYS reload mocks at boot when in demo mode (idempotent — refreshes timestamps)
   // This guarantees mocks survive page refreshes and stale state from prior versions.
   if (isDemoMode()) {
@@ -10048,6 +10053,15 @@ function init() {
   renderSlip(); renderParlay();
   installOutsideClickClose();
   if (state.apiKey && !state.sportsList.length) reloadSports();
+  // Auto-fetch lines on boot if we have a real key but no cached games — covers
+  // first-launch and post-restore cases where the user shouldn't have to hunt
+  // for a refresh button.
+  if (state.apiKey && !isDemoMode()) {
+    const cacheGameCount = Object.values(state.cache || {}).reduce((a, c) => a + ((c?.games || []).length), 0);
+    if (cacheGameCount === 0) {
+      setTimeout(() => refreshLines(true).catch(e => console.error('boot auto-refresh failed', e)), 200);
+    }
+  }
 
   // Auto-settle silently on boot when there are open bets — surfaces win/loss notifications immediately
   setTimeout(() => {
