@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- BUILD: 2026-06-03T01:46Z -->
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -3382,6 +3383,7 @@ const fmtAmerican = a => (a > 0 ? '+' : '') + a;
 const profit = (s, d) => s * (d - 1);
 const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
 const nowISO = () => new Date().toISOString();
+const APP_BUILD = '2026-06-03T01:46Z';
 const escapeHtml = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Turn machine tags like "high_vig" into readable "High vig"
 const humanize = s => String(s == null ? '' : s).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
@@ -4501,7 +4503,8 @@ function renderLines() {
       }
       html = `<div class="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm">
         <div class="font-bold text-base text-zinc-900 mb-1">No lines loaded</div>
-        <div class="text-xs text-zinc-500 mb-4">Here's what the app sees right now:</div>
+        <div class="text-xs text-zinc-500 mb-1">Here's what the app sees right now:</div>
+        <div class="text-[10px] text-zinc-400 font-mono mb-4">App build: ${APP_BUILD}</div>
         <ul class="text-sm text-zinc-700 space-y-1.5 mb-4">
           <li>${keyOk ? '✅' : '❌'} <strong>API key:</strong> ${keyOk ? 'saved' : 'not set'}</li>
           <li>${sportsOk ? '✅' : '❌'} <strong>Sports picked:</strong> ${escapeHtml(sportsLabel)}</li>
