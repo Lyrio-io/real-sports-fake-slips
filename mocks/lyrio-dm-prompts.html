@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>5 Prompts to Level-Up Your App · Lyrio</title>
+<meta name="description" content="Copy-paste prompts for Claude Code, Cursor, or any coding agent. Ship a polished app one prompt at a time." />
+<style>
+  :root {
+    --violet-50:  #f6f7ff;
+    --violet-100: #eef1ff;
+    --violet-200: #d6ddff;
+    --violet-300: #a5b4fc;
+    --violet-500: #7c7ef0;
+    --violet-600: #6366f1;
+    --violet-700: #4f46e5;
+    --violet-800: #4338ca;
+
+    --hero-1: #6366f1;
+    --hero-2: #8b8ff0;
+    --hero-3: #a5b4fc;
+
+    --ink-900: #0f172a;
+    --ink-700: #334155;
+    --ink-500: #64748b;
+    --ink-400: #94a3b8;
+    --ink-200: #e2e8f0;
+
+    --bg: #ffffff;
+    --bg-tint: #f5f7ff;
+    --line: #e5e7ff;
+    --line-strong: #c9cef7;
+
+    --code-bg: #0f172a;
+    --code-fg: #e2e8f0;
+    --code-accent: #a5b4fc;
+
+    --success: #10b981;
+
+    --shadow-sm: 0 1px 2px rgba(99,102,241,0.06), 0 4px 12px rgba(99,102,241,0.08);
+    --shadow-md: 0 8px 24px -8px rgba(99,102,241,0.16), 0 20px 48px -20px rgba(79,70,229,0.20);
+    --shadow-hero: 0 30px 80px -30px rgba(79,70,229,0.55);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink-900);
+    letter-spacing: -0.01em;
+    line-height: 1.55;
+  }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; letter-spacing: -0.015em; }
+  a { color: var(--violet-700); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* HERO */
+  .hero {
+    background:
+      radial-gradient(ellipse at top right, rgba(255,255,255,0.14), transparent 55%),
+      linear-gradient(135deg, var(--hero-1) 0%, var(--hero-2) 55%, var(--hero-3) 100%);
+    color: #ffffff;
+    padding: 72px 24px 96px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-hero);
+  }
+  .hero::before {
+    content: ""; position: absolute; top: -50%; left: -30%; width: 80%; height: 100%;
+    background: radial-gradient(circle, rgba(255,255,255,0.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero-inner { max-width: 780px; margin: 0 auto; position: relative; }
+  .hero .kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.14); backdrop-filter: blur(10px);
+    padding: 8px 16px; border-radius: 999px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,0.22);
+  }
+  .hero h1 {
+    font-size: clamp(38px, 6.5vw, 68px);
+    font-weight: 900;
+    line-height: 1.03;
+    letter-spacing: -0.04em;
+    margin-top: 22px;
+  }
+  .hero h1 .highlight {
+    background: rgba(255,255,255,0.22);
+    padding: 0 10px;
+    border-radius: 14px;
+    display: inline-block;
+    color: #ffffff;
+    box-shadow: 0 6px 20px -8px rgba(0,0,0,0.25) inset;
+  }
+  .hero p {
+    max-width: 620px; margin: 22px auto 0;
+    font-size: clamp(15px, 1.7vw, 18px);
+    color: rgba(255,255,255,0.92);
+    font-weight: 500;
+  }
+  .hero .cta-row {
+    margin-top: 30px;
+    display: inline-flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+  }
+  .hero .btn-primary {
+    background: #ffffff; color: var(--violet-700);
+    padding: 14px 26px; border-radius: 999px;
+    font-weight: 800; font-size: 15px;
+    border: none; cursor: pointer;
+    box-shadow: 0 8px 20px -4px rgba(0,0,0,0.20);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .hero .btn-secondary {
+    background: rgba(255,255,255,0.14); color: white;
+    padding: 14px 24px; border-radius: 999px;
+    font-weight: 700; font-size: 15px;
+    border: 1px solid rgba(255,255,255,0.25);
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+  }
+  .hero .fine {
+    margin-top: 22px;
+    font-size: 12px; color: rgba(255,255,255,0.75);
+    display: inline-flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center;
+  }
+  .hero .fine span { display: inline-flex; align-items: center; gap: 4px; }
+
+  /* AGENT LOGOS STRIP */
+  .agents {
+    background: var(--bg);
+    padding: 40px 24px 20px;
+    text-align: center;
+  }
+  .agents .label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-500);
+  }
+  .agents .row {
+    margin-top: 14px;
+    display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; align-items: center;
+  }
+  .agents .chip {
+    background: var(--bg-tint); border: 1px solid var(--line);
+    padding: 10px 18px; border-radius: 999px;
+    font-size: 13px; font-weight: 700; color: var(--ink-700);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .agents .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--violet-500); }
+
+  /* HOW TO USE */
+  .howto {
+    max-width: 780px; margin: 40px auto 0;
+    padding: 0 24px;
+    text-align: center;
+  }
+  .howto .steps {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 14px; margin-top: 20px;
+  }
+  .howto .step {
+    background: var(--bg-tint); border: 1px solid var(--line);
+    padding: 18px 16px; border-radius: 14px;
+    text-align: left;
+  }
+  .howto .step .n {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--violet-500), var(--violet-700));
+    color: white; font-weight: 800; font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .howto .step h3 { font-size: 14px; font-weight: 800; }
+  .howto .step p { font-size: 12px; color: var(--ink-500); margin-top: 4px; font-weight: 500; }
+  @media (max-width: 640px) {
+    .howto .steps { grid-template-columns: 1fr; }
+  }
+
+  /* PROMPTS SECTION */
+  .prompts-section {
+    max-width: 840px;
+    margin: 60px auto 0;
+    padding: 0 24px 100px;
+  }
+  .section-header {
+    text-align: center; margin-bottom: 40px;
+  }
+  .section-header .kicker {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--violet-700);
+  }
+  .section-header h2 {
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 900; letter-spacing: -0.03em;
+    margin-top: 6px; line-height: 1.1;
+  }
+  .section-header p {
+    color: var(--ink-500); max-width: 560px; margin: 12px auto 0;
+    font-size: 15px; font-weight: 500;
+  }
+
+  /* Prompt card */
+  .prompt {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 28px 28px 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 220ms ease, transform 220ms ease, border-color 200ms ease;
+    position: relative;
+  }
+  .prompt:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--line-strong);
+    transform: translateY(-2px);
+  }
+  .prompt-head {
+    display: flex; align-items: flex-start; gap: 16px;
+    margin-bottom: 18px;
+  }
+  .prompt-number {
+    flex-shrink: 0;
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--violet-500), var(--violet-700));
+    color: white;
+    display: grid; place-items: center;
+    font-weight: 900; font-size: 18px;
+    box-shadow: 0 6px 14px -4px rgba(99,102,241,0.4);
+    letter-spacing: -0.02em;
+  }
+  .prompt-title {
+    flex: 1; min-width: 0;
+  }
+  .prompt-title .tag {
+    display: inline-block;
+    background: var(--violet-100); color: var(--violet-700);
+    font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 6px;
+    margin-bottom: 6px;
+  }
+  .prompt-title h3 {
+    font-size: 22px; font-weight: 800;
+    letter-spacing: -0.02em; line-height: 1.15;
+  }
+
+  /* Copy button */
+  .copy-btn {
+    background: linear-gradient(180deg, var(--violet-500), var(--violet-700));
+    color: white; border: none;
+    padding: 10px 18px; border-radius: 10px;
+    font-size: 13px; font-weight: 700; font-family: inherit;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    box-shadow: 0 4px 12px -2px rgba(99,102,241,0.45);
+    transition: transform 140ms ease, box-shadow 200ms ease;
+    letter-spacing: -0.005em;
+    flex-shrink: 0;
+  }
+  .copy-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px -2px rgba(99,102,241,0.55);
+  }
+  .copy-btn:active { transform: translateY(0); }
+  .copy-btn.copied {
+    background: linear-gradient(180deg, #34d399, var(--success));
+    box-shadow: 0 4px 12px -2px rgba(16,185,129,0.45);
+  }
+  .copy-btn svg { width: 15px; height: 15px; }
+
+  /* Prompt body */
+  .prompt-body {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    border-radius: 14px;
+    padding: 22px 24px;
+    font-family: "SF Mono", ui-monospace, "JetBrains Mono", "Menlo", "Consolas", monospace;
+    font-size: 13.5px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .prompt-body::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--violet-500), var(--violet-300), var(--violet-500));
+    opacity: 0.6;
+  }
+
+  /* Footer / CTA */
+  .final-cta {
+    background: linear-gradient(135deg, var(--bg-tint) 0%, #ffffff 100%);
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    padding: 42px 34px;
+    text-align: center;
+    margin-top: 30px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+  }
+  .final-cta::before {
+    content: ""; position: absolute; top: -50px; right: -50px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(99,102,241,0.10), transparent 70%);
+  }
+  .final-cta h3 {
+    font-size: 24px; font-weight: 900; letter-spacing: -0.02em;
+    position: relative;
+  }
+  .final-cta p {
+    font-size: 15px; color: var(--ink-500); margin: 8px auto 0;
+    max-width: 520px; font-weight: 500;
+    position: relative;
+  }
+  .final-cta .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 20px;
+    background: linear-gradient(180deg, var(--violet-500), var(--violet-700));
+    color: white; padding: 14px 28px;
+    border: none; border-radius: 999px;
+    font-size: 15px; font-weight: 800; font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 8px 20px -4px rgba(99,102,241,0.45);
+    letter-spacing: -0.01em;
+    position: relative;
+  }
+
+  /* Sticky toast for "Copied!" feedback */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(120%);
+    background: var(--ink-900); color: white;
+    padding: 12px 22px; border-radius: 999px;
+    font-size: 14px; font-weight: 700;
+    box-shadow: 0 20px 40px -10px rgba(15,23,42,0.35);
+    opacity: 0; transition: opacity 220ms, transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 100;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+  }
+
+  @media (max-width: 640px) {
+    .hero { padding: 56px 20px 72px; }
+    .prompt { padding: 22px 20px 20px; border-radius: 20px; }
+    .prompt-head { flex-wrap: wrap; }
+    .prompt-title h3 { font-size: 19px; }
+    .prompt-body { padding: 18px 18px; font-size: 12.5px; }
+    .copy-btn { padding: 9px 14px; font-size: 12px; }
+    .final-cta { padding: 32px 24px; border-radius: 22px; }
+    .prompts-section { padding: 0 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="kicker">📋 Free · Copy-paste ready</div>
+    <h1>Five prompts to make your app <span class="highlight">look legit.</span></h1>
+    <p>Battle-tested prompts for Claude Code, Cursor, Codex, or any AI coding agent. One prompt per polish pass — copy, paste, test, ship. No fluff, no filler.</p>
+    <div class="cta-row">
+      <button class="btn-primary" onclick="document.getElementById('prompts').scrollIntoView({behavior:'smooth'})">
+        Jump to prompts
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+      <button class="btn-secondary" onclick="copyAllPrompts()">Copy all 5</button>
+    </div>
+    <div class="fine">
+      <span>✓ Works with any coding agent</span>
+      <span>✓ Run one at a time</span>
+      <span>✓ Test between each</span>
+    </div>
+  </div>
+</section>
+
+<!-- COMPATIBLE AGENTS -->
+<section class="agents">
+  <div class="label">Works with</div>
+  <div class="row">
+    <span class="chip"><span class="dot"></span>Claude Code</span>
+    <span class="chip"><span class="dot"></span>Cursor</span>
+    <span class="chip"><span class="dot"></span>Codex</span>
+    <span class="chip"><span class="dot"></span>Windsurf</span>
+    <span class="chip"><span class="dot"></span>Any coding agent</span>
+  </div>
+</section>
+
+<!-- HOW TO USE -->
+<div class="howto">
+  <div class="section-header" style="margin-bottom: 0;">
+    <div class="kicker">How to use</div>
+    <h2 style="font-size: clamp(22px, 3vw, 28px);">Three simple rules</h2>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="n">1</div>
+      <h3>Copy one prompt</h3>
+      <p>Tap the copy button on any prompt below. Paste it into your agent's chat.</p>
+    </div>
+    <div class="step">
+      <div class="n">2</div>
+      <h3>Run it, then test</h3>
+      <p>Let the agent make its changes. Open the app and try every screen it touched.</p>
+    </div>
+    <div class="step">
+      <div class="n">3</div>
+      <h3>Only then, next one</h3>
+      <p>Never chain prompts. Each one is a full polish pass. Rushing means bugs slip through.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PROMPTS -->
+<section class="prompts-section" id="prompts">
+  <div class="section-header">
+    <div class="kicker">The prompts</div>
+    <h2>Five polish passes, one prompt each.</h2>
+    <p>Ordered by impact. Start at #1 for the biggest visible win, or jump to whichever one hurts most in your app right now.</p>
+  </div>
+
+  <!-- PROMPT 1 -->
+  <article class="prompt">
+    <div class="prompt-head">
+      <div class="prompt-number">1</div>
+      <div class="prompt-title">
+        <span class="tag">Feedback</span>
+        <h3>Build a Toast Notification System</h3>
+      </div>
+      <button class="copy-btn" data-target="prompt-1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        Copy
+      </button>
+    </div>
+    <div class="prompt-body" id="prompt-1">Implement a consistent toast/notification system for transient feedback across my app. Support distinct types (success, error, warning, info) with appropriate styling and icons, auto-dismiss after a sensible duration (with errors persisting longer or until dismissed), allow manual dismissal, stack multiple notifications cleanly, and position them consistently without blocking important content. Make them accessible via ARIA live regions and pausable on hover. Replace any ad-hoc alerts with this system. Show me the notification system and where it's now used.</div>
+  </article>
+
+  <!-- PROMPT 2 -->
+  <article class="prompt">
+    <div class="prompt-head">
+      <div class="prompt-number">2</div>
+      <div class="prompt-title">
+        <span class="tag">Copy</span>
+        <h3>Write Clear, Helpful Error Messages</h3>
+      </div>
+      <button class="copy-btn" data-target="prompt-2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        Copy
+      </button>
+    </div>
+    <div class="prompt-body" id="prompt-2">Audit all the error and validation messages in my app and rewrite the unhelpful ones. Make each message specific (what exactly is wrong), constructive (how to fix it), and human (friendly, not robotic or blaming) — for example replace "Invalid input" with "Please enter a valid email address like name@example.com". Avoid technical jargon and error codes in user-facing copy, and place messages where the user is looking. Show me the worst offenders and the improved messaging you wrote for each.</div>
+  </article>
+
+  <!-- PROMPT 3 -->
+  <article class="prompt">
+    <div class="prompt-head">
+      <div class="prompt-number">3</div>
+      <div class="prompt-title">
+        <span class="tag">Typography</span>
+        <h3>Establish a Modular Type Scale</h3>
+      </div>
+      <button class="copy-btn" data-target="prompt-3">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        Copy
+      </button>
+    </div>
+    <div class="prompt-body" id="prompt-3">Audit every font-size used across my app and consolidate them into a coherent modular type scale derived from a consistent ratio (for example a 1.25 major-third scale) anchored to a sensible base body size of around 16px. Define named tiers — display, h1–h4, body-large, body, small, and caption — and map each piece of text content to the appropriate tier based on its role. Refactor components to use these tiers instead of one-off sizes. Report the scale you established and how many distinct sizes you eliminated.</div>
+  </article>
+
+  <!-- PROMPT 4 -->
+  <article class="prompt">
+    <div class="prompt-head">
+      <div class="prompt-number">4</div>
+      <div class="prompt-title">
+        <span class="tag">Responsive</span>
+        <h3>Add Fluid Responsive Typography</h3>
+      </div>
+      <button class="copy-btn" data-target="prompt-4">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        Copy
+      </button>
+    </div>
+    <div class="prompt-body" id="prompt-4">Make my typography scale fluidly between screen sizes instead of jumping at breakpoints. Use CSS `clamp()` for headings and large display text so font-size interpolates smoothly between a minimum (mobile) and maximum (desktop) value based on viewport width, with sensible bounds so text never gets uncomfortably small or large. Apply this primarily to large headings where the size difference matters most, keeping body text at a stable, readable size. Show me which text styles you made fluid and the min/max values you chose.</div>
+  </article>
+
+  <!-- PROMPT 5 -->
+  <article class="prompt">
+    <div class="prompt-head">
+      <div class="prompt-number">5</div>
+      <div class="prompt-title">
+        <span class="tag">Accessibility · SEO</span>
+        <h3>Fix Page Titles and Language</h3>
+      </div>
+      <button class="copy-btn" data-target="prompt-5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        Copy
+      </button>
+    </div>
+    <div class="prompt-body" id="prompt-5">Ensure every page/route in my app has a unique, descriptive document title that reflects its content and updates correctly on client-side navigation, and that the `<html lang>` attribute is set correctly (and updated for any multilingual content). Make titles follow a consistent, useful pattern (e.g. specific page name first, then app name) so browser tabs, history, and bookmarks are meaningful. Verify titles announce correctly to screen readers on navigation. Show me the title pattern you implemented and confirm the language attributes."</div>
+  </article>
+
+  <!-- Final CTA -->
+  <div class="final-cta">
+    <h3>Want more prompts like these?</h3>
+    <p>New polish pass every week — real, tested, and actually useful for shipping legit apps.</p>
+    <button class="btn" onclick="window.location.href='https://dm.lyrio.io'">
+      Explore Lyrio DM
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</section>
+
+<!-- Copy toast -->
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+  const toast = document.getElementById('toast');
+  let toastTimer;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const target = document.getElementById(btn.dataset.target);
+      if (!target) return;
+      try {
+        await navigator.clipboard.writeText(target.textContent.trim());
+        btn.classList.add('copied');
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg> Copied';
+        showToast('Copied to clipboard');
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> Copy';
+        }, 1800);
+      } catch (e) {
+        showToast('Could not copy — try again');
+      }
+    });
+  });
+
+  async function copyAllPrompts() {
+    const bodies = [...document.querySelectorAll('.prompt-body')].map((b, i) => `${i + 1}. ${b.textContent.trim()}`);
+    try {
+      await navigator.clipboard.writeText(bodies.join('\n\n---\n\n'));
+      showToast('All 5 prompts copied');
+    } catch (e) {
+      showToast('Could not copy — try again');
+    }
+  }
+</script>
+
+</body>
+</html>
