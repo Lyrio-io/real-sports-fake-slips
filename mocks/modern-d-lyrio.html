@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Modern D · Lyrio DM colors</title>
+<style>
+  :root {
+    /* Lyrio DM palette — sampled from the reference site */
+    --violet-100: #eef1ff;
+    --violet-200: #d6ddff;
+    --violet-300: #a5b4fc;
+    --violet-400: #8b90f5;
+    --violet-500: #7c7ef0;   /* CTA */
+    --violet-600: #6366f1;   /* deeper CTA / hero mid */
+    --violet-700: #4f46e5;   /* hover */
+    --violet-800: #4338ca;
+
+    --hero-grad-1: #6366f1;
+    --hero-grad-2: #8b8ff0;
+    --hero-grad-3: #a5b4fc;
+
+    --ink-900: #0f172a;   /* headings */
+    --ink-700: #334155;
+    --ink-500: #64748b;
+    --ink-400: #94a3b8;
+    --ink-200: #e2e8f0;
+    --ink-100: #f1f5f9;
+
+    --bg: #ffffff;
+    --bg-tint: #f5f7ff;      /* card bg with slight lavender */
+    --line: #e5e7ff;
+
+    --success: #10b981;
+    --success-tint: #ecfdf5;
+    --danger: #ef4444;
+
+    --shadow-sm: 0 1px 2px rgba(99,102,241,0.05), 0 2px 8px rgba(99,102,241,0.06);
+    --shadow-md: 0 4px 12px rgba(99,102,241,0.08), 0 12px 32px rgba(99,102,241,0.10);
+    --shadow-hero: 0 20px 60px -20px rgba(79,70,229,0.35);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink-900);
+    letter-spacing: -0.01em;
+    padding-bottom: 110px;
+  }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; letter-spacing: -0.015em; }
+  .container { max-width: 440px; margin: 0 auto; }
+
+  /* Explanation banner */
+  .mock-note {
+    background: var(--violet-100); border: 1px solid var(--violet-200);
+    padding: 12px 16px; font-size: 12px; color: var(--violet-800);
+    margin: 16px; border-radius: 12px; line-height: 1.5;
+  }
+
+  /* Top nav — white with purple brand */
+  .top-nav {
+    background: white;
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 18px; font-weight: 800; letter-spacing: -0.02em;
+  }
+  .brand-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--violet-500), var(--violet-700));
+    display: grid; place-items: center;
+    box-shadow: 0 4px 12px -2px rgba(99,102,241,0.4);
+  }
+  .brand-icon svg { width: 18px; height: 18px; color: white; }
+  .brand .light { color: var(--violet-600); }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff9500, #ff5c00);
+    color: white; font-weight: 700; font-size: 14px;
+    display: grid; place-items: center;
+  }
+
+  /* HERO — purple gradient, big number leads */
+  .hero {
+    position: relative;
+    background: linear-gradient(135deg, var(--hero-grad-1) 0%, var(--hero-grad-2) 60%, var(--hero-grad-3) 100%);
+    padding: 30px 22px 40px;
+    color: white;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: ""; position: absolute; top: -30%; right: -20%;
+    width: 60%; height: 60%; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.12), transparent 70%);
+    pointer-events: none;
+  }
+  .hero-label {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.16); backdrop-filter: blur(8px);
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .hero-h1 {
+    font-size: 42px; font-weight: 900; margin-top: 16px;
+    letter-spacing: -0.035em; line-height: 1;
+  }
+  .hero-h1 .cents { font-size: 22px; opacity: 0.75; font-weight: 700; }
+  .hero-sub {
+    display: flex; align-items: center; gap: 10px; margin-top: 12px;
+    font-size: 14px; font-weight: 600;
+  }
+  .hero-sub .badge {
+    background: var(--success); color: white;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 800;
+  }
+  .hero-sub .muted { opacity: 0.75; font-weight: 500; }
+
+  .hero-actions {
+    display: flex; gap: 10px; margin-top: 22px;
+  }
+  .btn-primary {
+    background: white; color: var(--violet-700);
+    border: none; padding: 12px 22px; border-radius: 999px;
+    font-size: 14px; font-weight: 800; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.15); color: white;
+    border: 1px solid rgba(255,255,255,0.25); padding: 12px 22px; border-radius: 999px;
+    font-size: 14px; font-weight: 700; font-family: inherit;
+    backdrop-filter: blur(8px);
+  }
+
+  .hero-fine {
+    margin-top: 16px; display: flex; gap: 16px;
+    font-size: 12px; opacity: 0.85; font-weight: 500;
+  }
+  .hero-fine span { display: flex; align-items: center; gap: 4px; }
+
+  /* Section head */
+  .section {
+    padding: 30px 20px 12px;
+  }
+  .section-label {
+    color: var(--violet-600); font-size: 11px; font-weight: 800;
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .section h2 {
+    font-size: 26px; font-weight: 900; margin-top: 6px;
+    letter-spacing: -0.03em; line-height: 1.1;
+  }
+  .section .sub {
+    font-size: 14px; color: var(--ink-500); margin-top: 6px; font-weight: 500;
+  }
+
+  /* Sport chips */
+  .sport-chips {
+    display: flex; gap: 8px; padding: 0 20px 4px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .sport-chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0; padding: 9px 16px;
+    background: white; border: 1px solid var(--line);
+    border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--ink-700);
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: var(--shadow-sm);
+  }
+  .chip.active {
+    background: linear-gradient(135deg, var(--violet-500), var(--violet-700));
+    color: white; border-color: transparent;
+    box-shadow: 0 4px 12px -2px rgba(99,102,241,0.35);
+  }
+
+  /* Game card — Lyrio numbered-card style */
+  .games { padding: 8px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .game {
+    background: white; border: 1px solid var(--line);
+    border-radius: 18px; padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+  }
+  .game .time-badge {
+    background: var(--violet-100); color: var(--violet-700);
+    padding: 4px 10px; border-radius: 8px;
+    font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .game .league-badge {
+    background: white; color: var(--ink-500);
+    padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line);
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    margin-left: 6px;
+  }
+  .game .matchup {
+    margin-top: 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .team {
+    display: flex; align-items: center; gap: 10px;
+    flex: 1; min-width: 0;
+  }
+  .team.away { justify-content: flex-start; }
+  .team.home { justify-content: flex-end; text-align: right; }
+  .team .logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 11px; color: white;
+    flex-shrink: 0;
+  }
+  .team .name { font-weight: 800; font-size: 15px; }
+  .team .record { font-size: 11px; color: var(--ink-500); font-weight: 500; margin-top: 1px; }
+  .vs-pill {
+    background: var(--ink-100); color: var(--ink-500);
+    padding: 3px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+  }
+
+  .game .picks {
+    margin-top: 16px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+  }
+  .pick {
+    background: var(--bg-tint); border: 1px solid var(--line);
+    border-radius: 12px; padding: 10px 12px; text-align: center;
+    transition: all 140ms;
+  }
+  .pick:hover { border-color: var(--violet-300); }
+  .pick .lbl { font-size: 10px; color: var(--ink-500); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .pick .val { font-size: 14px; font-weight: 800; margin-top: 3px; }
+  .pick .odds { font-size: 12px; color: var(--ink-700); font-weight: 700; margin-top: 2px; }
+  .pick.selected {
+    background: linear-gradient(135deg, var(--violet-100), white);
+    border-color: var(--violet-500);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  }
+  .pick.selected .odds { color: var(--violet-700); }
+
+  /* Bet slip — big rounded card with purple header */
+  .slip {
+    margin: 8px 20px;
+    background: white; border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  .slip-header {
+    background: linear-gradient(135deg, var(--violet-600), var(--violet-700));
+    color: white; padding: 20px 22px 16px;
+  }
+  .slip-header .row {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .slip-header h3 { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+  .slip-header .badge {
+    background: rgba(255,255,255,0.2); backdrop-filter: blur(6px);
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .slip-header .parlay-odds {
+    margin-top: 8px; font-size: 34px; font-weight: 900; letter-spacing: -0.03em;
+  }
+  .slip .leg {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  }
+  .slip .leg:last-of-type { border-bottom: none; }
+  .slip .leg .title { font-size: 14px; font-weight: 700; }
+  .slip .leg .sub { font-size: 12px; color: var(--ink-500); margin-top: 2px; font-weight: 500; }
+  .slip .leg .price { font-size: 15px; font-weight: 800; }
+  .slip .stake-panel {
+    background: var(--bg-tint);
+    padding: 18px 22px;
+    border-top: 1px solid var(--line);
+  }
+  .slip .stake-panel .row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; color: var(--ink-500); font-weight: 500;
+  }
+  .slip .stake-panel .row .val { color: var(--ink-900); font-weight: 800; font-size: 20px; }
+  .slip .stake-panel .row.win { padding-top: 12px; border-top: 1px dashed var(--line); margin-top: 12px; }
+  .slip .stake-panel .row.win .val { color: var(--success); font-size: 22px; font-weight: 900; }
+  .slip .place {
+    display: block; width: calc(100% - 44px); margin: 16px 22px 22px;
+    background: linear-gradient(135deg, var(--violet-500), var(--violet-700));
+    color: white; border: none;
+    padding: 16px; border-radius: 14px;
+    font-size: 15px; font-weight: 800; font-family: inherit;
+    box-shadow: 0 4px 14px -2px rgba(99,102,241,0.5);
+    letter-spacing: -0.01em;
+  }
+
+  /* Open bet card */
+  .open-card {
+    margin: 0 20px 12px;
+    background: white; border: 1px solid var(--line);
+    border-radius: 18px; padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .open-card .head {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  }
+  .open-card .head .title { font-size: 15px; font-weight: 800; }
+  .open-card .head .sub { font-size: 12px; color: var(--ink-500); margin-top: 3px; font-weight: 500; }
+  .status {
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+    display: inline-flex; align-items: center; gap: 4px;
+    white-space: nowrap;
+  }
+  .status.live { background: rgba(239,68,68,0.1); color: var(--danger); }
+  .status.live::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--danger); animation: pulse 1.4s ease-in-out infinite;
+  }
+  .status.pending { background: var(--violet-100); color: var(--violet-700); }
+  .status.won { background: var(--success-tint); color: var(--success); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .live-strip {
+    margin-top: 14px; padding: 12px 14px;
+    background: linear-gradient(135deg, var(--bg-tint), white);
+    border: 1px solid var(--line); border-radius: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .live-strip .score { font-size: 15px; font-weight: 800; }
+  .live-strip .clock { font-size: 11px; color: var(--ink-500); font-weight: 600; margin-top: 2px; }
+  .live-strip .cash { text-align: right; }
+  .live-strip .cash .amt { font-size: 20px; font-weight: 900; color: var(--success); }
+  .live-strip .cash .lbl { font-size: 11px; color: var(--ink-500); font-weight: 600; }
+
+  /* Stats — big feature card first */
+  .stat-hero-card {
+    margin: 0 20px 14px;
+    padding: 22px 24px;
+    background: linear-gradient(135deg, var(--violet-100), white);
+    border: 1px solid var(--violet-200);
+    border-radius: 18px;
+    box-shadow: var(--shadow-sm);
+    position: relative; overflow: hidden;
+  }
+  .stat-hero-card::after {
+    content: ""; position: absolute; top: -20px; right: -20px;
+    width: 120px; height: 120px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(99,102,241,0.12), transparent 70%);
+    pointer-events: none;
+  }
+  .stat-hero-card .lbl { font-size: 11px; font-weight: 800; color: var(--violet-700); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat-hero-card .amount {
+    font-size: 36px; font-weight: 900; color: var(--ink-900);
+    margin-top: 6px; letter-spacing: -0.035em;
+  }
+  .stat-hero-card .breakdown {
+    font-size: 13px; color: var(--ink-500); margin-top: 6px; font-weight: 500;
+  }
+  .stat-hero-card .breakdown strong { color: var(--success); font-weight: 800; }
+
+  .stat-tiles {
+    padding: 0 20px 20px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .stat-tile {
+    background: white; border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-tile .lbl { font-size: 10px; font-weight: 800; color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat-tile .val { font-size: 22px; font-weight: 900; margin-top: 4px; letter-spacing: -0.02em; }
+  .stat-tile .val.pos { color: var(--success); }
+  .stat-tile .val.violet { color: var(--violet-700); }
+  .stat-tile .sub { font-size: 11px; color: var(--ink-500); margin-top: 2px; font-weight: 500; }
+
+  /* Bottom tabbar */
+  .tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,0.97); backdrop-filter: blur(20px);
+    border-top: 1px solid var(--line);
+    max-width: 440px; margin: 0 auto;
+    padding: 10px 0 26px;
+    display: flex; justify-content: space-around;
+  }
+  .tabbar .tab {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    color: var(--ink-500);
+  }
+  .tabbar .tab.active { color: var(--violet-700); }
+  .tabbar .tab .ico {
+    width: 34px; height: 34px; border-radius: 12px;
+    background: var(--bg-tint); display: grid; place-items: center;
+    font-size: 16px;
+  }
+  .tabbar .tab.active .ico {
+    background: linear-gradient(135deg, var(--violet-500), var(--violet-700));
+    color: white;
+  }
+  .tabbar .tab .lbl { font-size: 10px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="mock-note">
+    <strong>Modern D · Lyrio DM colors.</strong> Sampled from dm.lyrio.io — purple/violet gradient hero, deep indigo headings, white content sections, lavender-tinted cards, purple CTAs with soft glow. Same warm-friendly vibe as Lyrio DM but adapted for sports betting.
+  </div>
+
+  <!-- TOP NAV -->
+  <div class="top-nav">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>
+      </div>
+      <span>Real<span class="light">Sports</span></span>
+    </div>
+    <div class="avatar">J</div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-label">📊 Your bankroll</div>
+    <div class="hero-h1 num">$1,247<span class="cents">.30</span></div>
+    <div class="hero-sub">
+      <span class="badge">↑ 24.7%</span>
+      <span class="muted">up $247.30 this month</span>
+    </div>
+    <div class="hero-actions">
+      <button class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        Refresh lines
+      </button>
+      <button class="btn-secondary">View slate</button>
+    </div>
+    <div class="hero-fine">
+      <span>✓ 3 open bets</span>
+      <span>✓ 14 credits left</span>
+    </div>
+  </div>
+
+  <!-- SPORT CHIPS -->
+  <div class="section" style="padding-bottom:6px;">
+    <div class="section-label">Live &amp; Upcoming</div>
+    <h2>Today's slate</h2>
+    <div class="sub">6 games from 6 leagues · pick your side</div>
+  </div>
+
+  <div class="sport-chips">
+    <div class="chip active">🎯 All (6)</div>
+    <div class="chip">⚾ MLB</div>
+    <div class="chip">🏀 WNBA</div>
+    <div class="chip">⚽ MLS</div>
+    <div class="chip">🎾 Tennis</div>
+    <div class="chip">🥊 UFC</div>
+  </div>
+
+  <!-- GAME CARDS -->
+  <div class="games">
+    <div class="game">
+      <div>
+        <span class="time-badge">🕗 Tonight · 7:05 PM</span>
+        <span class="league-badge">MLB</span>
+      </div>
+      <div class="matchup">
+        <div class="team away">
+          <div class="logo" style="background:#0c2340;">NYY</div>
+          <div>
+            <div class="name">Yankees</div>
+            <div class="record">42-28 · 26-9 away</div>
+          </div>
+        </div>
+        <div class="vs-pill">at</div>
+        <div class="team home">
+          <div>
+            <div class="name">Red Sox</div>
+            <div class="record">38-32 · 22-13 home</div>
+          </div>
+          <div class="logo" style="background:#bd3039;">BOS</div>
+        </div>
+      </div>
+      <div class="picks">
+        <div class="pick selected">
+          <div class="lbl">Moneyline</div>
+          <div class="val">NYY</div>
+          <div class="odds num">-150</div>
+        </div>
+        <div class="pick">
+          <div class="lbl">Spread</div>
+          <div class="val">NYY -1.5</div>
+          <div class="odds num">+120</div>
+        </div>
+        <div class="pick">
+          <div class="lbl">Total</div>
+          <div class="val">O 8.5</div>
+          <div class="odds num">-108</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="game">
+      <div>
+        <span class="time-badge">🕙 Tonight · 10:10 PM</span>
+        <span class="league-badge">MLB</span>
+      </div>
+      <div class="matchup">
+        <div class="team away">
+          <div class="logo" style="background:#005a9c;">LAD</div>
+          <div>
+            <div class="name">Dodgers</div>
+            <div class="record">45-25 · 24-11 away</div>
+          </div>
+        </div>
+        <div class="vs-pill">at</div>
+        <div class="team home">
+          <div>
+            <div class="name">Padres</div>
+            <div class="record">37-33 · 20-15 home</div>
+          </div>
+          <div class="logo" style="background:#2f241d;">SD</div>
+        </div>
+      </div>
+      <div class="picks">
+        <div class="pick">
+          <div class="lbl">Moneyline</div>
+          <div class="val">LAD</div>
+          <div class="odds num">-135</div>
+        </div>
+        <div class="pick selected">
+          <div class="lbl">Spread</div>
+          <div class="val">LAD -1.5</div>
+          <div class="odds num">+145</div>
+        </div>
+        <div class="pick">
+          <div class="lbl">Total</div>
+          <div class="val">O 7.5</div>
+          <div class="odds num">+100</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BET SLIP -->
+  <div class="section">
+    <div class="section-label">Ready to send</div>
+    <h2>Your slip</h2>
+    <div class="sub">2 picks · potential parlay</div>
+  </div>
+
+  <div class="slip">
+    <div class="slip-header">
+      <div class="row">
+        <h3>Parlay · 2 legs</h3>
+        <span class="badge">Combined</span>
+      </div>
+      <div class="parlay-odds num">+321</div>
+    </div>
+    <div class="leg">
+      <div>
+        <div class="title">Yankees ML</div>
+        <div class="sub">vs Red Sox · 7:05 PM</div>
+      </div>
+      <div class="price num">-150</div>
+    </div>
+    <div class="leg">
+      <div>
+        <div class="title">Dodgers -1.5</div>
+        <div class="sub">vs Padres · 10:10 PM</div>
+      </div>
+      <div class="price num">+145</div>
+    </div>
+    <div class="stake-panel">
+      <div class="row">
+        <span>Stake</span>
+        <span class="val num">$25</span>
+      </div>
+      <div class="row win">
+        <span>To win</span>
+        <span class="val num">$80.25</span>
+      </div>
+    </div>
+    <button class="place">Place bet · $25</button>
+  </div>
+
+  <!-- OPEN BETS -->
+  <div class="section">
+    <div class="section-label">In play</div>
+    <h2>Live now</h2>
+    <div class="sub">3 bets in progress · updating every 30s</div>
+  </div>
+
+  <div class="open-card">
+    <div class="head">
+      <div>
+        <div class="title">Yankees ML</div>
+        <div class="sub">-150 · $25 stake · placed 6:45 PM</div>
+      </div>
+      <div class="status live">Live</div>
+    </div>
+    <div class="live-strip">
+      <div>
+        <div class="score">NYY 4 · BOS 2</div>
+        <div class="clock">Top 6 · 2 outs · runner on 1st</div>
+      </div>
+      <div class="cash">
+        <div class="amt num">+$16.67</div>
+        <div class="lbl">Cash out</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="open-card">
+    <div class="head">
+      <div>
+        <div class="title">Dodgers -1.5</div>
+        <div class="sub">+145 · $10 stake · starts 10:10 PM</div>
+      </div>
+      <div class="status pending">Pending</div>
+    </div>
+  </div>
+
+  <div class="open-card">
+    <div class="head">
+      <div>
+        <div class="title">3-leg parlay</div>
+        <div class="sub">BAL ML · WNBA total · Djokovic ML · +512 · $10</div>
+      </div>
+      <div class="status pending">2 of 3</div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="section">
+    <div class="section-label">Performance</div>
+    <h2>Your week</h2>
+    <div class="sub">Last 7 days · 14 bets settled</div>
+  </div>
+
+  <div class="stat-hero-card">
+    <div class="lbl">Net this week</div>
+    <div class="amount num">+$127.50</div>
+    <div class="breakdown"><strong>9 wins</strong> · 5 losses · 64.3% win rate</div>
+  </div>
+
+  <div class="stat-tiles">
+    <div class="stat-tile">
+      <div class="lbl">ROI</div>
+      <div class="val num pos">+18.2%</div>
+      <div class="sub">Life-time</div>
+    </div>
+    <div class="stat-tile">
+      <div class="lbl">Score</div>
+      <div class="val num violet">72</div>
+      <div class="sub">Top 15% this month</div>
+    </div>
+    <div class="stat-tile">
+      <div class="lbl">Streak</div>
+      <div class="val num" style="color:#f59e0b;">🔥 5</div>
+      <div class="sub">Days of discipline</div>
+    </div>
+    <div class="stat-tile">
+      <div class="lbl">Best sport</div>
+      <div class="val" style="font-size:16px;">MLB</div>
+      <div class="sub">+$89 · 7-3 record</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TABBAR -->
+<div class="tabbar">
+  <div class="tab active"><div class="ico">◐</div><div class="lbl">Home</div></div>
+  <div class="tab"><div class="ico">✓</div><div class="lbl">Bets</div></div>
+  <div class="tab"><div class="ico">▲</div><div class="lbl">Stats</div></div>
+  <div class="tab"><div class="ico">☰</div><div class="lbl">More</div></div>
+</div>
+
+</body>
+</html>
