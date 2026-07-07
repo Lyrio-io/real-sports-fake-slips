@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Modern B · Linear-tight</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-2: #fafafa;
+    --line: #eaeaee;
+    --line-2: #f0f0f2;
+    --ink-1: #1a1a1c;
+    --ink-2: #575761;
+    --ink-3: #8a8a94;
+    --accent: #5e6ad2;
+    --accent-2: #4e5ac2;
+    --green: #009754;
+    --red: #d83232;
+    --amber: #b6800c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink-1);
+    font-size: 14px;
+    line-height: 1.45;
+    letter-spacing: -0.006em;
+    padding-bottom: 80px;
+  }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; letter-spacing: -0.01em; }
+  .container { max-width: 440px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+  }
+  .header .brand {
+    font-size: 13px; font-weight: 600; color: var(--ink-1);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .header .brand .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 2px; }
+  .header .actions { display: flex; gap: 6px; }
+  .header .icon-btn {
+    width: 30px; height: 30px; border: 1px solid var(--line);
+    border-radius: 6px; display: grid; place-items: center; font-size: 12px; color: var(--ink-2);
+    background: white;
+  }
+
+  /* Overview strip */
+  .overview {
+    padding: 16px; border-bottom: 1px solid var(--line);
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+  }
+  .stat {
+    font-size: 12px;
+  }
+  .stat .lbl { color: var(--ink-3); font-weight: 500; margin-bottom: 4px; }
+  .stat .val { font-size: 20px; font-weight: 600; }
+  .stat .val.pos { color: var(--green); }
+  .stat .val.neg { color: var(--red); }
+  .stat .sub { color: var(--ink-3); font-size: 11px; margin-top: 2px; }
+
+  /* Section header — tight */
+  .section {
+    padding: 20px 16px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--line);
+  }
+  .section h2 {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--ink-3);
+  }
+  .section .action { font-size: 12px; color: var(--accent); font-weight: 500; }
+
+  /* Sport tabs — flat text, underline active */
+  .tabs {
+    display: flex; gap: 20px; padding: 0 16px;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs .tab {
+    padding: 10px 0; font-size: 13px; font-weight: 500; color: var(--ink-3);
+    white-space: nowrap; position: relative;
+  }
+  .tabs .tab.active { color: var(--ink-1); font-weight: 600; }
+  .tabs .tab.active::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
+    height: 2px; background: var(--ink-1); border-radius: 2px 2px 0 0;
+  }
+
+  /* Game rows — dense but breathable */
+  .game-list { padding: 4px 0; }
+  .game {
+    padding: 12px 16px;
+    display: grid; grid-template-columns: auto 1fr auto;
+    gap: 12px; align-items: center;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .game:last-child { border-bottom: none; }
+  .game .teams {
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .game .team {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 500;
+  }
+  .game .team .logo {
+    width: 20px; height: 20px; border-radius: 4px;
+    background: var(--bg-2); display: grid; place-items: center;
+    font-size: 9px; font-weight: 700; color: white;
+  }
+  .game .team.win { font-weight: 600; }
+  .game .meta {
+    font-size: 11px; color: var(--ink-3); align-self: center;
+    text-align: center;
+  }
+  .game .picks {
+    display: flex; gap: 6px;
+  }
+  .game .picks .btn {
+    background: white; border: 1px solid var(--line);
+    padding: 6px 10px; border-radius: 6px;
+    font-size: 12px; font-weight: 600; min-width: 52px;
+    text-align: center;
+  }
+  .game .picks .btn:hover { border-color: var(--accent); }
+  .game .picks .btn .odds { color: var(--ink-2); font-size: 11px; font-weight: 500; margin-top: 1px; }
+
+  /* Bet slip — right panel style */
+  .slip {
+    border: 1px solid var(--line);
+    background: white;
+    margin: 0 16px 20px;
+    border-radius: 8px;
+  }
+  .slip .head {
+    padding: 12px 14px; border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .slip .head h3 { font-size: 13px; font-weight: 600; }
+  .slip .head .badge {
+    background: var(--bg-2); color: var(--ink-2);
+    font-size: 10px; font-weight: 600; padding: 2px 6px;
+    border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .slip .leg {
+    padding: 10px 14px; border-bottom: 1px solid var(--line-2);
+    display: grid; grid-template-columns: 1fr auto; gap: 10px;
+  }
+  .slip .leg .title { font-size: 13px; font-weight: 500; }
+  .slip .leg .sub { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .slip .leg .odds { font-size: 13px; font-weight: 600; align-self: center; }
+  .slip .stake {
+    padding: 12px 14px; display: grid;
+    grid-template-columns: 1fr auto; gap: 12px; align-items: center;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .slip .stake .lbl { font-size: 12px; color: var(--ink-2); font-weight: 500; }
+  .slip .stake input {
+    border: 1px solid var(--line); background: var(--bg-2);
+    padding: 6px 10px; border-radius: 6px;
+    font-size: 14px; font-weight: 600; text-align: right;
+    font-family: inherit; width: 90px;
+  }
+  .slip .footer {
+    padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;
+    gap: 12px;
+  }
+  .slip .footer .win {
+    font-size: 12px; color: var(--ink-2);
+  }
+  .slip .footer .win strong { color: var(--green); font-weight: 700; font-size: 14px; }
+  .slip .footer .place {
+    background: var(--ink-1); color: white; border: none;
+    padding: 8px 16px; border-radius: 6px;
+    font-size: 13px; font-weight: 600; font-family: inherit;
+  }
+
+  /* Open bets — table-like */
+  .open-list {
+    padding: 0 16px 20px;
+  }
+  .open {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 12px; padding: 12px 0;
+    border-bottom: 1px solid var(--line-2);
+    align-items: center;
+  }
+  .open .title { font-size: 13px; font-weight: 600; }
+  .open .sub { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .open .live {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 600; color: var(--red);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-top: 5px;
+  }
+  .open .live .dot { width: 5px; height: 5px; background: var(--red); border-radius: 50%; }
+  .open .value { text-align: right; }
+  .open .value .amt { font-size: 15px; font-weight: 600; }
+  .open .value .amt.pos { color: var(--green); }
+  .open .value .amt.neg { color: var(--red); }
+  .open .value .lbl { font-size: 10px; color: var(--ink-3); margin-top: 2px; }
+
+  /* Stats table */
+  .kpis {
+    display: grid; grid-template-columns: 1fr 1fr;
+    border-top: 1px solid var(--line);
+  }
+  .kpi {
+    padding: 14px 16px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .kpi:nth-child(2n) { border-right: none; }
+  .kpi .lbl { font-size: 11px; color: var(--ink-3); font-weight: 500; }
+  .kpi .val { font-size: 20px; font-weight: 600; margin-top: 3px; }
+  .kpi .val.pos { color: var(--green); }
+  .kpi .val.neg { color: var(--red); }
+  .kpi .sub { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+
+  /* Tabbar bottom */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: white; border-top: 1px solid var(--line);
+    max-width: 440px; margin: 0 auto;
+    display: flex; padding: 8px 0 22px;
+  }
+  .bottom-nav .n {
+    flex: 1; text-align: center; padding: 6px 0;
+    font-size: 10px; font-weight: 500; color: var(--ink-3);
+  }
+  .bottom-nav .n .ico { font-size: 16px; display: block; margin-bottom: 2px; }
+  .bottom-nav .n.active { color: var(--ink-1); font-weight: 600; }
+
+  /* Explanation */
+  .mock-note {
+    background: #f0f2ff; border: 1px solid #d2d8f5; padding: 10px 14px;
+    font-size: 12px; color: #3a4198; margin: 12px 16px 4px; border-radius: 6px;
+    line-height: 1.5;
+  }
+
+  /* Command palette hint */
+  .cmd-hint {
+    padding: 8px 16px; font-size: 11px; color: var(--ink-3);
+    display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--line);
+  }
+  .cmd-hint kbd {
+    background: var(--bg-2); border: 1px solid var(--line);
+    padding: 1px 5px; border-radius: 4px; font-size: 10px; font-family: inherit;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="mock-note">
+    <strong>Modern B · Linear/Notion-tight.</strong> Small type, thin dividers, no decorative shadows, muted grays with one indigo accent. Dense but breathable. Feels like a pro sports-betting operations dashboard.
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="brand"><span class="dot"></span> Real Sports</div>
+    <div class="actions">
+      <div class="icon-btn">🔍</div>
+      <div class="icon-btn">⚙</div>
+    </div>
+  </div>
+
+  <div class="cmd-hint">
+    <span>Quick actions</span>
+    <kbd>⌘K</kbd>
+  </div>
+
+  <!-- Overview -->
+  <div class="overview">
+    <div class="stat">
+      <div class="lbl">Bankroll</div>
+      <div class="val num">$1,247<span style="font-size:14px; color:var(--ink-3); font-weight:500;">.30</span></div>
+      <div class="sub num">+24.7%</div>
+    </div>
+    <div class="stat">
+      <div class="lbl">Today</div>
+      <div class="val num pos">+$47.50</div>
+      <div class="sub num">3 bets</div>
+    </div>
+    <div class="stat">
+      <div class="lbl">Open</div>
+      <div class="val num">3</div>
+      <div class="sub num">$45 at risk</div>
+    </div>
+  </div>
+
+  <!-- Section: Lines -->
+  <div class="section">
+    <h2>Today's slate</h2>
+    <span class="action">Filter</span>
+  </div>
+  <div class="tabs">
+    <div class="tab active">All</div>
+    <div class="tab">MLB</div>
+    <div class="tab">WNBA</div>
+    <div class="tab">MLS</div>
+    <div class="tab">Tennis</div>
+    <div class="tab">UFC</div>
+  </div>
+
+  <div class="game-list">
+    <div class="game">
+      <div class="teams">
+        <div class="team"><span class="logo" style="background:#0c2340;">NYY</span> Yankees</div>
+        <div class="team"><span class="logo" style="background:#bd3039;">BOS</span> Red Sox</div>
+      </div>
+      <div class="meta">7:05<br/>PM</div>
+      <div class="picks">
+        <div class="btn">-150<div class="odds">ML</div></div>
+        <div class="btn">-1.5<div class="odds">+120</div></div>
+        <div class="btn">O 8.5<div class="odds">-108</div></div>
+      </div>
+    </div>
+    <div class="game">
+      <div class="teams">
+        <div class="team"><span class="logo" style="background:#005a9c;">LAD</span> Dodgers</div>
+        <div class="team"><span class="logo" style="background:#2f241d;">SD</span> Padres</div>
+      </div>
+      <div class="meta">10:10<br/>PM</div>
+      <div class="picks">
+        <div class="btn">-135<div class="odds">ML</div></div>
+        <div class="btn">-1.5<div class="odds">+145</div></div>
+        <div class="btn">O 7.5<div class="odds">+100</div></div>
+      </div>
+    </div>
+    <div class="game">
+      <div class="teams">
+        <div class="team"><span class="logo" style="background:#df4601;">BAL</span> Orioles</div>
+        <div class="team"><span class="logo" style="background:#132448;">TB</span> Rays</div>
+      </div>
+      <div class="meta">1:10<br/>PM tmr</div>
+      <div class="picks">
+        <div class="btn">-110<div class="odds">ML</div></div>
+        <div class="btn">-1.5<div class="odds">+150</div></div>
+        <div class="btn">O 8.0<div class="odds">-115</div></div>
+      </div>
+    </div>
+    <div class="game">
+      <div class="teams">
+        <div class="team"><span class="logo" style="background:#552583;">LAS</span> Aces</div>
+        <div class="team"><span class="logo" style="background:#000;">NY</span> Liberty</div>
+      </div>
+      <div class="meta">8:00<br/>PM</div>
+      <div class="picks">
+        <div class="btn">-125<div class="odds">ML</div></div>
+        <div class="btn">-2.5<div class="odds">-105</div></div>
+        <div class="btn">O 165<div class="odds">-110</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bet slip -->
+  <div class="section">
+    <h2>Slip · 2 picks</h2>
+    <span class="action">Clear</span>
+  </div>
+  <div class="slip">
+    <div class="head">
+      <h3>Parlay</h3>
+      <span class="badge">+321</span>
+    </div>
+    <div class="leg">
+      <div>
+        <div class="title">Yankees ML</div>
+        <div class="sub">vs Red Sox · 7:05 PM</div>
+      </div>
+      <div class="odds num">-150</div>
+    </div>
+    <div class="leg">
+      <div>
+        <div class="title">Dodgers -1.5</div>
+        <div class="sub">vs Padres · 10:10 PM</div>
+      </div>
+      <div class="odds num">+145</div>
+    </div>
+    <div class="stake">
+      <span class="lbl">Stake</span>
+      <input class="num" value="25.00" />
+    </div>
+    <div class="footer">
+      <div class="win">To win <strong class="num">$80.25</strong></div>
+      <button class="place">Place</button>
+    </div>
+  </div>
+
+  <!-- Open bets -->
+  <div class="section">
+    <h2>Open bets · 3</h2>
+    <span class="action">Settle all</span>
+  </div>
+  <div class="open-list">
+    <div class="open">
+      <div>
+        <div class="title">Yankees ML</div>
+        <div class="sub">-150 · $25 stake · Book: DraftKings</div>
+        <div class="live"><span class="dot"></span> Live · NYY 4-2 · Top 6</div>
+      </div>
+      <div class="value">
+        <div class="amt num pos">+$16.67</div>
+        <div class="lbl">Winning</div>
+      </div>
+    </div>
+    <div class="open">
+      <div>
+        <div class="title">Dodgers -1.5</div>
+        <div class="sub">+145 · $10 stake · Book: FanDuel</div>
+        <div class="sub" style="color:var(--ink-3);">Starts 10:10 PM</div>
+      </div>
+      <div class="value">
+        <div class="amt num">$14.50</div>
+        <div class="lbl">To win</div>
+      </div>
+    </div>
+    <div class="open">
+      <div>
+        <div class="title">3-leg parlay</div>
+        <div class="sub">BAL ML · WNBA total · Djokovic ML</div>
+        <div class="sub" style="color:var(--amber);">2 of 3 pending</div>
+      </div>
+      <div class="value">
+        <div class="amt num">$51.20</div>
+        <div class="lbl">To win</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="section">
+    <h2>Performance · Last 7 days</h2>
+    <span class="action">Details</span>
+  </div>
+  <div class="kpis">
+    <div class="kpi">
+      <div class="lbl">Net P&L</div>
+      <div class="val num pos">+$127.50</div>
+      <div class="sub">14 bets · +8.7%</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Win rate</div>
+      <div class="val num">64.3%</div>
+      <div class="sub">9W · 5L</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">ROI</div>
+      <div class="val num pos">+18.2%</div>
+      <div class="sub">Life-time</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">CLV</div>
+      <div class="val num pos">+2.3¢</div>
+      <div class="sub">Beat closing 71%</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="bottom-nav">
+  <div class="n active"><span class="ico">◐</span>Lines</div>
+  <div class="n"><span class="ico">✓</span>Slip</div>
+  <div class="n"><span class="ico">⌛</span>Open</div>
+  <div class="n"><span class="ico">▲</span>Stats</div>
+  <div class="n"><span class="ico">☰</span>More</div>
+</div>
+
+</body>
+</html>

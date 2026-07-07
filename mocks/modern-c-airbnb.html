@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Modern C · Airbnb-warm</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-2: #fafaf7;
+    --bg-3: #f5f2ee;
+    --line: #e8e4dd;
+    --ink-1: #191919;
+    --ink-2: #545458;
+    --ink-3: #949296;
+    --accent: #ff385c;
+    --accent-2: #e6194f;
+    --terra: #b34a1e;
+    --green: #058a52;
+    --red: #d1372f;
+    --shadow-sm: 0 1px 2px rgba(70,50,20,0.04), 0 2px 8px rgba(70,50,20,0.06);
+    --shadow-md: 0 4px 12px rgba(70,50,20,0.05), 0 12px 32px rgba(70,50,20,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: "Circular", "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink-1);
+    letter-spacing: -0.005em;
+    padding-bottom: 100px;
+  }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  .container { max-width: 440px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    padding: 18px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header .brand { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+  .header .brand span { color: var(--ink-1); font-weight: 700; }
+  .header .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff9500, #e6194f);
+    color: white; font-weight: 700; font-size: 15px;
+    display: grid; place-items: center;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Bankroll banner — big rounded soft card */
+  .bank-card {
+    margin: 0 24px 24px;
+    background: linear-gradient(135deg, #fff7ed 0%, #ffffff 60%);
+    border: 1px solid #f8dcc0;
+    border-radius: 20px;
+    padding: 22px 24px;
+    box-shadow: var(--shadow-sm);
+  }
+  .bank-card .greeting { font-size: 13px; color: var(--ink-3); font-weight: 500; }
+  .bank-card .name { font-size: 22px; font-weight: 700; margin-top: 2px; letter-spacing: -0.02em; }
+  .bank-card .amount {
+    font-size: 38px; font-weight: 800; margin-top: 14px;
+    letter-spacing: -0.03em;
+  }
+  .bank-card .change {
+    font-size: 14px; color: var(--green); font-weight: 700; margin-top: 4px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .bank-card .change span { color: var(--ink-3); font-weight: 500; margin-left: 4px; }
+
+  /* Sport pills */
+  .sport-pills {
+    padding: 0 24px 4px;
+    display: flex; gap: 10px; overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .sport-pills::-webkit-scrollbar { display: none; }
+  .sport-pill {
+    flex-shrink: 0;
+    padding: 10px 16px 10px 12px;
+    background: white; border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 13px; font-weight: 600; color: var(--ink-1);
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: var(--shadow-sm);
+  }
+  .sport-pill.active {
+    background: var(--ink-1); color: white; border-color: var(--ink-1);
+  }
+  .sport-pill .emoji { font-size: 15px; }
+
+  /* Section title */
+  .section-title {
+    padding: 28px 24px 12px;
+    font-size: 20px; font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .section-title .sub {
+    display: block; font-size: 13px; color: var(--ink-3);
+    font-weight: 500; margin-top: 3px;
+  }
+
+  /* Game card — Airbnb listing style */
+  .game-card {
+    margin: 0 24px 14px;
+    background: white; border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .game-card .game-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px;
+  }
+  .game-card .game-time {
+    font-size: 12px; font-weight: 700; color: var(--terra);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .game-card .game-league {
+    font-size: 11px; font-weight: 600; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    background: var(--bg-3); padding: 3px 8px; border-radius: 6px;
+  }
+  .game-card .matchup {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .game-card .team {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .game-card .team .logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--bg-3); display: grid; place-items: center;
+    font-weight: 800; font-size: 11px; color: white;
+  }
+  .game-card .team .name { font-weight: 700; font-size: 15px; }
+  .game-card .team .record { font-size: 11px; color: var(--ink-3); font-weight: 500; margin-top: 1px; }
+  .game-card .vs {
+    font-size: 12px; color: var(--ink-3); font-weight: 600;
+    padding: 4px 10px; background: var(--bg-2); border-radius: 999px;
+  }
+  .game-card .options {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+  }
+  .game-card .opt {
+    padding: 10px; background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    text-align: center;
+  }
+  .game-card .opt .lbl { font-size: 11px; color: var(--ink-3); font-weight: 600; }
+  .game-card .opt .val { font-size: 14px; font-weight: 700; margin-top: 3px; }
+  .game-card .opt .odds { font-size: 12px; color: var(--ink-2); font-weight: 600; margin-top: 2px; }
+  .game-card .opt.selected {
+    background: linear-gradient(135deg, #fff0e8, #ffe0d0);
+    border-color: var(--accent);
+  }
+  .game-card .opt.selected .odds { color: var(--accent-2); }
+
+  /* Bet slip — floating card */
+  .slip-card {
+    margin: 24px;
+    background: white; border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  .slip-card .slip-header {
+    padding: 20px 22px 14px;
+    background: linear-gradient(135deg, #191919 0%, #2c2c2c 100%);
+    color: white;
+  }
+  .slip-card .slip-header .title {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .slip-card .slip-header h3 { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+  .slip-card .slip-header .badge {
+    background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .slip-card .slip-header .odds {
+    margin-top: 8px; font-size: 32px; font-weight: 800; letter-spacing: -0.03em;
+  }
+  .slip-card .legs { padding: 4px 22px; }
+  .slip-card .leg {
+    padding: 14px 0; border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  }
+  .slip-card .leg:last-child { border-bottom: none; }
+  .slip-card .leg .title { font-size: 14px; font-weight: 700; }
+  .slip-card .leg .sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+  .slip-card .leg .odds-val { font-size: 15px; font-weight: 700; }
+  .slip-card .stake-panel {
+    padding: 18px 22px;
+    background: var(--bg-2);
+    border-top: 1px solid var(--line);
+  }
+  .slip-card .stake-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .slip-card .stake-row .lbl { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+  .slip-card .stake-row .val { font-size: 24px; font-weight: 800; }
+  .slip-card .win-row {
+    display: flex; justify-content: space-between; padding-top: 10px;
+    border-top: 1px dashed var(--line); margin-top: 10px;
+    font-size: 13px;
+  }
+  .slip-card .win-row .val { color: var(--green); font-weight: 800; font-size: 16px; }
+  .slip-card .place-btn {
+    display: block; width: calc(100% - 44px); margin: 16px 22px 22px;
+    padding: 16px; background: var(--accent); color: white;
+    border: none; border-radius: 14px;
+    font-size: 15px; font-weight: 700; font-family: inherit;
+    box-shadow: 0 4px 12px rgba(255,56,92,0.25);
+    letter-spacing: -0.01em;
+  }
+
+  /* Open bet card */
+  .open-card {
+    margin: 0 24px 14px;
+    background: white; border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .open-card .open-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 12px;
+  }
+  .open-card .title { font-size: 16px; font-weight: 700; }
+  .open-card .sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; font-weight: 500; }
+  .open-card .status {
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .open-card .status.live { background: rgba(209,55,47,0.1); color: var(--red); }
+  .open-card .status.live::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--red);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  .open-card .status.pending { background: var(--bg-3); color: var(--ink-2); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .open-card .live-line {
+    margin-top: 14px; padding: 12px 14px;
+    background: var(--bg-2); border-radius: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .open-card .live-line .score { font-size: 14px; font-weight: 700; }
+  .open-card .live-line .cur { text-align: right; }
+  .open-card .live-line .cur .amt { font-size: 18px; font-weight: 800; color: var(--green); }
+  .open-card .live-line .cur .lbl { font-size: 11px; color: var(--ink-3); }
+
+  /* Stats — big feature card */
+  .stat-hero {
+    margin: 0 24px 14px;
+    padding: 22px 24px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+    border: 1px solid #c9ead2;
+    border-radius: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-hero .lbl { font-size: 12px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat-hero .amount { font-size: 34px; font-weight: 800; color: var(--green); margin-top: 6px; letter-spacing: -0.03em; }
+  .stat-hero .breakdown { font-size: 12px; color: var(--ink-2); margin-top: 4px; font-weight: 500; }
+
+  .stat-tiles {
+    padding: 0 24px 20px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .stat-tile {
+    background: white; border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-tile .lbl { font-size: 11px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-tile .val { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .stat-tile .sub { font-size: 11px; color: var(--ink-3); margin-top: 2px; font-weight: 500; }
+
+  /* Tabbar */
+  .tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: white; border-top: 1px solid var(--line);
+    max-width: 440px; margin: 0 auto;
+    padding: 12px 0 26px;
+    display: flex; justify-content: space-around;
+    box-shadow: 0 -2px 12px rgba(70,50,20,0.04);
+  }
+  .tabbar .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--ink-3); }
+  .tabbar .tab.active { color: var(--accent); }
+  .tabbar .tab .ico {
+    width: 30px; height: 30px; border-radius: 12px;
+    background: var(--bg-2); display: grid; place-items: center; font-size: 16px;
+  }
+  .tabbar .tab.active .ico { background: rgba(255,56,92,0.1); }
+  .tabbar .tab .lbl { font-size: 10px; font-weight: 700; }
+
+  /* Explanation */
+  .mock-note {
+    background: #fef8f1; border: 1px solid #f7dcb8; padding: 12px 16px;
+    font-size: 12px; color: #7a4a1a; margin: 20px 24px; border-radius: 12px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="mock-note">
+    <strong>Modern C · Airbnb-warm.</strong> Warm off-whites and terra accents, soft shadows on generously rounded cards, humanist typography with tighter tracking. Feels premium and approachable — like a lifestyle app, not a spreadsheet.
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="brand">Real<span>Sports</span></div>
+    <div class="avatar">J</div>
+  </div>
+
+  <!-- Bankroll card -->
+  <div class="bank-card">
+    <div class="greeting">Welcome back,</div>
+    <div class="name">Jorge</div>
+    <div class="amount num">$1,247.30</div>
+    <div class="change">↑ $247.30 <span>this month</span></div>
+  </div>
+
+  <!-- Sport pills -->
+  <div class="sport-pills">
+    <div class="sport-pill active"><span class="emoji">🎯</span>All</div>
+    <div class="sport-pill"><span class="emoji">⚾</span>MLB</div>
+    <div class="sport-pill"><span class="emoji">🏀</span>WNBA</div>
+    <div class="sport-pill"><span class="emoji">⚽</span>MLS</div>
+    <div class="sport-pill"><span class="emoji">🎾</span>Tennis</div>
+    <div class="sport-pill"><span class="emoji">🥊</span>UFC</div>
+  </div>
+
+  <!-- Games -->
+  <div class="section-title">Tonight's games
+    <span class="sub">6 games starting soon</span>
+  </div>
+
+  <div class="game-card">
+    <div class="game-head">
+      <div class="game-time">Tonight · 7:05 PM</div>
+      <div class="game-league">MLB</div>
+    </div>
+    <div class="matchup">
+      <div class="team">
+        <div class="logo" style="background:#0c2340;">NYY</div>
+        <div>
+          <div class="name">Yankees</div>
+          <div class="record">42-28 · 26-9 away</div>
+        </div>
+      </div>
+      <div class="vs">at</div>
+      <div class="team">
+        <div>
+          <div class="name" style="text-align:right;">Red Sox</div>
+          <div class="record" style="text-align:right;">38-32 · 22-13 home</div>
+        </div>
+        <div class="logo" style="background:#bd3039;">BOS</div>
+      </div>
+    </div>
+    <div class="options">
+      <div class="opt selected">
+        <div class="lbl">Moneyline</div>
+        <div class="val">NYY</div>
+        <div class="odds num">-150</div>
+      </div>
+      <div class="opt">
+        <div class="lbl">Spread</div>
+        <div class="val">-1.5</div>
+        <div class="odds num">+120</div>
+      </div>
+      <div class="opt">
+        <div class="lbl">Total</div>
+        <div class="val">O 8.5</div>
+        <div class="odds num">-108</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-card">
+    <div class="game-head">
+      <div class="game-time">Tonight · 10:10 PM</div>
+      <div class="game-league">MLB</div>
+    </div>
+    <div class="matchup">
+      <div class="team">
+        <div class="logo" style="background:#005a9c;">LAD</div>
+        <div>
+          <div class="name">Dodgers</div>
+          <div class="record">45-25 · 24-11 away</div>
+        </div>
+      </div>
+      <div class="vs">at</div>
+      <div class="team">
+        <div>
+          <div class="name" style="text-align:right;">Padres</div>
+          <div class="record" style="text-align:right;">37-33 · 20-15 home</div>
+        </div>
+        <div class="logo" style="background:#2f241d;">SD</div>
+      </div>
+    </div>
+    <div class="options">
+      <div class="opt">
+        <div class="lbl">Moneyline</div>
+        <div class="val">LAD</div>
+        <div class="odds num">-135</div>
+      </div>
+      <div class="opt selected">
+        <div class="lbl">Spread</div>
+        <div class="val">-1.5</div>
+        <div class="odds num">+145</div>
+      </div>
+      <div class="opt">
+        <div class="lbl">Total</div>
+        <div class="val">O 7.5</div>
+        <div class="odds num">+100</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slip -->
+  <div class="section-title">Your slip
+    <span class="sub">2 picks · $25 stake</span>
+  </div>
+
+  <div class="slip-card">
+    <div class="slip-header">
+      <div class="title">
+        <h3>Parlay</h3>
+        <span class="badge">2 legs</span>
+      </div>
+      <div class="odds num">+321</div>
+    </div>
+    <div class="legs">
+      <div class="leg">
+        <div>
+          <div class="title">Yankees ML</div>
+          <div class="sub">vs Red Sox · 7:05 PM</div>
+        </div>
+        <div class="odds-val num">-150</div>
+      </div>
+      <div class="leg">
+        <div>
+          <div class="title">Dodgers -1.5</div>
+          <div class="sub">vs Padres · 10:10 PM</div>
+        </div>
+        <div class="odds-val num">+145</div>
+      </div>
+    </div>
+    <div class="stake-panel">
+      <div class="stake-row">
+        <span class="lbl">Bet amount</span>
+        <span class="val num">$25</span>
+      </div>
+      <div class="win-row">
+        <span>To win</span>
+        <span class="val num">$80.25</span>
+      </div>
+    </div>
+    <button class="place-btn">Place bet · $25</button>
+  </div>
+
+  <!-- Open bets -->
+  <div class="section-title">Live now
+    <span class="sub">3 bets in play</span>
+  </div>
+
+  <div class="open-card">
+    <div class="open-head">
+      <div>
+        <div class="title">Yankees ML</div>
+        <div class="sub">-150 · $25 stake · Placed 6:45 PM</div>
+      </div>
+      <div class="status live">Live</div>
+    </div>
+    <div class="live-line">
+      <div>
+        <div class="score">NYY 4 · BOS 2</div>
+        <div style="font-size:11px; color:var(--ink-3); margin-top:2px;">Top 6 · 2 outs</div>
+      </div>
+      <div class="cur">
+        <div class="amt num">+$16.67</div>
+        <div class="lbl">Cash out</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="open-card">
+    <div class="open-head">
+      <div>
+        <div class="title">Dodgers -1.5</div>
+        <div class="sub">+145 · $10 stake · Starts 10:10 PM</div>
+      </div>
+      <div class="status pending">Pending</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="section-title">Your week
+    <span class="sub">Last 7 days · 14 bets</span>
+  </div>
+
+  <div class="stat-hero">
+    <div class="lbl">Net this week</div>
+    <div class="amount num">+$127.50</div>
+    <div class="breakdown">9 wins · 5 losses · 64.3% win rate</div>
+  </div>
+
+  <div class="stat-tiles">
+    <div class="stat-tile">
+      <div class="lbl">ROI</div>
+      <div class="val num" style="color: var(--green);">+18.2%</div>
+      <div class="sub">Life-time</div>
+    </div>
+    <div class="stat-tile">
+      <div class="lbl">Score</div>
+      <div class="val num">72</div>
+      <div class="sub">Top 15% this month</div>
+    </div>
+    <div class="stat-tile">
+      <div class="lbl">Streak</div>
+      <div class="val num" style="color: var(--terra);">🔥 5</div>
+      <div class="sub">Days of discipline</div>
+    </div>
+    <div class="stat-tile">
+      <div class="lbl">Best sport</div>
+      <div class="val" style="font-size:16px;">MLB</div>
+      <div class="sub">+$89 · 7-3 record</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tabbar -->
+<div class="tabbar">
+  <div class="tab active"><div class="ico">◐</div><div class="lbl">Home</div></div>
+  <div class="tab"><div class="ico">✓</div><div class="lbl">Bets</div></div>
+  <div class="tab"><div class="ico">▲</div><div class="lbl">Stats</div></div>
+  <div class="tab"><div class="ico">☰</div><div class="lbl">More</div></div>
+</div>
+
+</body>
+</html>

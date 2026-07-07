@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Modern A · Robinhood-clean</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-2: #fafafa;
+    --line: #ececec;
+    --ink-1: #0a0a0a;
+    --ink-2: #4d4d52;
+    --ink-3: #9c9ca4;
+    --accent: #00c805;
+    --accent-2: #008f04;
+    --red: #ff3b3b;
+    --shadow: 0 1px 2px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink-1);
+    letter-spacing: -0.011em;
+    padding-bottom: 100px;
+  }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; letter-spacing: -0.02em; }
+  .container { max-width: 440px; margin: 0 auto; }
+
+  /* Header */
+  .header { padding: 18px 20px 8px; display: flex; align-items: center; justify-content: space-between; }
+  .header .brand { font-size: 15px; font-weight: 700; }
+  .header .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff9500, #ff5c00);
+    color: white; font-weight: 800; font-size: 14px;
+    display: grid; place-items: center;
+  }
+
+  /* Hero — the "big number" that leads */
+  .hero {
+    padding: 28px 20px 32px;
+  }
+  .hero .label { font-size: 12px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .hero .amount {
+    font-size: 52px; font-weight: 700; margin-top: 8px; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui;
+  }
+  .hero .change {
+    margin-top: 10px; font-size: 15px; font-weight: 600; color: var(--accent-2);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .hero .change .arrow { font-size: 12px; }
+  .hero .subtle { font-size: 13px; color: var(--ink-3); margin-left: 6px; font-weight: 500; }
+
+  /* Sparkline */
+  .spark {
+    display: block; width: 100%; height: 60px; margin-top: 20px;
+  }
+
+  /* Time chips */
+  .time-chips {
+    display: flex; gap: 4px; padding: 12px 20px 20px; overflow-x: auto;
+  }
+  .time-chips button {
+    background: transparent; border: none; padding: 6px 12px;
+    font-size: 13px; font-weight: 700; color: var(--ink-3);
+    border-radius: 999px; cursor: pointer;
+  }
+  .time-chips button.active { background: var(--ink-1); color: white; }
+
+  /* Section header */
+  .section-head {
+    padding: 24px 20px 8px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .section-head h2 { font-size: 16px; font-weight: 700; }
+  .section-head .see-all { font-size: 13px; color: var(--ink-3); font-weight: 600; }
+
+  /* Watchlist / Sport chips */
+  .sport-scroll {
+    display: flex; gap: 8px; padding: 0 20px 12px; overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .sport-scroll::-webkit-scrollbar { display: none; }
+  .sport-chip {
+    flex-shrink: 0; padding: 8px 14px;
+    background: transparent; border: 1px solid var(--line);
+    border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--ink-2);
+  }
+  .sport-chip.active { background: var(--ink-1); color: white; border-color: var(--ink-1); }
+
+  /* Game row — the star of the Lines page */
+  .game-list { padding: 0 20px; }
+  .game-row {
+    display: grid; grid-template-columns: auto 1fr auto;
+    align-items: center; gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .game-row:last-child { border-bottom: none; }
+  .game-row .logos { display: flex; }
+  .game-row .logos .logo {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--bg-2); border: 2px solid white;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 11px;
+  }
+  .game-row .logos .logo:nth-child(2) { margin-left: -10px; }
+  .game-row .info .teams { font-size: 15px; font-weight: 600; }
+  .game-row .info .meta { font-size: 12px; color: var(--ink-3); margin-top: 2px; font-weight: 500; }
+  .game-row .price {
+    text-align: right; font-size: 16px; font-weight: 700;
+  }
+  .game-row .price .odds { font-weight: 700; }
+  .game-row .price .odds.pos { color: var(--accent-2); }
+
+  /* Buy/Sell style pills for spread + total */
+  .pick-pills {
+    display: flex; gap: 8px; padding: 0 20px 8px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .pick-pills::-webkit-scrollbar { display: none; }
+  .pill {
+    flex-shrink: 0;
+    background: white; border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px 14px;
+    min-width: 100px;
+  }
+  .pill .label { font-size: 11px; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .pill .val { font-size: 15px; font-weight: 700; margin-top: 2px; }
+  .pill .price { font-size: 13px; color: var(--ink-2); margin-top: 2px; font-weight: 600; }
+
+  /* Panel divider */
+  .divider {
+    height: 8px; background: var(--bg-2); margin-top: 28px;
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }
+
+  /* Bet slip peek */
+  .slip {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin: 20px;
+  }
+  .slip .slip-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .slip .slip-head h3 { font-size: 14px; font-weight: 700; }
+  .slip .slip-head .count {
+    background: var(--ink-1); color: white; font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .slip .leg {
+    padding: 10px 0; border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .slip .leg .desc { font-size: 13px; font-weight: 600; }
+  .slip .leg .sub { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .slip .leg .odds { font-size: 15px; font-weight: 700; }
+  .slip .stake-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 14px 0 4px;
+  }
+  .slip .stake-input {
+    flex: 1; font-size: 22px; font-weight: 700; border: none; outline: none;
+    text-align: right; font-family: inherit;
+  }
+  .slip .stake-input::placeholder { color: var(--ink-3); }
+  .slip .stake-label { font-size: 13px; font-weight: 600; color: var(--ink-3); }
+  .slip .to-win {
+    font-size: 13px; color: var(--ink-3); font-weight: 500;
+    display: flex; justify-content: space-between; padding: 8px 0 16px;
+    border-bottom: 1px solid var(--line); margin-bottom: 16px;
+  }
+  .slip .to-win .val { color: var(--accent-2); font-weight: 700; }
+  .slip .place-btn {
+    width: 100%; padding: 15px; background: var(--ink-1); color: white;
+    border: none; border-radius: 999px; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+    letter-spacing: -0.01em;
+  }
+
+  /* Open bets */
+  .open-bet {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--line);
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 12px; align-items: start;
+  }
+  .open-bet .bet-title { font-size: 15px; font-weight: 700; }
+  .open-bet .bet-sub { font-size: 12px; color: var(--ink-3); margin-top: 3px; font-weight: 500; }
+  .open-bet .bet-live { font-size: 11px; color: var(--red); font-weight: 700; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .open-bet .bet-live::before { content: "●"; margin-right: 4px; animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .open-bet .bet-value { text-align: right; }
+  .open-bet .bet-value .amount { font-size: 17px; font-weight: 700; }
+  .open-bet .bet-value .amount.pos { color: var(--accent-2); }
+  .open-bet .bet-value .amount.neg { color: var(--red); }
+  .open-bet .bet-value .sub { font-size: 11px; color: var(--ink-3); margin-top: 2px; font-weight: 500; }
+
+  /* Stats card */
+  .stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    padding: 0 20px;
+  }
+  .stat-card {
+    background: var(--bg-2); border: 1px solid var(--line);
+    border-radius: 16px; padding: 14px 16px;
+  }
+  .stat-card .lbl { font-size: 11px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat-card .val { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .stat-card .val.pos { color: var(--accent-2); }
+  .stat-card .val.neg { color: var(--red); }
+  .stat-card .trend { font-size: 11px; color: var(--ink-3); margin-top: 2px; font-weight: 500; }
+
+  /* Tab bar */
+  .tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,0.94); backdrop-filter: blur(20px);
+    border-top: 1px solid var(--line);
+    padding: 10px 0 22px;
+    display: flex; justify-content: space-around;
+    max-width: 440px; margin: 0 auto;
+  }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--ink-3); }
+  .tab.active { color: var(--ink-1); }
+  .tab .ico { font-size: 20px; }
+  .tab .lbl { font-size: 10px; font-weight: 600; }
+
+  /* Explanation panel */
+  .mock-note {
+    background: #fff8e6; border: 1px solid #ffe28a; padding: 12px 16px;
+    font-size: 12px; color: #7a5b00; margin: 20px; border-radius: 12px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="mock-note">
+    <strong>Modern A · Robinhood-clean.</strong> Massive numbers lead, one green accent, monochrome everywhere else. Feels like a finance app. Notice how the eye lands on the bankroll → sport chip → game odds without any visual noise fighting it.
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="brand">Real Sports</div>
+    <div class="avatar">J</div>
+  </div>
+
+  <!-- HERO — the big number -->
+  <div class="hero">
+    <div class="label">Bankroll</div>
+    <div class="amount num">$1,247<span style="font-size:26px; color:var(--ink-3); font-weight:600;">.30</span></div>
+    <div>
+      <span class="change"><span class="arrow">▲</span>$247.30 (24.7%)</span>
+      <span class="subtle">all time</span>
+    </div>
+    <svg class="spark" viewBox="0 0 400 60" preserveAspectRatio="none">
+      <path d="M0,45 L40,42 L80,38 L120,40 L160,32 L200,28 L240,22 L280,18 L320,15 L360,10 L400,8" stroke="var(--accent)" stroke-width="2" fill="none"/>
+      <path d="M0,45 L40,42 L80,38 L120,40 L160,32 L200,28 L240,22 L280,18 L320,15 L360,10 L400,8 L400,60 L0,60 Z" fill="var(--accent)" opacity="0.06"/>
+    </svg>
+    <div class="time-chips">
+      <button>1D</button>
+      <button>1W</button>
+      <button class="active">1M</button>
+      <button>3M</button>
+      <button>YTD</button>
+      <button>All</button>
+    </div>
+  </div>
+
+  <!-- LINES SECTION -->
+  <div class="section-head">
+    <h2>Today's games</h2>
+    <span class="see-all">See all</span>
+  </div>
+  <div class="sport-scroll">
+    <button class="sport-chip active">All</button>
+    <button class="sport-chip">MLB</button>
+    <button class="sport-chip">WNBA</button>
+    <button class="sport-chip">MLS</button>
+    <button class="sport-chip">Tennis</button>
+    <button class="sport-chip">UFC</button>
+  </div>
+
+  <!-- Featured game — big treatment -->
+  <div class="game-list">
+    <div class="game-row">
+      <div class="logos">
+        <div class="logo" style="background:#0c2340; color:white;">NYY</div>
+        <div class="logo" style="background:#bd3039; color:white;">BOS</div>
+      </div>
+      <div class="info">
+        <div class="teams">Yankees vs Red Sox</div>
+        <div class="meta">Tonight 7:05 PM · Fenway</div>
+      </div>
+      <div class="price">
+        <div class="num">-150</div>
+        <div class="odds num pos" style="font-size:13px; margin-top:2px;">+130</div>
+      </div>
+    </div>
+    <div class="game-row">
+      <div class="logos">
+        <div class="logo" style="background:#005a9c; color:white;">LAD</div>
+        <div class="logo" style="background:#2f241d; color:white;">SD</div>
+      </div>
+      <div class="info">
+        <div class="teams">Dodgers vs Padres</div>
+        <div class="meta">Tonight 10:10 PM · Petco</div>
+      </div>
+      <div class="price">
+        <div class="num">-135</div>
+        <div class="odds num pos" style="font-size:13px; margin-top:2px;">+115</div>
+      </div>
+    </div>
+    <div class="game-row">
+      <div class="logos">
+        <div class="logo" style="background:#df4601; color:white;">BAL</div>
+        <div class="logo" style="background:#132448; color:white;">TB</div>
+      </div>
+      <div class="info">
+        <div class="teams">Orioles vs Rays</div>
+        <div class="meta">Tomorrow 1:10 PM · Tropicana</div>
+      </div>
+      <div class="price">
+        <div class="num">-110</div>
+        <div class="odds num pos" style="font-size:13px; margin-top:2px;">-110</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <h2>Spread & totals</h2>
+    <span class="see-all">More</span>
+  </div>
+  <div class="pick-pills">
+    <div class="pill">
+      <div class="label">NYY spread</div>
+      <div class="val">-1.5</div>
+      <div class="price num">+120</div>
+    </div>
+    <div class="pill">
+      <div class="label">Total</div>
+      <div class="val">Over 8.5</div>
+      <div class="price num">-108</div>
+    </div>
+    <div class="pill">
+      <div class="label">LAD spread</div>
+      <div class="val">-1.5</div>
+      <div class="price num">+145</div>
+    </div>
+    <div class="pill">
+      <div class="label">NRFI</div>
+      <div class="val">Yankees</div>
+      <div class="price num">+140</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- BET SLIP -->
+  <div class="section-head" style="padding-top:20px;">
+    <h2>Your slip</h2>
+    <span class="see-all">Clear</span>
+  </div>
+  <div class="slip">
+    <div class="slip-head">
+      <h3>2 picks</h3>
+      <span class="count">Parlay</span>
+    </div>
+    <div class="leg">
+      <div>
+        <div class="desc">Yankees ML</div>
+        <div class="sub">vs Red Sox · 7:05 PM</div>
+      </div>
+      <div class="odds num">-150</div>
+    </div>
+    <div class="leg" style="border-bottom:none;">
+      <div>
+        <div class="desc">Dodgers -1.5</div>
+        <div class="sub">vs Padres · 10:10 PM</div>
+      </div>
+      <div class="odds num">+145</div>
+    </div>
+
+    <div class="stake-row">
+      <span class="stake-label">Bet</span>
+      <input class="stake-input num" value="$25" />
+    </div>
+    <div class="to-win">
+      <span>To win</span>
+      <span class="val num">$63.75</span>
+    </div>
+    <button class="place-btn">Place bet</button>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- OPEN BETS -->
+  <div class="section-head">
+    <h2>Live now</h2>
+    <span class="see-all">3 open</span>
+  </div>
+  <div>
+    <div class="open-bet">
+      <div>
+        <div class="bet-title">Yankees ML</div>
+        <div class="bet-sub">vs Red Sox · -150 · $25</div>
+        <div class="bet-live">Live · Yankees 4-2, Top 6</div>
+      </div>
+      <div class="bet-value">
+        <div class="amount num pos">+$16.67</div>
+        <div class="sub">Winning</div>
+      </div>
+    </div>
+    <div class="open-bet">
+      <div>
+        <div class="bet-title">Dodgers -1.5</div>
+        <div class="bet-sub">vs Padres · +145 · $10</div>
+        <div class="bet-live" style="color:var(--ink-3);">Starts 10:10 PM</div>
+      </div>
+      <div class="bet-value">
+        <div class="amount num">$14.50</div>
+        <div class="sub">To win</div>
+      </div>
+    </div>
+    <div class="open-bet">
+      <div>
+        <div class="bet-title">3-leg parlay</div>
+        <div class="bet-sub">BAL ML, WNBA total, Djokovic ML · +512 · $10</div>
+        <div class="bet-live" style="color:var(--ink-3);">2 of 3 legs pending</div>
+      </div>
+      <div class="bet-value">
+        <div class="amount num">$51.20</div>
+        <div class="sub">To win</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- STATS -->
+  <div class="section-head">
+    <h2>Performance</h2>
+    <span class="see-all">This week</span>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="lbl">This week</div>
+      <div class="val num pos">+$127</div>
+      <div class="trend">14 bets · 9W-5L</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Win rate</div>
+      <div class="val num">64.3%</div>
+      <div class="trend">Above 52.4% breakeven</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">ROI</div>
+      <div class="val num pos">+18.2%</div>
+      <div class="trend">Life-time</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Score</div>
+      <div class="val num">72</div>
+      <div class="trend">CLV · discipline · risk</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tabbar -->
+<div class="tabbar">
+  <div class="tab active"><div class="ico">◐</div><div class="lbl">Home</div></div>
+  <div class="tab"><div class="ico">✓</div><div class="lbl">Bets</div></div>
+  <div class="tab"><div class="ico">▲</div><div class="lbl">Stats</div></div>
+  <div class="tab"><div class="ico">☰</div><div class="lbl">More</div></div>
+</div>
+
+</body>
+</html>
