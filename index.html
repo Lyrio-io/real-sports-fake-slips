@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- BUILD: 2026-07-07T04:55Z -->
+<!-- BUILD: 2026-07-07T05:31Z -->
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -268,17 +268,22 @@
   .gc-summary-pair {
     display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 4px;
-    background: #fafafa;
-    border: 1px solid #e4e4e7;
-    border-radius: 12px;
-    padding: 10px 6px;
+    background: #fbf9f4;                        /* warm cream, softer than pure gray */
+    border: 1px solid #ece8e0;
+    border-radius: 14px;                        /* rounder */
+    padding: 11px 6px;
     min-height: 78px;
-    transition: border-color 140ms ease, transform 140ms ease;
+    transition: border-color 160ms ease, transform 160ms ease, box-shadow 200ms ease, background 160ms ease;
     cursor: pointer;
     position: relative;
     overflow: hidden;
   }
-  .gc-summary-pair:hover { border-color: #00b86b; transform: translateY(-1px); }
+  .gc-summary-pair:hover {
+    background: #ffffff;
+    border-color: #34d399;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px -4px rgba(16, 185, 129, 0.22);
+  }
   .gc-summary-pair:active { transform: scale(0.97); }
   .gc-summary-pair[data-clickable="true"]::after {
     content: "↕"; position: absolute; top: 4px; right: 6px;
@@ -864,16 +869,27 @@
   .bottom-nav-btn[data-active="true"]::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 32px; height: 3px; background: #00b86b; border-radius: 0 0 4px 4px; }
   .bottom-nav-btn:active .bn-icon { transform: scale(0.92); }
 
-  /* GAME CARD — bubble style */
+  /* GAME CARD — warmer, softer, friendlier */
   .game-card {
     background: #ffffff;
-    border: 1px solid #e4e4e7;
-    border-radius: 18px;
+    border: 1px solid #ece8e0;                   /* warm off-white border, less clinical than pure gray */
+    border-radius: 22px;                          /* rounder, softer */
     overflow: hidden;
-    transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
-    box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 4px 14px -6px rgba(15,23,42,0.05);
+    transition: border-color 200ms ease, transform 200ms ease, box-shadow 220ms ease;
+    /* Softer, warmer shadow — lifts card off the page without feeling glassy */
+    box-shadow:
+      0 1px 2px rgba(75, 55, 30, 0.03),
+      0 4px 16px -8px rgba(75, 55, 30, 0.08),
+      0 12px 32px -14px rgba(75, 55, 30, 0.06);
   }
-  .game-card:hover { border-color: #d4d4d8; transform: translateY(-1px); box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 8px 22px -8px rgba(15,23,42,0.10); }
+  .game-card:hover {
+    border-color: #dfd8ca;
+    transform: translateY(-2px);
+    box-shadow:
+      0 1px 2px rgba(75, 55, 30, 0.04),
+      0 10px 28px -10px rgba(75, 55, 30, 0.14),
+      0 20px 48px -20px rgba(75, 55, 30, 0.10);
+  }
 
   /* Live ESPN scoreboard slot — appears under game-card header when game is in progress */
   .gc-live-slot { margin: 0 14px 10px; padding: 10px 12px; background: linear-gradient(180deg, #f4f4f5 0%, #fafafa 100%); border: 1px solid #e4e4e7; border-left: 3px solid #ef4444; border-radius: 12px; font-size: 12px; }
@@ -896,15 +912,42 @@
   .vig-rows { display: flex; flex-wrap: wrap; gap: 4px 14px; }
   .vig-cell { display: inline-flex; align-items: center; gap: 0; line-height: 1.4; }
 
-  /* HERO */
+  /* HERO — warmer welcome card */
   .hero-card {
     background:
-      radial-gradient(ellipse at top right, rgba(0,184,107,0.1), transparent 50%),
-      radial-gradient(ellipse at bottom left, rgba(167,139,250,0.1), transparent 50%),
-      linear-gradient(180deg, #f4f4f5 0%, #fafafa 100%);
-    border: 1.5px solid #e4e4e7;
+      radial-gradient(ellipse at top right, rgba(52, 211, 153, 0.14), transparent 55%),
+      radial-gradient(ellipse at bottom left, rgba(251, 191, 36, 0.10), transparent 55%),
+      linear-gradient(160deg, #fffaf3 0%, #fef8ee 45%, #ffffff 100%);
+    border: 1.5px solid #f2e6d1;
     border-radius: 28px;
+    box-shadow:
+      0 1px 2px rgba(75, 55, 30, 0.04),
+      0 8px 28px -12px rgba(75, 55, 30, 0.10);
   }
+  .hero-card #hero-name { font-weight: 800; }
+  .hero-card .num { letter-spacing: -0.02em; }
+  #refresh-btn {
+    /* Softer green with a subtle warm glow */
+    background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+    color: #ffffff;
+    border-radius: 14px;
+    padding: 12px 20px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    box-shadow:
+      0 4px 12px -2px rgba(16, 185, 129, 0.35),
+      0 1px 2px rgba(16, 185, 129, 0.18),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+    transition: transform 140ms ease, box-shadow 200ms ease;
+  }
+  #refresh-btn:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 8px 22px -4px rgba(16, 185, 129, 0.45),
+      0 1px 2px rgba(16, 185, 129, 0.18),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  #refresh-btn:active { transform: translateY(0); }
 
   /* PROFILE PICKER */
   .picker-bg {
@@ -932,24 +975,32 @@
 
   /* CHIPS — bubble pills */
   .chip {
-    padding: 8px 16px;
+    padding: 9px 18px;
     border-radius: 999px;
     background: #ffffff;
-    border: 1px solid #e4e4e7;
-    color: #52525b;
+    border: 1px solid #ece8e0;
+    color: #57544c;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: -0.005em;
     white-space: nowrap;
-    transition: all 140ms ease;
+    transition: transform 140ms ease, box-shadow 200ms ease, border-color 200ms ease, background 200ms ease, color 200ms ease;
     cursor: pointer;
+    /* Soft warm shadow so chips feel like they float slightly */
+    box-shadow: 0 1px 2px rgba(75, 55, 30, 0.05);
   }
-  .chip:hover { border-color: #d4d4d8; color: #0a0a0a; }
-  .chip:active { transform: scale(0.96); }
+  .chip:hover {
+    border-color: #dfd8ca;
+    color: #1a1815;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px -2px rgba(75, 55, 30, 0.12);
+  }
+  .chip:active { transform: translateY(0) scale(0.97); }
   .chip[data-active="true"] {
-    background: #0a0a0a;
+    background: linear-gradient(180deg, #1a1815 0%, #06070a 100%);
     color: #ffffff;
-    border-color: #0a0a0a;
-    box-shadow: none;
+    border-color: transparent;
+    box-shadow: 0 6px 14px -4px rgba(6, 7, 10, 0.35), 0 1px 2px rgba(6, 7, 10, 0.20);
   }
 
   /* MULTIPLIER GLOW */
@@ -1872,7 +1923,7 @@
           </div>
 
           <!-- Always-visible build stamp so we can confirm cache state in any view -->
-          <div class="text-[10px] text-zinc-400 font-mono mb-2">App build: 2026-07-07T04:55Z</div>
+          <div class="text-[10px] text-zinc-400 font-mono mb-2">App build: 2026-07-07T05:31Z</div>
 
           <div id="morning-ritual"></div>
 
@@ -3386,7 +3437,7 @@ const fmtAmerican = a => (a > 0 ? '+' : '') + a;
 const profit = (s, d) => s * (d - 1);
 const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
 const nowISO = () => new Date().toISOString();
-const APP_BUILD = '2026-07-07T04:55Z';
+const APP_BUILD = '2026-07-07T05:31Z';
 const escapeHtml = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Turn machine tags like "high_vig" into readable "High vig"
 const humanize = s => String(s == null ? '' : s).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
