@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Real Sports Fake Slips — sandbox sports betting app",
   "scripts": {
-    "start": "serve -s . -l ${PORT:-8080}"
+    "start": "serve . -l ${PORT:-8080}"
   },
   "dependencies": {
     "serve": "^14.2.4"
