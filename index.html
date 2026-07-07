@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- BUILD: 2026-07-07T05:40Z -->
+<!-- BUILD: 2026-07-07T17:53Z -->
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -1923,7 +1923,7 @@
           </div>
 
           <!-- Always-visible build stamp so we can confirm cache state in any view -->
-          <div class="text-[10px] text-zinc-400 font-mono mb-2">App build: 2026-07-07T05:40Z</div>
+          <div class="text-[10px] text-zinc-400 font-mono mb-2">App build: 2026-07-07T17:53Z</div>
 
           <div id="morning-ritual"></div>
 
@@ -3437,7 +3437,7 @@ const fmtAmerican = a => (a > 0 ? '+' : '') + a;
 const profit = (s, d) => s * (d - 1);
 const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
 const nowISO = () => new Date().toISOString();
-const APP_BUILD = '2026-07-07T05:40Z';
+const APP_BUILD = '2026-07-07T17:53Z';
 const escapeHtml = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Turn machine tags like "high_vig" into readable "High vig"
 const humanize = s => String(s == null ? '' : s).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
@@ -4504,8 +4504,24 @@ function renderLines() {
   for (const sportKey of sportsToShow) {
     const entry = state.cache[sportKey]; if (!entry) continue;
     const sportShort = sportAbbr(sportKey);
-    const games = (entry.games || []).filter(g => !search ||
-      (g.home_team||'').toLowerCase().includes(search) || (g.away_team||'').toLowerCase().includes(search));
+    // Hide games that ended more than 4h ago (safe upper bound for a slow MLB
+    // game). The Odds API returns a rolling window that includes yesterday,
+    // so without this filter Jorge sees "yesterday's games" mixed with today's.
+    const now = Date.now();
+    const CUTOFF_MS = 4 * 3600 * 1000;
+    const games = (entry.games || [])
+      .filter(g => {
+        if (search && !((g.home_team||'').toLowerCase().includes(search) || (g.away_team||'').toLowerCase().includes(search))) return false;
+        if (!g.commence_time) return true;                 // no time -> keep
+        const t = new Date(g.commence_time).getTime();
+        if (!Number.isFinite(t)) return true;              // bad time -> keep, don't hide
+        return (now - t) < CUTOFF_MS;                      // hide anything older than the cutoff
+      })
+      .sort((a, b) => {                                    // earliest upcoming first
+        const ta = new Date(a.commence_time || 0).getTime();
+        const tb = new Date(b.commence_time || 0).getTime();
+        return ta - tb;
+      });
     if (!games.length) continue;
     html += `<section>
       <div class="flex items-center justify-between mb-3">
