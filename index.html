@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- BUILD: 2026-07-07T05:31Z -->
+<!-- BUILD: 2026-07-07T05:40Z -->
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -1923,7 +1923,7 @@
           </div>
 
           <!-- Always-visible build stamp so we can confirm cache state in any view -->
-          <div class="text-[10px] text-zinc-400 font-mono mb-2">App build: 2026-07-07T05:31Z</div>
+          <div class="text-[10px] text-zinc-400 font-mono mb-2">App build: 2026-07-07T05:40Z</div>
 
           <div id="morning-ritual"></div>
 
@@ -3437,7 +3437,7 @@ const fmtAmerican = a => (a > 0 ? '+' : '') + a;
 const profit = (s, d) => s * (d - 1);
 const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
 const nowISO = () => new Date().toISOString();
-const APP_BUILD = '2026-07-07T05:31Z';
+const APP_BUILD = '2026-07-07T05:40Z';
 const escapeHtml = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Turn machine tags like "high_vig" into readable "High vig"
 const humanize = s => String(s == null ? '' : s).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
@@ -5026,10 +5026,15 @@ function _espnTeamRecord(sportKey, teamName, type) {
   return null;
 }
 // Starting pitchers (MLB only) — returns array of { side, name, era, record, score }
-function _espnProbables(sportKey, awayName, homeName) {
+function _espnProbables(sportKey, awayName, homeName, commenceTime) {
   if (sportKey !== 'baseball_mlb') return null;
   const cache = _liveCache?.[sportKey]?.data; if (!cache) return null;
   const events = cache.events || [];
+  const targetMs = commenceTime ? new Date(commenceTime).getTime() : NaN;
+  const WINDOW = 12 * 3600 * 1000;
+  // Pick the event whose date is closest to the scheduled start; if no date
+  // provided, fall through to legacy first-match behavior.
+  let selected = null; let selectedDelta = Infinity;
   for (const ev of events) {
     const comp = ev.competitions?.[0]; if (!comp) continue;
     let matched = false;
@@ -5038,6 +5043,20 @@ function _espnProbables(sportKey, awayName, homeName) {
       if (t.displayName === awayName || t.displayName === homeName || t.name === awayName || t.name === homeName) { matched = true; break; }
     }
     if (!matched) continue;
+    if (Number.isFinite(targetMs)) {
+      const evMs = new Date(ev.date || comp.date || 0).getTime();
+      if (!Number.isFinite(evMs)) continue;
+      const delta = Math.abs(evMs - targetMs);
+      if (delta > WINDOW) continue;
+      if (delta < selectedDelta) { selectedDelta = delta; selected = ev; }
+      continue;
+    }
+    // Legacy — no date passed; keep old behavior of grabbing the first match
+    selected = ev; break;
+  }
+  const events2 = selected ? [selected] : [];
+  for (const ev of events2) {
+    const comp = ev.competitions?.[0]; if (!comp) continue;
     const out = [];
     for (const c of comp.competitors || []) {
       const t = c.team || {};
@@ -5360,13 +5379,13 @@ function renderGameCard(g, sportKey, marketFilter) {
     <div class="gc-meta-strip">
       <div class="gc-meta-left">
         <span class="gc-league">${escapeHtml(sportTitle)}</span>
-        ${isLive ? `<span class="gc-live-inline live-slot gc-live-inline-slot" data-sport-key="${escapeHtml(sportKey || '')}" data-away="${escapeHtml(away)}" data-home="${escapeHtml(home)}"><span class="pulse-dot"></span> LIVE</span>` : ''}
+        ${isLive ? `<span class="gc-live-inline live-slot gc-live-inline-slot" data-sport-key="${escapeHtml(sportKey || '')}" data-away="${escapeHtml(away)}" data-home="${escapeHtml(home)}" data-commence="${escapeHtml(g.commence_time || '')}"><span class="pulse-dot"></span> LIVE</span>` : ''}
       </div>
       <div class="gc-meta-right">
         <span class="gc-when">${escapeHtml(dayStr ? dayStr + ' ' : '')}${escapeHtml(startStr)}</span>
       </div>
     </div>
-    <div class="gc-team-row" data-team-row="away" data-game-id="${g.id}" data-team="${escapeHtml(away)}" data-sport-key="${escapeHtml(sportKey)}">
+    <div class="gc-team-row" data-team-row="away" data-game-id="${g.id}" data-team="${escapeHtml(away)}" data-sport-key="${escapeHtml(sportKey)}" data-commence="${escapeHtml(g.commence_time || '')}">
       ${teamAvatarHTML(sportKey, away, stripeColorAway, 44)}
       <div class="gc-team-info">
         <div class="gc-team-name">${escapeHtml(_teamShortName(away))}</div>
@@ -5375,7 +5394,7 @@ function renderGameCard(g, sportKey, marketFilter) {
       <div data-diamond-slot="away" class="gc-diamond-slot"></div>
       <div class="gc-team-score empty" data-score-slot="away"></div>
     </div>
-    <div class="gc-team-row" data-team-row="home" data-game-id="${g.id}" data-team="${escapeHtml(home)}" data-sport-key="${escapeHtml(sportKey)}">
+    <div class="gc-team-row" data-team-row="home" data-game-id="${g.id}" data-team="${escapeHtml(home)}" data-sport-key="${escapeHtml(sportKey)}" data-commence="${escapeHtml(g.commence_time || '')}">
       ${teamAvatarHTML(sportKey, home, stripeColorHome, 44)}
       <div class="gc-team-info">
         <div class="gc-team-name">${escapeHtml(_teamShortName(home))}</div>
@@ -5384,7 +5403,7 @@ function renderGameCard(g, sportKey, marketFilter) {
       <div data-diamond-slot="home" class="gc-diamond-slot"></div>
       <div class="gc-team-score empty" data-score-slot="home"></div>
     </div>
-    <div data-linescore-slot="${g.id}" data-sport-key="${escapeHtml(sportKey)}" data-away="${escapeHtml(away)}" data-home="${escapeHtml(home)}"></div>
+    <div data-linescore-slot="${g.id}" data-sport-key="${escapeHtml(sportKey)}" data-away="${escapeHtml(away)}" data-home="${escapeHtml(home)}" data-commence="${escapeHtml(g.commence_time || '')}"></div>
     ${sportKey === 'baseball_mlb' ? `<div class="gc-pitchers" data-pitcher-slot="${g.id}"></div>
     <div class="gc-nrfi" data-nrfi-slot="${g.id}" data-sport-key="${escapeHtml(sportKey)}"></div>` : ''}`;
 
@@ -6701,9 +6720,17 @@ async function _fetchEspn(sportKey) {
 }
 
 function _normTeam(s) { return (s || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim(); }
-function _findEspnEvent(scoreboard, awayName, homeName) {
+// Find the ESPN event for a specific matchup on a specific date.
+// commenceTime (ISO string) is REQUIRED so we don't pin yesterday's completed
+// Brewers vs Cardinals linescore onto today's scheduled Brewers vs Cardinals game.
+// If no event within +/-12h of the scheduled start matches, return null instead of
+// falling back to some other-day game between the same two teams.
+function _findEspnEvent(scoreboard, awayName, homeName, commenceTime) {
   if (!scoreboard?.events) return null;
   const tA = _normTeam(awayName), tH = _normTeam(homeName);
+  const targetMs = commenceTime ? new Date(commenceTime).getTime() : null;
+  const WINDOW_MS = 12 * 3600 * 1000; // 12h window on either side of scheduled start
+  let best = null; let bestDelta = Infinity;
   for (const ev of scoreboard.events) {
     const comp = ev.competitions?.[0]; if (!comp) continue;
     const home = comp.competitors.find(c => c.homeAway === 'home');
@@ -6713,9 +6740,20 @@ function _findEspnEvent(scoreboard, awayName, homeName) {
     const aN = _normTeam(away.team.displayName);
     const hMatch = hN.includes(tH) || tH.includes(hN);
     const aMatch = aN.includes(tA) || tA.includes(aN);
-    if (hMatch && aMatch) return { event: ev, comp, home, away };
+    if (!hMatch || !aMatch) continue;
+    if (targetMs) {
+      const evDate = ev.date || comp.date;
+      const evMs = evDate ? new Date(evDate).getTime() : NaN;
+      if (!Number.isFinite(evMs)) continue;
+      const delta = Math.abs(evMs - targetMs);
+      if (delta > WINDOW_MS) continue;    // wrong day — skip
+      if (delta < bestDelta) { bestDelta = delta; best = { event: ev, comp, home, away }; }
+    } else {
+      // Legacy caller without a scheduled time — return the first match
+      return { event: ev, comp, home, away };
+    }
   }
-  return null;
+  return best;
 }
 
 function _ordinal(n) {
@@ -6859,8 +6897,12 @@ async function populateLiveStates() {
   for (const slot of liveSlots) {
     const sk = slot.dataset.sportKey; if (!ESPN_SPORT_PATH[sk]) continue;
     const data = _liveCache[sk]?.data; if (!data) continue;
-    const match = _findEspnEvent(data, slot.dataset.away, slot.dataset.home);
+    // Pass scheduled start time so we don't match yesterday's game between the same teams
+    const match = _findEspnEvent(data, slot.dataset.away, slot.dataset.home, slot.dataset.commence);
     if (!match) continue;
+    // Only render live state when the ESPN event is actually in-progress
+    const evState = match.event.status?.type?.state;
+    if (evState !== 'in') continue;
     const isInline = slot.classList.contains('gc-live-inline');
     if (isInline) {
       const inning = _buildLiveStateCompact(sk, match);
@@ -6888,10 +6930,28 @@ async function populateLiveStates() {
         recSlot.innerHTML = `${overall} overall · ${side === 'home' ? 'Home' : 'Road'}`;
       } else { recSlot.textContent = side === 'home' ? 'Home' : 'Road'; }
     }
-    // Score (only when game in progress or final)
+    // Score (only when THIS specific game is in progress or final — must
+    // match the team + scheduled date so yesterday's completed game doesn't
+    // stamp its score onto today's scheduled matchup between the same teams).
     const scoreSlot = row.querySelector('[data-score-slot]');
     if (scoreSlot) {
-      const ev = (data.events || []).find(e => (e.competitions?.[0]?.competitors || []).some(c => c.team?.displayName === row.dataset.team || c.team?.shortDisplayName === row.dataset.team || c.team?.name === row.dataset.team));
+      const targetMs = row.dataset.commence ? new Date(row.dataset.commence).getTime() : NaN;
+      const WINDOW = 12 * 3600 * 1000;
+      let ev = null;
+      if (Number.isFinite(targetMs)) {
+        // Find the event with matching teams whose date is closest to this game's start
+        let bestDelta = Infinity;
+        for (const candidate of (data.events || [])) {
+          const cs = candidate.competitions?.[0]?.competitors || [];
+          const hasTeam = cs.some(c => c.team?.displayName === row.dataset.team || c.team?.shortDisplayName === row.dataset.team || c.team?.name === row.dataset.team);
+          if (!hasTeam) continue;
+          const evMs = new Date(candidate.date || candidate.competitions?.[0]?.date || 0).getTime();
+          if (!Number.isFinite(evMs)) continue;
+          const delta = Math.abs(evMs - targetMs);
+          if (delta > WINDOW) continue;
+          if (delta < bestDelta) { bestDelta = delta; ev = candidate; }
+        }
+      }
       const state = ev?.status?.type?.state;
       if (ev && (state === 'in' || state === 'post')) {
         const comp = ev.competitions[0];
@@ -6905,6 +6965,8 @@ async function populateLiveStates() {
           scoreSlot.classList.toggle('dim', myScore < otherScore);
         }
       }
+      // Otherwise leave the score slot empty — never stamp a number from
+      // some other event we can't confidently match to this game.
     }
     cardsTouched.add(row.dataset.gameId);
   }
@@ -6914,7 +6976,7 @@ async function populateLiveStates() {
     const row = slot.closest('[data-team-row]'); if (!row) return;
     const sk = row.dataset.sportKey; if (sk !== 'baseball_mlb') { slot.innerHTML = ''; return; }
     const data = _liveCache[sk]?.data; if (!data) return;
-    const match = _findEspnEvent(data, row.parentElement.querySelector('[data-team-row="away"]')?.dataset.team, row.parentElement.querySelector('[data-team-row="home"]')?.dataset.team);
+    const match = _findEspnEvent(data, row.parentElement.querySelector('[data-team-row="away"]')?.dataset.team, row.parentElement.querySelector('[data-team-row="home"]')?.dataset.team, row.dataset.commence);
     if (!match) { slot.innerHTML = ''; return; }
     const sit = match.comp.situation || {};
     const state = match.event.status?.type?.state;
@@ -6934,10 +6996,15 @@ async function populateLiveStates() {
   document.querySelectorAll('[data-linescore-slot]').forEach(slot => {
     const sk = slot.dataset.sportKey; if (!ESPN_SPORT_PATH[sk]) return;
     const data = _liveCache[sk]?.data; if (!data) return;
-    const match = _findEspnEvent(data, slot.dataset.away, slot.dataset.home);
+    // Match by team + scheduled date so yesterday's completed game between the
+    // same teams doesn't render its linescore on today's scheduled game.
+    const match = _findEspnEvent(data, slot.dataset.away, slot.dataset.home, slot.dataset.commence);
     if (!match) { slot.innerHTML = ''; return; }
     const state = match.event.status?.type?.state;
     if (state === 'pre') { slot.innerHTML = ''; return; }
+    // Extra safety: if the ESPN event doesn't have live/final status yet, hide
+    // the linescore entirely so we never guess a score.
+    if (state !== 'in' && state !== 'post') { slot.innerHTML = ''; return; }
     const currentPeriod = match.event.status?.period || 1;
     const away = match.away, home = match.home;
     const awayLs = away.linescores || []; const homeLs = home.linescores || [];
@@ -6985,7 +7052,8 @@ async function populateLiveStates() {
     const homeRow = document.querySelector(`[data-team-row="home"][data-game-id="${slot.dataset.pitcherSlot}"]`);
     const awayName = awayRow?.dataset.team, homeName = homeRow?.dataset.team;
     if (!awayName || !homeName) return;
-    const probables = _espnProbables(sk, awayName, homeName);
+    const commence = awayRow?.dataset.commence || homeRow?.dataset.commence || '';
+    const probables = _espnProbables(sk, awayName, homeName, commence);
     if (!probables || !probables.length) { slot.innerHTML = ''; return; }
     slot.innerHTML = probables.map(p => {
       const bucket = pitcherBucket(p.score);
@@ -7371,7 +7439,7 @@ function renderBetCard(b) {
     const isLive = start && start <= now;
     const cd = !isLive && start ? formatCountdown(start - now) : null;
     // Wrap in a live-slot that the ESPN fetcher can fill in with rich data
-    return `<div class="live-slot" data-sport-key="${escapeHtml(l.sportKey || '')}" data-away="${escapeHtml(l.away)}" data-home="${escapeHtml(l.home)}">
+    return `<div class="live-slot" data-sport-key="${escapeHtml(l.sportKey || '')}" data-away="${escapeHtml(l.away)}" data-home="${escapeHtml(l.home)}" data-commence="${escapeHtml(l.start || '')}">
       <div class="score-row mb-1.5">
         <div class="team-name away truncate">${escapeHtml(l.away)}</div>
         <div class="score dim">—</div>
