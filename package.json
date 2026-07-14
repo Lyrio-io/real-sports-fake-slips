@@ -1,14 +1,21 @@
 {
-  "name": "real-sports-fake-slips",
-  "version": "1.0.0",
-  "description": "Real Sports Fake Slips — sandbox sports betting app",
+  "name": "rsfs-tg-listener",
+  "version": "0.1.0",
+  "description": "Telegram user-client listener that parses tipster picks into an inbox RSFS can consume",
+  "type": "module",
+  "main": "src/index.js",
   "scripts": {
-    "start": "serve . -l ${PORT:-8080}"
+    "start": "node src/index.js",
+    "login": "node src/login.js"
   },
   "dependencies": {
-    "serve": "^14.2.4"
+    "@anthropic-ai/sdk": "^0.68.0",
+    "dotenv": "^17.0.0",
+    "express": "^4.21.2",
+    "input": "^1.0.1",
+    "telegram": "^2.26.14"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }
