@@ -23,6 +23,32 @@
   }
   function saveCfg() { try { if (typeof persistProfiles === "function") persistProfiles(); } catch (e) {} }
 
+  // ---- data now comes from the always-on bot, not this phone ----
+  const TG_BOT_URL = "https://tg-bot-production-fa2a.up.railway.app";
+  const TG_TOKEN = "rsfs-2026-tipster-inbox-9x8k4m";
+  let CAP = { bets: [], review: [], loaded: false, error: null };
+
+  async function loadLeaderboard() {
+    try {
+      const r = await fetch(`${TG_BOT_URL}/leaderboard`, { headers: { "X-Inbox-Token": TG_TOKEN } });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const d = await r.json();
+      CAP = { bets: Array.isArray(d.bets) ? d.bets : [], review: Array.isArray(d.review) ? d.review : [], loaded: true, error: null };
+    } catch (e) { CAP = { ...CAP, loaded: true, error: e.message }; }
+    render();
+  }
+
+  async function rejectBet(id) {
+    try {
+      await fetch(`${TG_BOT_URL}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Inbox-Token": TG_TOKEN },
+        body: JSON.stringify({ id }),
+      });
+    } catch (e) {}
+    loadLeaderboard();
+  }
+
   // ---- helpers ----
   const money = (n) => (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   const unitsFmt = (n) => (n > 0 ? "+" : "") + n.toFixed(2) + "u";
@@ -61,9 +87,7 @@
   }
 
   function buildBoard() {
-    const p = (typeof P === "function") ? P() : null;
-    const bets = (p && Array.isArray(p.bets)) ? p.bets : [];
-    const capBets = bets.filter(b => isCapperBet(b) && !b.capperMine);
+    const capBets = CAP.bets.filter(b => isCapperBet(b) && !b.capperMine);
     const map = new Map();
     for (const b of capBets) {
       const name = capperName(b);
@@ -89,14 +113,11 @@
 
   // Your 0.25u auto-parlays (tagged capperMine) — shown separately, not on capper records.
   function buildMyParlays() {
-    const p = (typeof P === "function") ? P() : null;
-    const bets = (p && Array.isArray(p.bets)) ? p.bets : [];
-    return bets.filter(b => isCapperBet(b) && b.capperMine).slice().reverse();
+    return CAP.bets.filter(b => isCapperBet(b) && b.capperMine).slice().reverse();
   }
   // Picks the odds feed couldn't match to a line — parked for review.
   function buildReview() {
-    const p = (typeof P === "function") ? P() : null;
-    return (p && Array.isArray(p.capperReview)) ? p.capperReview.slice().reverse() : [];
+    return CAP.review.slice().reverse();
   }
   // Readable label for a raw (unmatched) parsed leg.
   function parsedLegText(leg) {
@@ -115,6 +136,10 @@
   // "verify" link to the original Telegram post so no pick has to be trusted blind.
   function verifyLink(url) {
     return url ? ' · <a href="' + esc(url) + '" target="_blank" rel="noopener" class="cap-verify">verify ↗</a>' : "";
+  }
+  // "reject" a bad parse — removes it from the ledger.
+  function rejectBtn(id) {
+    return id ? ' · <a class="cap-reject" data-reject="' + esc(id) + '">reject</a>' : "";
   }
 
   // ---- rendering ----
@@ -138,7 +163,7 @@
     const when = b.placedAt ? new Date(b.placedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
     return '<div class="cap-bet">'
       + '<div class="cap-bet-main"><span class="cap-bet-pick">' + esc(legs || "(pick)") + '</span>'
-      + '<span class="cap-bet-meta">' + esc(when) + ' · ' + (+b.units || 1) + 'u' + verifyLink(b.tipsterLink) + '</span></div>'
+      + '<span class="cap-bet-meta">' + esc(when) + ' · ' + (+b.units || 1) + 'u' + verifyLink(b.tipsterLink) + rejectBtn(b.id) + '</span></div>'
       + '<span class="cap-bet-status ' + statusCls + '">' + esc(statusTxt) + '</span></div>';
   }
 
@@ -190,11 +215,14 @@
       + '</div>';
 
     let body;
-    if (!rows.length) {
+    if (!CAP.loaded) {
+      body = '<div class="cap-empty"><div class="cap-empty-h">Loading…</div></div>';
+    } else if (CAP.error) {
+      body = '<div class="cap-empty"><div class="cap-empty-h">Couldn\'t reach the bot</div><p class="cap-empty-sub">' + esc(CAP.error) + ' — it\'ll retry automatically.</p></div>';
+    } else if (!rows.length) {
       body = '<div class="cap-empty">'
         + '<div class="cap-empty-h">No capper picks yet</div>'
-        + '<p>Your bot is live and watching the group. As cappers post picks, they get placed here automatically and this board fills in with each person\'s record.</p>'
-        + '<p class="cap-empty-sub">It only catches picks posted from now on — older ones from earlier today aren\'t pulled in automatically.</p>'
+        + '<p>Your bot is watching the group 24/7. As cappers post picks, they get placed here automatically — even with the app closed — and this board fills in with each person\'s record.</p>'
         + '</div>';
     } else {
       body = '<div class="cap-list">' + rows.map(capperCard).join("") + '</div>';
@@ -212,7 +240,7 @@
             else if (b.status === "lost") { st = "cap-lost"; tx = "LOST " + money(pl); }
             else if (b.status === "push") { tx = "PUSH"; } else if (b.status === "void") { tx = "VOID"; }
             const legs = Array.isArray(b.legs) ? b.legs.map(legText).filter(Boolean).join("  +  ") : "";
-            return '<div class="cap-bet"><div class="cap-bet-main"><span class="cap-bet-pick">' + esc(capperName(b)) + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + (+b.units || 0.25) + 'u parlay' + verifyLink(b.tipsterLink) + '</span></div><span class="cap-bet-status ' + st + '">' + esc(tx) + '</span></div>';
+            return '<div class="cap-bet"><div class="cap-bet-main"><span class="cap-bet-pick">' + esc(capperName(b)) + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + (+b.units || 0.25) + 'u parlay' + verifyLink(b.tipsterLink) + rejectBtn(b.id) + '</span></div><span class="cap-bet-status ' + st + '">' + esc(tx) + '</span></div>';
           }).join("")
         + '</div>';
     }
@@ -224,7 +252,7 @@
       reviewHtml = '<div class="cap-section"><div class="cap-section-h">Review <span class="cap-section-sub">(' + review.length + ' pick' + (review.length === 1 ? "" : "s") + " your odds feed couldn't match — nothing guessed)</span></div>"
         + review.map(rv => {
             const legs = Array.isArray(rv.legs) ? rv.legs.map(parsedLegText).filter(Boolean).join("  +  ") : "";
-            return '<div class="cap-bet cap-review"><div class="cap-bet-main"><span class="cap-bet-pick">' + esc(rv.tipster || "Unknown") + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + esc(rv.reason || "") + verifyLink(rv.link) + '</span></div></div>';
+            return '<div class="cap-bet cap-review"><div class="cap-bet-main"><span class="cap-bet-pick">' + esc(rv.tipster || "Unknown") + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + esc(rv.reason || "") + verifyLink(rv.link) + rejectBtn(rv.id) + '</span></div></div>';
           }).join("")
         + '</div>';
     }
@@ -255,6 +283,11 @@
       const name = btn.getAttribute("data-expand");
       const list = root.querySelector('[data-bets="' + CSS.escape(name) + '"]');
       if (list) { list.hidden = !list.hidden; btn.textContent = list.hidden ? "▾" : "▴"; }
+    }));
+    root.querySelectorAll("[data-reject]").forEach((btn) => btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const id = btn.getAttribute("data-reject");
+      if (id && confirm("Remove this pick? It won't count toward the capper.")) rejectBet(id);
     }));
   }
 
@@ -302,6 +335,7 @@
       + '.cap-section-sub{font-weight:600;font-size:12px;color:#9a9aa2;}'
       + '.cap-review{border-left:3px solid #f5a623;}'
       + '.cap-verify{color:#16a34a;font-weight:700;text-decoration:none;}'
+      + '.cap-reject{color:#dc2626;font-weight:700;text-decoration:none;cursor:pointer;}'
       // Force the light look regardless of the phone's dark-mode setting (the app
       // stays on a white background, so dark text is what stays readable).
       + '#cappers-root,#cappers-root *{color-scheme:light;}';
@@ -357,7 +391,7 @@
     const orig = switchTab;
     window.switchTab = function (name) {
       const r = orig.apply(this, arguments);
-      if (name === "cappers") { try { render(); } catch (e) { console.warn("[cappers] render", e); } }
+      if (name === "cappers") { try { loadLeaderboard(); } catch (e) { console.warn("[cappers] load", e); } }
       return r;
     };
     window.switchTab.__capWrapped = true;
@@ -369,11 +403,11 @@
       injectPanel();
       injectNav();
       patchSwitchTab();
-      window.renderCappers = render;   // let tg-inbox.js refresh the board after placing
-      // pre-render so the first open is instant; harmless if hidden
-      render();
-      // keep the board fresh after auto-settle / new placements
-      setInterval(() => { try { if (typeof state !== "undefined" && state.activeTab === "cappers") render(); } catch (e) {} }, 60 * 1000);
+      window.renderCappers = loadLeaderboard;   // external refresh hook
+      render();               // paint the shell (Loading…) immediately
+      loadLeaderboard();      // then pull from the bot
+      // refresh from the server while the tab is open
+      setInterval(() => { try { if (typeof state !== "undefined" && state.activeTab === "cappers") loadLeaderboard(); } catch (e) {} }, 60 * 1000);
       console.log("[cappers] page ready");
     } catch (e) { console.warn("[cappers] boot failed", e); }
   }
