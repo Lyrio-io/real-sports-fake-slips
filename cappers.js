@@ -49,6 +49,7 @@
       CAP = { bets: Array.isArray(d.bets) ? d.bets : [], review: Array.isArray(d.review) ? d.review : [], loaded: true, error: null };
     } catch (e) { CAP = { ...CAP, loaded: true, error: e.message }; }
     render();
+    try { injectOpenBetsGroup(); } catch (e) {}   // keep the Open Bets tracked group fresh
   }
 
   async function rejectBet(id) {
@@ -148,9 +149,37 @@
     return (t + " " + (m || "")).trim();
   }
 
-  // "verify" link to the original Telegram post so no pick has to be trusted blind.
+  // The exact pick-card image the bot read (best "verify" — you see the real card).
+  function cardImgUrl(cardId) {
+    return cardId ? (TG_BOT_URL + "/card/" + encodeURIComponent(cardId) + "?token=" + encodeURIComponent(TG_TOKEN)) : null;
+  }
+  function cardThumb(cardId) {
+    const u = cardImgUrl(cardId);
+    if (!u) return "";
+    return '<img class="cap-thumb" src="' + esc(u) + '" data-card="' + esc(u) + '" alt="pick card" loading="lazy" title="Tap to see the exact card">';
+  }
+  // Full-screen viewer for a tapped card image.
+  function ensureLightbox() {
+    if (document.getElementById("cap-lightbox")) return;
+    const lb = document.createElement("div");
+    lb.id = "cap-lightbox";
+    lb.innerHTML = '<img id="cap-lightbox-img" alt="pick card">';
+    lb.addEventListener("click", () => { lb.style.display = "none"; });
+    document.body.appendChild(lb);
+  }
+  function wireCards(root) {
+    root.querySelectorAll("[data-card]").forEach((el) => el.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      ensureLightbox();
+      document.getElementById("cap-lightbox-img").src = el.getAttribute("data-card");
+      document.getElementById("cap-lightbox").style.display = "flex";
+    }));
+  }
+
+  // "verify" link to the original Telegram post (secondary — note: one post can hold
+  // several cappers, so the card image above is the reliable check).
   function verifyLink(url) {
-    return url ? ' · <a href="' + esc(url) + '" target="_blank" rel="noopener" class="cap-verify">verify ↗</a>' : "";
+    return url ? ' · <a href="' + esc(url) + '" target="_blank" rel="noopener" class="cap-verify">post ↗</a>' : "";
   }
   // "reject" a bad parse — removes it from the ledger.
   function rejectBtn(id) {
@@ -177,6 +206,7 @@
     else if (b.status === "void") { statusTxt = "VOID"; }
     const when = b.placedAt ? new Date(b.placedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
     return '<div class="cap-bet">'
+      + cardThumb(b.cardId)
       + '<div class="cap-bet-main"><span class="cap-bet-pick">' + esc(legs || "(pick)") + '</span>'
       + '<span class="cap-bet-meta">' + esc(when) + ' · ' + (+b.units || 1) + 'u' + verifyLink(b.tipsterLink) + rejectBtn(b.id) + '</span></div>'
       + '<span class="cap-bet-status ' + statusCls + '">' + esc(statusTxt) + '</span></div>';
@@ -260,7 +290,7 @@
             else if (b.status === "lost") { st = "cap-lost"; tx = "LOST " + money(pl); }
             else if (b.status === "push") { tx = "PUSH"; } else if (b.status === "void") { tx = "VOID"; }
             const legs = Array.isArray(b.legs) ? b.legs.map(legText).filter(Boolean).join("  +  ") : "";
-            return '<div class="cap-bet"><div class="cap-bet-main"><span class="cap-bet-pick">' + esc(capperName(b)) + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + (+b.units || 0.25) + 'u parlay' + verifyLink(b.tipsterLink) + rejectBtn(b.id) + '</span></div><span class="cap-bet-status ' + st + '">' + esc(tx) + '</span></div>';
+            return '<div class="cap-bet">' + cardThumb(b.cardId) + '<div class="cap-bet-main"><span class="cap-bet-pick">' + esc(capperName(b)) + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + (+b.units || 0.25) + 'u parlay' + verifyLink(b.tipsterLink) + rejectBtn(b.id) + '</span></div><span class="cap-bet-status ' + st + '">' + esc(tx) + '</span></div>';
           }).join("")
         + '</div>';
     }
@@ -272,7 +302,7 @@
       reviewHtml = '<div class="cap-section"><div class="cap-section-h">Review <span class="cap-section-sub">(' + review.length + ' pick' + (review.length === 1 ? "" : "s") + " your odds feed couldn't match — nothing guessed)</span></div>"
         + review.map(rv => {
             const legs = Array.isArray(rv.legs) ? rv.legs.map(parsedLegText).filter(Boolean).join("  +  ") : "";
-            return '<div class="cap-bet cap-review"><div class="cap-bet-main"><span class="cap-bet-pick">' + esc(rv.tipster || "Unknown") + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + esc(rv.reason || "") + verifyLink(rv.link) + rejectBtn(rv.id) + '</span></div></div>';
+            return '<div class="cap-bet cap-review">' + cardThumb(rv.cardId) + '<div class="cap-bet-main"><span class="cap-bet-pick">' + esc(rv.tipster || "Unknown") + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + esc(rv.reason || "") + verifyLink(rv.link) + rejectBtn(rv.id) + '</span></div></div>';
           }).join("")
         + '</div>';
     }
@@ -314,6 +344,46 @@
     if (favBtn) favBtn.addEventListener("click", () => { FILT.favOnly = !FILT.favOnly; render(); });
     const sortSel = root.querySelector("#cap-sort");
     if (sortSel) sortSel.addEventListener("change", () => { FILT.sort = sortSel.value; render(); });
+    wireCards(root);
+  }
+
+  // ---- Open Bets integration: show capper picks (auto-tracked, NOT from your
+  // bankroll) as their own group under the app's Open Bets. Read-only. ----
+  function pendingCapperBets() {
+    return CAP.bets.filter(b => isCapperBet(b) && !b.capperMine && OPENISH[b.status]);
+  }
+  function injectOpenBetsGroup() {
+    const cont = document.getElementById("open-bets-container");
+    if (!cont) return;
+    const prev = document.getElementById("cap-openbets-group");
+    if (prev) prev.remove();
+    const pend = pendingCapperBets();
+    if (!pend.length) return;
+    const unitUSD = Math.max(0.01, +cfg().capperUnitUSD || 10);
+    const rows = pend.slice().reverse().map((b) => {
+      const legs = Array.isArray(b.legs) ? b.legs.map(legText).filter(Boolean).join("  +  ") : "";
+      const stake = effUnits(b) * unitUSD;
+      return '<div class="cap-bet">' + cardThumb(b.cardId)
+        + '<div class="cap-bet-main"><span class="cap-bet-pick">' + esc(capperName(b)) + ": " + esc(legs || "(pick)") + '</span>'
+        + '<span class="cap-bet-meta">' + (+b.units || 1) + 'u · would be ' + money(stake) + ' at $' + Math.round(unitUSD) + '/u' + verifyLink(b.tipsterLink) + '</span></div>'
+        + '<span class="cap-bet-status cap-open">TRACKING</span></div>';
+    }).join("");
+    const div = document.createElement("div");
+    div.id = "cap-openbets-group";
+    div.innerHTML = '<div class="cap-section" style="margin-top:18px"><div class="cap-section-h">Capper picks '
+      + '<span class="cap-section-sub">(' + pend.length + ' auto-tracked — not from your bankroll; tap a card to verify)</span></div>' + rows + '</div>';
+    cont.appendChild(div);
+    wireCards(div);
+  }
+  function patchRenderOpenBets() {
+    if (typeof renderOpenBets !== "function" || renderOpenBets.__capWrapped) return;
+    const orig = renderOpenBets;
+    window.renderOpenBets = function () {
+      const r = orig.apply(this, arguments);
+      try { injectOpenBetsGroup(); } catch (e) {}
+      return r;
+    };
+    window.renderOpenBets.__capWrapped = true;
   }
 
   // ---- one-time DOM injection ----
@@ -365,6 +435,9 @@
       + '.cap-review{border-left:3px solid #f5a623;}'
       + '.cap-verify{color:#16a34a;font-weight:700;text-decoration:none;}'
       + '.cap-reject{color:#dc2626;font-weight:700;text-decoration:none;cursor:pointer;}'
+      + '.cap-thumb{width:42px;height:42px;object-fit:cover;border-radius:8px;border:1px solid #e6e6ea;cursor:zoom-in;flex:none;background:#f0f0f3;}'
+      + '#cap-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:99999;padding:16px;cursor:zoom-out;}'
+      + '#cap-lightbox img{max-width:100%;max-height:100%;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.5);}'
       // Force the light look regardless of the phone's dark-mode setting (the app
       // stays on a white background, so dark text is what stays readable).
       + '#cappers-root,#cappers-root *{color-scheme:light;}';
@@ -420,7 +493,8 @@
     const orig = switchTab;
     window.switchTab = function (name) {
       const r = orig.apply(this, arguments);
-      if (name === "cappers") { try { loadLeaderboard(); } catch (e) { console.warn("[cappers] load", e); } }
+      // Refresh capper data both on the Cappers page and on Open Bets (tracked group).
+      if (name === "cappers" || name === "open") { try { loadLeaderboard(); } catch (e) { console.warn("[cappers] load", e); } }
       return r;
     };
     window.switchTab.__capWrapped = true;
@@ -432,11 +506,12 @@
       injectPanel();
       injectNav();
       patchSwitchTab();
+      patchRenderOpenBets();
       window.renderCappers = loadLeaderboard;   // external refresh hook
       render();               // paint the shell (Loading…) immediately
       loadLeaderboard();      // then pull from the bot
-      // refresh from the server while the tab is open
-      setInterval(() => { try { if (typeof state !== "undefined" && state.activeTab === "cappers") loadLeaderboard(); } catch (e) {} }, 60 * 1000);
+      // refresh from the server while the Cappers OR Open Bets tab is open
+      setInterval(() => { try { if (typeof state !== "undefined" && (state.activeTab === "cappers" || state.activeTab === "open")) loadLeaderboard(); } catch (e) {} }, 60 * 1000);
       console.log("[cappers] page ready");
     } catch (e) { console.warn("[cappers] boot failed", e); }
   }
