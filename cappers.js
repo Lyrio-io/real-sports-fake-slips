@@ -158,9 +158,14 @@
           + '<div class="cap-spend-v">' + money(s.usd) + '</div>'
           + '<div class="cap-spend-n">' + s.count + ' pick' + (s.count === 1 ? '' : 's') + ' · ' + s.units.toFixed(2) + 'u</div></div>';
       }).join("");
-    return '<div class="cap-spend"><div class="cap-spend-h">Money on the line at $' + Math.round(unitUSD)
+    const unitLabel = unitUSD < 1 ? unitUSD.toFixed(2) : String(Math.round(unitUSD));
+    const presets = [0.5, 1, 2, 5, 10, 25, 50, 100]
+      .map((v) => '<button class="cap-preset' + (Math.abs(unitUSD - v) < 0.001 ? ' cap-preset-on' : '') + '" data-unit="' + v + '">$' + (v < 1 ? v : Math.round(v)) + '</button>').join("");
+    return '<div class="cap-spend"><div class="cap-spend-h">Money on the line at $' + unitLabel
       + '/unit <span class="cap-spend-note">(total staked following every capper)</span></div>'
-      + '<div class="cap-spend-grid">' + cells + '</div></div>';
+      + '<div class="cap-spend-grid">' + cells + '</div>'
+      + '<div class="cap-spend-presets"><span class="cap-spend-presets-label">Try a unit size:</span>' + presets + '</div>'
+      + '</div>';
   }
 
   // Your 0.25u auto-parlays (tagged capperMine) — shown separately, not on capper records.
@@ -288,7 +293,7 @@
       + '<div class="cap-title">CAPPERS FREE</div>'
       + '<div class="cap-tagline">Everyone posting picks in the group, ranked by how they\'d have done on your money.</div>'
       + '<div class="cap-controls">'
-      + '<label class="cap-ctl">1 unit = $<input id="cap-unit" type="number" min="1" step="1" value="' + unitUSD + '"></label>'
+      + '<label class="cap-ctl">1 unit = $<input id="cap-unit" type="number" min="0.25" step="0.25" value="' + unitUSD + '"></label>'
       + '<label class="cap-ctl">Max risk / play $<input id="cap-safety" type="number" min="0" step="5" value="' + safety + '" placeholder="off"></label>'
       + '<span class="cap-ctl-note">' + (safety > 0 ? "capped at " + money(safety) + " per play" : "no cap — full unit sizes") + '</span>'
       + '</div>'
@@ -351,9 +356,13 @@
   function wire(root) {
     const unit = root.querySelector("#cap-unit");
     if (unit) unit.addEventListener("change", () => {
-      const v = Math.max(1, +unit.value || 10);
+      const v = Math.max(0.25, +unit.value || 10);
       cfg().capperUnitUSD = v; saveCfg(); render();
     });
+    root.querySelectorAll("[data-unit]").forEach((btn) => btn.addEventListener("click", () => {
+      const v = Math.max(0.25, +btn.getAttribute("data-unit") || 10);
+      cfg().capperUnitUSD = v; saveCfg(); render();
+    }));
     const safety = root.querySelector("#cap-safety");
     if (safety) safety.addEventListener("change", () => {
       const v = Math.max(0, +safety.value || 0);
@@ -448,6 +457,10 @@
       + '.cap-spend-k{font-size:11px;font-weight:700;color:#8a8a93;text-transform:uppercase;letter-spacing:.03em;}'
       + '.cap-spend-v{font-size:18px;font-weight:800;color:#14141a;line-height:1.2;margin-top:2px;}'
       + '.cap-spend-n{font-size:10px;color:#9a9aa2;font-weight:600;margin-top:1px;}'
+      + '.cap-spend-presets{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;}'
+      + '.cap-spend-presets-label{font-size:11px;color:#8a8a93;font-weight:700;}'
+      + '.cap-preset{background:#fff;border:1px solid #e6e6ea;border-radius:999px;padding:4px 11px;font-size:12px;font-weight:800;color:#4b4b55;cursor:pointer;}'
+      + '.cap-preset-on{background:#14141a;border-color:#14141a;color:#fff;}'
       + '@media(max-width:520px){.cap-spend-grid{grid-template-columns:repeat(2,1fr);}}'
       + '.cap-list{display:flex;flex-direction:column;gap:10px;}'
       + '.cap-card{background:#fff;border:1px solid #ececf0;border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.03);}'
