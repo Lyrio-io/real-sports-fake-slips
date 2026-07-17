@@ -127,6 +127,42 @@
     return rows;
   }
 
+  // How much money you'd have on the line, at your $/unit, over a time window.
+  // Counts every auto-placed pick (capper straights + your 0.25u parlays) by placed date.
+  function startOfRange(key) {
+    const now = Date.now();
+    if (key === "today") { const s = new Date(); s.setHours(0, 0, 0, 0); return s.getTime(); }
+    if (key === "week") return now - 7 * 864e5;
+    if (key === "month") return now - 30 * 864e5;
+    return 0; // all
+  }
+  function spendInRange(key) {
+    const unitUSD = Math.max(0.01, +cfg().capperUnitUSD || 10);
+    const startMs = startOfRange(key);
+    let count = 0, units = 0;
+    for (const b of CAP.bets) {
+      if (!isCapperBet(b)) continue;
+      const d = new Date(b.placedAt || b.createdAt || 0).getTime();
+      if (key !== "all" && (!d || d < startMs)) continue;
+      units += effUnits(b);
+      count++;
+    }
+    return { count, units, usd: units * unitUSD };
+  }
+  function spendSummaryHtml() {
+    const unitUSD = Math.max(0.01, +cfg().capperUnitUSD || 10);
+    const cells = [["today", "Today"], ["week", "This week"], ["month", "This month"], ["all", "All time"]]
+      .map(([k, label]) => {
+        const s = spendInRange(k);
+        return '<div class="cap-spend-cell"><div class="cap-spend-k">' + label + '</div>'
+          + '<div class="cap-spend-v">' + money(s.usd) + '</div>'
+          + '<div class="cap-spend-n">' + s.count + ' pick' + (s.count === 1 ? '' : 's') + ' · ' + s.units.toFixed(2) + 'u</div></div>';
+      }).join("");
+    return '<div class="cap-spend"><div class="cap-spend-h">Money on the line at $' + Math.round(unitUSD)
+      + '/unit <span class="cap-spend-note">(total staked following every capper)</span></div>'
+      + '<div class="cap-spend-grid">' + cells + '</div></div>';
+  }
+
   // Your 0.25u auto-parlays (tagged capperMine) — shown separately, not on capper records.
   function buildMyParlays() {
     return CAP.bets.filter(b => isCapperBet(b) && b.capperMine).slice().reverse();
@@ -262,6 +298,7 @@
       + '<select id="cap-sort"><option value="units"' + (FILT.sort === "units" ? " selected" : "") + '>Sort: Units</option><option value="roi"' + (FILT.sort === "roi" ? " selected" : "") + '>Sort: ROI</option><option value="win"' + (FILT.sort === "win" ? " selected" : "") + '>Sort: Win%</option></select>'
       + '</div>'
       + (rows.length ? '<div class="cap-summary">' + rows.length + ' capper' + (rows.length === 1 ? '' : 's') + ' · ' + totSettled + ' settled · net ' + unitsFmt(totNet) + ' (' + money(totNet * unitUSD) + ')</div>' : '')
+      + (CAP.loaded && !CAP.error && CAP.bets.length ? spendSummaryHtml() : '')
       + '</div>';
 
     let body;
@@ -403,6 +440,15 @@
       + '.cap-chip-on{background:#14141a;border-color:#14141a;color:#fff;}'
       + '#cap-sort{margin-left:auto;background:#f4f4f6;border:1px solid #e6e6ea;border-radius:10px;padding:5px 8px;font-size:13px;font-weight:600;color:#14141a;}'
       + '.cap-summary{margin-top:10px;font-size:13px;color:#6b6b76;font-weight:600;}'
+      + '.cap-spend{margin-top:12px;background:#f7f7f9;border:1px solid #ececf0;border-radius:14px;padding:12px 14px;}'
+      + '.cap-spend-h{font-size:13px;font-weight:800;color:#14141a;margin-bottom:10px;}'
+      + '.cap-spend-note{font-weight:600;color:#9a9aa2;font-size:11px;}'
+      + '.cap-spend-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}'
+      + '.cap-spend-cell{background:#fff;border:1px solid #ececf0;border-radius:10px;padding:8px 10px;text-align:center;}'
+      + '.cap-spend-k{font-size:11px;font-weight:700;color:#8a8a93;text-transform:uppercase;letter-spacing:.03em;}'
+      + '.cap-spend-v{font-size:18px;font-weight:800;color:#14141a;line-height:1.2;margin-top:2px;}'
+      + '.cap-spend-n{font-size:10px;color:#9a9aa2;font-weight:600;margin-top:1px;}'
+      + '@media(max-width:520px){.cap-spend-grid{grid-template-columns:repeat(2,1fr);}}'
       + '.cap-list{display:flex;flex-direction:column;gap:10px;}'
       + '.cap-card{background:#fff;border:1px solid #ececf0;border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.03);}'
       + '.cap-card-top{display:flex;align-items:center;gap:10px;}'
