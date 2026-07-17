@@ -52,6 +52,23 @@
     try { injectOpenBetsGroup(); } catch (e) {}   // keep the Open Bets tracked group fresh
   }
 
+  // When the bot couldn't read a capper's name, let the user type it in.
+  function isUnknownCapper(name) {
+    return !name || /^(unknown|cappersfree|capperstree|cappers ?free|dm|vip)$/i.test(String(name).trim());
+  }
+  async function assignName(id, name) {
+    name = (name || "").trim();
+    if (!id || !name) return;
+    try {
+      await fetch(`${TG_BOT_URL}/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Inbox-Token": TG_TOKEN },
+        body: JSON.stringify({ id, capper: name }),
+      });
+    } catch (e) {}
+    loadLeaderboard();
+  }
+
   async function rejectBet(id) {
     try {
       await fetch(`${TG_BOT_URL}/reject`, {
@@ -344,7 +361,12 @@
       reviewHtml = '<div class="cap-section"><div class="cap-section-h">Review <span class="cap-section-sub">(' + review.length + ' pick' + (review.length === 1 ? "" : "s") + " your odds feed couldn't match — nothing guessed)</span></div>"
         + review.map(rv => {
             const legs = Array.isArray(rv.legs) ? rv.legs.map(parsedLegText).filter(Boolean).join("  +  ") : "";
-            return '<div class="cap-bet cap-review">' + cardThumb(rv.cardId) + '<div class="cap-bet-main"><span class="cap-bet-pick">' + esc(rv.tipster || "Unknown") + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + esc(rv.reason || "") + verifyLink(rv.link) + rejectBtn(rv.id) + '</span></div></div>';
+            const unknown = isUnknownCapper(rv.tipster);
+            const nameBox = unknown
+              ? '<div class="cap-namebox"><input class="cap-name-input" type="text" maxlength="40" placeholder="Type the capper\'s name" data-nameid="' + esc(rv.id) + '">'
+                + '<button class="cap-name-save" data-namesave="' + esc(rv.id) + '">Save name</button></div>'
+              : "";
+            return '<div class="cap-bet cap-review">' + cardThumb(rv.cardId) + '<div class="cap-bet-main"><span class="cap-bet-pick">' + esc(rv.tipster || "Unknown") + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + esc(rv.reason || "") + verifyLink(rv.link) + rejectBtn(rv.id) + '</span>' + nameBox + '</div></div>';
           }).join("")
         + '</div>';
     }
@@ -375,10 +397,23 @@
       if (i === -1) favs.push(name); else favs.splice(i, 1);
       saveCfg(); render();
     }));
-    root.querySelectorAll("[data-expand]").forEach((btn) => btn.addEventListener("click", () => {
-      const name = btn.getAttribute("data-expand");
-      const list = root.querySelector('[data-bets="' + CSS.escape(name) + '"]');
-      if (list) { list.hidden = !list.hidden; btn.textContent = list.hidden ? "▾" : "▴"; }
+    // Tap ANYWHERE on a capper's header row (not just the tiny arrow) to open/close
+    // its bets — much easier to browse on a phone.
+    root.querySelectorAll(".cap-card-top").forEach((top) => top.addEventListener("click", (e) => {
+      if (e.target.closest("[data-star]")) return;      // the star has its own action
+      const card = top.closest(".cap-card");
+      const list = card && card.querySelector("[data-bets]");
+      const exp = card && card.querySelector("[data-expand]");
+      if (list) { list.hidden = !list.hidden; if (exp) exp.textContent = list.hidden ? "▾" : "▴"; }
+    }));
+    root.querySelectorAll("[data-namesave]").forEach((btn) => btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-namesave");
+      const input = root.querySelector('[data-nameid="' + CSS.escape(id) + '"]');
+      const name = input && input.value.trim();
+      if (name) assignName(id, name);
+    }));
+    root.querySelectorAll(".cap-name-input").forEach((inp) => inp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); const id = inp.getAttribute("data-nameid"); if (inp.value.trim()) assignName(id, inp.value.trim()); }
     }));
     root.querySelectorAll("[data-reject]").forEach((btn) => btn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -464,7 +499,7 @@
       + '@media(max-width:520px){.cap-spend-grid{grid-template-columns:repeat(2,1fr);}}'
       + '.cap-list{display:flex;flex-direction:column;gap:10px;}'
       + '.cap-card{background:#fff;border:1px solid #ececf0;border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.03);}'
-      + '.cap-card-top{display:flex;align-items:center;gap:10px;}'
+      + '.cap-card-top{display:flex;align-items:center;gap:10px;cursor:pointer;}'
       + '.cap-star{background:none;border:none;cursor:pointer;padding:2px;line-height:0;flex:none;}'
       + '.cap-id{flex:1;min-width:0;}'
       + '.cap-name{font-size:16px;font-weight:800;color:#14141a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
@@ -491,7 +526,10 @@
       + '.cap-section{margin-top:22px;}'
       + '.cap-section-h{font-size:15px;font-weight:800;color:#14141a;margin-bottom:8px;}'
       + '.cap-section-sub{font-weight:600;font-size:12px;color:#9a9aa2;}'
-      + '.cap-review{border-left:3px solid #f5a623;}'
+      + '.cap-review{border-left:3px solid #f5a623;flex-wrap:wrap;}'
+      + '.cap-namebox{display:flex;gap:6px;margin-top:8px;width:100%;}'
+      + '.cap-name-input{flex:1;min-width:0;border:1px solid #e6e6ea;border-radius:8px;padding:7px 10px;font-size:13px;color:#14141a;background:#fff;}'
+      + '.cap-name-save{flex:none;background:#14141a;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;}'
       + '.cap-verify{color:#16a34a;font-weight:700;text-decoration:none;}'
       + '.cap-reject{color:#dc2626;font-weight:700;text-decoration:none;cursor:pointer;}'
       + '.cap-thumb{width:42px;height:42px;object-fit:cover;border-radius:8px;border:1px solid #e6e6ea;cursor:zoom-in;flex:none;background:#f0f0f3;}'
