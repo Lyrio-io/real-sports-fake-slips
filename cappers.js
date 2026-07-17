@@ -302,13 +302,9 @@
       + '.cap-section-sub{font-weight:600;font-size:12px;color:#9a9aa2;}'
       + '.cap-review{border-left:3px solid #f5a623;}'
       + '.cap-verify{color:#16a34a;font-weight:700;text-decoration:none;}'
-      + '@media (prefers-color-scheme: dark){'
-      + '.cap-title,.cap-name,.cap-empty-h,.cap-section-h{color:#f2f2f5;}'
-      + '.cap-ctl,.cap-card{background:#1a1a20;border-color:#2a2a32;color:#f2f2f5;}'
-      + '.cap-ctl input{background:#0f0f14;color:#f2f2f5;}'
-      + '.cap-follow{background:#15151a;color:#c9c9d2;}'
-      + '.cap-bet{background:#15151a;border-color:#26262e;}.cap-bet-pick{color:#f2f2f5;}'
-      + '}';
+      // Force the light look regardless of the phone's dark-mode setting (the app
+      // stays on a white background, so dark text is what stays readable).
+      + '#cappers-root,#cappers-root *{color-scheme:light;}';
     const st = document.createElement("style");
     st.id = "cap-styles"; st.textContent = css;
     document.head.appendChild(st);
