@@ -63,7 +63,7 @@
   function buildBoard() {
     const p = (typeof P === "function") ? P() : null;
     const bets = (p && Array.isArray(p.bets)) ? p.bets : [];
-    const capBets = bets.filter(isCapperBet);
+    const capBets = bets.filter(b => isCapperBet(b) && !b.capperMine);
     const map = new Map();
     for (const b of capBets) {
       const name = capperName(b);
@@ -85,6 +85,31 @@
     });
     rows.sort((a, b) => (b.fav - a.fav) || (b.netUnits - a.netUnits) || (b.settled - a.settled));
     return rows;
+  }
+
+  // Your 0.25u auto-parlays (tagged capperMine) — shown separately, not on capper records.
+  function buildMyParlays() {
+    const p = (typeof P === "function") ? P() : null;
+    const bets = (p && Array.isArray(p.bets)) ? p.bets : [];
+    return bets.filter(b => isCapperBet(b) && b.capperMine).slice().reverse();
+  }
+  // Picks the odds feed couldn't match to a line — parked for review.
+  function buildReview() {
+    const p = (typeof P === "function") ? P() : null;
+    return (p && Array.isArray(p.capperReview)) ? p.capperReview.slice().reverse() : [];
+  }
+  // Readable label for a raw (unmatched) parsed leg.
+  function parsedLegText(leg) {
+    if (!leg) return "";
+    const t = leg.team || "";
+    const m = leg.market;
+    if (m === "total") return (t + " " + (leg.side === "under" ? "u" : "o") + (leg.line ?? "")).trim();
+    if (m === "moneyline") return (t + " ML").trim();
+    if (m === "spread") return (t + " " + (leg.line > 0 ? "+" : "") + (leg.line ?? "")).trim();
+    if (m === "first_five") return (t + " F5").trim();
+    if (m === "yrfi") return (t + " YRFI").trim();
+    if (m === "draw_no_bet") return (t + " DNB").trim();
+    return (t + " " + (m || "")).trim();
   }
 
   // ---- rendering ----
@@ -170,7 +195,36 @@
       body = '<div class="cap-list">' + rows.map(capperCard).join("") + '</div>';
     }
 
-    root.innerHTML = head + body;
+    // My Parlays — your 0.25u combos, not counted on cappers
+    const mine = buildMyParlays();
+    let mineHtml = "";
+    if (mine.length) {
+      mineHtml = '<div class="cap-section"><div class="cap-section-h">My Parlays <span class="cap-section-sub">(your ' + '0.25u combos — not counted on the cappers)</span></div>'
+        + mine.map(b => {
+            const pl = unitsPL(b) * unitUSD;
+            let st = "cap-open", tx = "OPEN";
+            if (b.status === "won") { st = "cap-won"; tx = "WON " + money(pl); }
+            else if (b.status === "lost") { st = "cap-lost"; tx = "LOST " + money(pl); }
+            else if (b.status === "push") { tx = "PUSH"; } else if (b.status === "void") { tx = "VOID"; }
+            const legs = Array.isArray(b.legs) ? b.legs.map(legText).filter(Boolean).join("  +  ") : "";
+            return '<div class="cap-bet"><div class="cap-bet-main"><span class="cap-bet-pick">' + esc(capperName(b)) + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + (+b.units || 0.25) + 'u parlay</span></div><span class="cap-bet-status ' + st + '">' + esc(tx) + '</span></div>';
+          }).join("")
+        + '</div>';
+    }
+
+    // Review — picks the odds feed couldn't match
+    const review = buildReview();
+    let reviewHtml = "";
+    if (review.length) {
+      reviewHtml = '<div class="cap-section"><div class="cap-section-h">Review <span class="cap-section-sub">(' + review.length + ' pick' + (review.length === 1 ? "" : "s") + " your odds feed couldn't match — nothing guessed)</span></div>"
+        + review.map(rv => {
+            const legs = Array.isArray(rv.legs) ? rv.legs.map(parsedLegText).filter(Boolean).join("  +  ") : "";
+            return '<div class="cap-bet cap-review"><div class="cap-bet-main"><span class="cap-bet-pick">' + esc(rv.tipster || "Unknown") + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + esc(rv.reason || "") + '</span></div></div>';
+          }).join("")
+        + '</div>';
+    }
+
+    root.innerHTML = head + body + mineHtml + reviewHtml;
     wire(root);
   }
 
@@ -238,8 +292,12 @@
       + '.cap-empty-h{font-size:18px;font-weight:800;color:#14141a;margin-bottom:6px;}'
       + '.cap-empty p{font-size:14px;max-width:420px;margin:6px auto;}'
       + '.cap-empty-sub{font-size:12px;color:#9a9aa2;}'
+      + '.cap-section{margin-top:22px;}'
+      + '.cap-section-h{font-size:15px;font-weight:800;color:#14141a;margin-bottom:8px;}'
+      + '.cap-section-sub{font-weight:600;font-size:12px;color:#9a9aa2;}'
+      + '.cap-review{border-left:3px solid #f5a623;}'
       + '@media (prefers-color-scheme: dark){'
-      + '.cap-title,.cap-name,.cap-empty-h{color:#f2f2f5;}'
+      + '.cap-title,.cap-name,.cap-empty-h,.cap-section-h{color:#f2f2f5;}'
       + '.cap-ctl,.cap-card{background:#1a1a20;border-color:#2a2a32;color:#f2f2f5;}'
       + '.cap-ctl input{background:#0f0f14;color:#f2f2f5;}'
       + '.cap-follow{background:#15151a;color:#c9c9d2;}'
@@ -309,6 +367,7 @@
       injectPanel();
       injectNav();
       patchSwitchTab();
+      window.renderCappers = render;   // let tg-inbox.js refresh the board after placing
       // pre-render so the first open is instant; harmless if hidden
       render();
       // keep the board fresh after auto-settle / new placements

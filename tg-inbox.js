@@ -1,5 +1,7 @@
-// tg-inbox.js — polls the Telegram bot every 5 min and auto-places parsed
-// tipster picks into your RSFS Open Bets tab, tagged by tipster name.
+// tg-inbox.js — polls the Telegram bot every 5 min and places parsed tipster
+// picks into RSFS, tagged by capper. Sizing = capper's units x your "1 unit = $X"
+// value (set on the Cappers page). Auto-parlays are flagged as YOUR bets. Picks
+// whose market isn't in your odds feed go to the Cappers "Review" list, not placed.
 // Loaded from index.html via a <script> tag at the bottom of body.
 (function () {
   const TG_BOT_URL = "https://tg-bot-production-fa2a.up.railway.app";
@@ -31,29 +33,56 @@
           body: JSON.stringify({ ids: acked }),
         }).catch(() => {});
       }
+      if (typeof window.renderCappers === "function") { try { window.renderCappers(); } catch (e) {} }
       if (placed.length && typeof toast === "function") {
-        toast(`Auto-placed ${placed.length} tipster bet${placed.length === 1 ? "" : "s"}: ${placed.join(", ")}`);
+        toast(`Placed ${placed.length} pick${placed.length === 1 ? "" : "s"}: ${placed.join(", ")}`);
       }
     } catch (e) {
       console.warn("[tg-inbox] poll error:", e.message);
     }
   }
 
+  // Park a pick we couldn't match to a real line into the Cappers "Review" list.
+  function queueReview(p, bet, leg) {
+    if (!Array.isArray(p.capperReview)) p.capperReview = [];
+    p.capperReview.push({
+      id: uid(),
+      at: nowISO(),
+      tipster: bet.tipster || "Unknown",
+      kind: bet.kind || (bet.legs && bet.legs.length > 1 ? "parlay" : "single"),
+      units: (bet.units != null ? bet.units : null),
+      mine: !!bet.mine,
+      reason: "no line in your feed for " + ((leg && (leg.team || leg.market)) || "this pick"),
+      legs: bet.legs || [],
+      messageId: bet.messageId || null,
+    });
+    if (p.capperReview.length > 200) p.capperReview = p.capperReview.slice(-100);
+    if (typeof persistProfiles === "function") persistProfiles();
+  }
+
   function placeTipsterBet(bet) {
     if (typeof P !== "function") { console.warn("[tg-inbox] RSFS globals not ready"); return false; }
     const p = P(); if (!p) return false;
-    const s = (typeof S === "function") ? S() : { unitSize: 0.01, maxUnits: 5 };
     if (!bet.legs || !bet.legs.length) return false;
+    const s = (typeof S === "function") ? S() : {};
+    const unitUSD = Math.max(0.5, +s.capperUnitUSD || 10);   // your "1 unit = $X" value
+    const safety = Math.max(0, +s.capperSafetyUSD || 0);      // optional per-play $ cap (0 = off)
+
+    // Match every leg to a real line. If any leg has no match -> Review, don't place.
     const matched = [];
     for (const leg of bet.legs) {
       const m = matchLegToGame(leg);
-      if (!m) { console.warn("[tg-inbox] no game match for", leg); return false; }
+      if (!m) { queueReview(p, bet, leg); return false; }
       matched.push(m);
     }
+
     const combinedDec = matched.reduce((a, l) => a * l.decimal, 1);
-    const units = Math.min(Math.max(bet.units || 1, 0.25), s.maxUnits || 5);
-    const stake = Math.min(units * p.bankroll * (s.unitSize || 0.01), p.bankroll);
+    const units = Math.max(0.25, +bet.units || 1);           // honor the capper's units (no cap)
+    let stake = units * unitUSD;
+    if (safety > 0) stake = Math.min(stake, safety);
+    stake = Math.min(stake, p.bankroll);
     if (stake <= 0.01) { console.warn("[tg-inbox] bankroll too low"); return false; }
+
     const rsfsBet = {
       id: uid(),
       placedAt: nowISO(),
@@ -66,9 +95,11 @@
       status: "pending",
       settledAt: null,
       payout: 0,
-      reason: (bet.reasoning || `Copied from ${bet.tipster}`).slice(0, 140),
+      reason: (bet.reasoning || `From ${bet.tipster || "Unknown"}`).slice(0, 140),
       source: `TG: ${bet.tipster || "Unknown"}`,
       units,
+      capperMine: !!bet.mine,                                 // true = YOUR auto-parlay, not the capper's
+      capperKind: bet.kind || (matched.length > 1 ? "parlay" : "single"),
       tipsterMessageId: bet.messageId,
       autoCopied: true,
     };
@@ -77,7 +108,7 @@
     if (typeof persistProfiles === "function") persistProfiles();
     if (typeof renderOpenBets === "function") renderOpenBets();
     if (typeof renderHeader === "function") renderHeader();
-    console.log(`[tg-inbox] placed ${bet.tipster} bet:`, matched.map(l => l.outcome).join(" + "));
+    console.log(`[tg-inbox] placed ${bet.tipster}${bet.mine ? " (my parlay)" : ""}:`, matched.map(l => l.outcome).join(" + "));
     return true;
   }
 
@@ -125,7 +156,7 @@
               outcome: oc.name,
               point: oc.point ?? null,
               american: oc.price,
-              decimal: (typeof americanToDecimal === "function") ? americanToDecimal(oc.price) : (oc.price > 0 ? oc.price/100+1 : 100/Math.abs(oc.price)+1),
+              decimal: (typeof americanToDecimal === "function") ? americanToDecimal(oc.price) : (oc.price > 0 ? oc.price / 100 + 1 : 100 / Math.abs(oc.price) + 1),
               book: bm.title,
               label: `${oc.name}${oc.point != null ? " " + (oc.point > 0 ? "+" : "") + oc.point : ""}`,
             };
