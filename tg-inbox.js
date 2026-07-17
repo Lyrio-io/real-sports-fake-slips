@@ -55,6 +55,7 @@
       reason: "no line in your feed for " + ((leg && (leg.team || leg.market)) || "this pick"),
       legs: bet.legs || [],
       messageId: bet.messageId || null,
+      link: bet.link || null,
     });
     if (p.capperReview.length > 200) p.capperReview = p.capperReview.slice(-100);
     if (typeof persistProfiles === "function") persistProfiles();
@@ -98,6 +99,7 @@
       reason: (bet.reasoning || `From ${bet.tipster || "Unknown"}`).slice(0, 140),
       source: `TG: ${bet.tipster || "Unknown"}`,
       units,
+      tipsterLink: bet.link || null,                          // tap-to-verify: link to the original Telegram post
       capperMine: !!bet.mine,                                 // true = YOUR auto-parlay, not the capper's
       capperKind: bet.kind || (matched.length > 1 ? "parlay" : "single"),
       tipsterMessageId: bet.messageId,

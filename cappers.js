@@ -112,6 +112,11 @@
     return (t + " " + (m || "")).trim();
   }
 
+  // "verify" link to the original Telegram post so no pick has to be trusted blind.
+  function verifyLink(url) {
+    return url ? ' · <a href="' + esc(url) + '" target="_blank" rel="noopener" class="cap-verify">verify ↗</a>' : "";
+  }
+
   // ---- rendering ----
   function legText(leg) {
     if (!leg) return "";
@@ -133,7 +138,7 @@
     const when = b.placedAt ? new Date(b.placedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
     return '<div class="cap-bet">'
       + '<div class="cap-bet-main"><span class="cap-bet-pick">' + esc(legs || "(pick)") + '</span>'
-      + '<span class="cap-bet-meta">' + esc(when) + ' · ' + (+b.units || 1) + 'u</span></div>'
+      + '<span class="cap-bet-meta">' + esc(when) + ' · ' + (+b.units || 1) + 'u' + verifyLink(b.tipsterLink) + '</span></div>'
       + '<span class="cap-bet-status ' + statusCls + '">' + esc(statusTxt) + '</span></div>';
   }
 
@@ -207,7 +212,7 @@
             else if (b.status === "lost") { st = "cap-lost"; tx = "LOST " + money(pl); }
             else if (b.status === "push") { tx = "PUSH"; } else if (b.status === "void") { tx = "VOID"; }
             const legs = Array.isArray(b.legs) ? b.legs.map(legText).filter(Boolean).join("  +  ") : "";
-            return '<div class="cap-bet"><div class="cap-bet-main"><span class="cap-bet-pick">' + esc(capperName(b)) + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + (+b.units || 0.25) + 'u parlay</span></div><span class="cap-bet-status ' + st + '">' + esc(tx) + '</span></div>';
+            return '<div class="cap-bet"><div class="cap-bet-main"><span class="cap-bet-pick">' + esc(capperName(b)) + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + (+b.units || 0.25) + 'u parlay' + verifyLink(b.tipsterLink) + '</span></div><span class="cap-bet-status ' + st + '">' + esc(tx) + '</span></div>';
           }).join("")
         + '</div>';
     }
@@ -219,7 +224,7 @@
       reviewHtml = '<div class="cap-section"><div class="cap-section-h">Review <span class="cap-section-sub">(' + review.length + ' pick' + (review.length === 1 ? "" : "s") + " your odds feed couldn't match — nothing guessed)</span></div>"
         + review.map(rv => {
             const legs = Array.isArray(rv.legs) ? rv.legs.map(parsedLegText).filter(Boolean).join("  +  ") : "";
-            return '<div class="cap-bet cap-review"><div class="cap-bet-main"><span class="cap-bet-pick">' + esc(rv.tipster || "Unknown") + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + esc(rv.reason || "") + '</span></div></div>';
+            return '<div class="cap-bet cap-review"><div class="cap-bet-main"><span class="cap-bet-pick">' + esc(rv.tipster || "Unknown") + ": " + esc(legs) + '</span><span class="cap-bet-meta">' + esc(rv.reason || "") + verifyLink(rv.link) + '</span></div></div>';
           }).join("")
         + '</div>';
     }
@@ -296,6 +301,7 @@
       + '.cap-section-h{font-size:15px;font-weight:800;color:#14141a;margin-bottom:8px;}'
       + '.cap-section-sub{font-weight:600;font-size:12px;color:#9a9aa2;}'
       + '.cap-review{border-left:3px solid #f5a623;}'
+      + '.cap-verify{color:#16a34a;font-weight:700;text-decoration:none;}'
       + '@media (prefers-color-scheme: dark){'
       + '.cap-title,.cap-name,.cap-empty-h,.cap-section-h{color:#f2f2f5;}'
       + '.cap-ctl,.cap-card{background:#1a1a20;border-color:#2a2a32;color:#f2f2f5;}'
