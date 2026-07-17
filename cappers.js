@@ -27,6 +27,19 @@
   const TG_BOT_URL = "https://tg-bot-production-fa2a.up.railway.app";
   const TG_TOKEN = "rsfs-2026-tipster-inbox-9x8k4m";
   let CAP = { bets: [], review: [], loaded: false, error: null };
+  let FILT = { range: "all", favOnly: false, sort: "units" };
+
+  // Is a bet inside the selected time window? (by settle date, else placed date)
+  function inRange(bet) {
+    if (FILT.range === "all") return true;
+    const d = new Date(bet.settledAt || bet.placedAt || 0).getTime();
+    if (!d) return false;
+    const now = Date.now();
+    if (FILT.range === "today") { const s = new Date(); s.setHours(0, 0, 0, 0); return d >= s.getTime(); }
+    if (FILT.range === "week") return d >= now - 7 * 864e5;
+    if (FILT.range === "month") return d >= now - 30 * 864e5;
+    return true;
+  }
 
   async function loadLeaderboard() {
     try {
@@ -87,7 +100,7 @@
   }
 
   function buildBoard() {
-    const capBets = CAP.bets.filter(b => isCapperBet(b) && !b.capperMine);
+    const capBets = CAP.bets.filter(b => isCapperBet(b) && !b.capperMine && inRange(b));
     const map = new Map();
     for (const b of capBets) {
       const name = capperName(b);
@@ -100,14 +113,16 @@
       else if (OPENISH[b.status]) c.open++;
     }
     const favs = cfg().capperFavorites || [];
-    const rows = [...map.values()].map((c) => {
+    let rows = [...map.values()].map((c) => {
       c.settled = c.w + c.l;
       c.winPct = c.settled ? c.w / c.settled : 0;
       c.roi = c.unitsRisked ? c.netUnits / c.unitsRisked : 0;
       c.fav = favs.indexOf(c.name) !== -1;
       return c;
     });
-    rows.sort((a, b) => (b.fav - a.fav) || (b.netUnits - a.netUnits) || (b.settled - a.settled));
+    if (FILT.favOnly) rows = rows.filter(r => r.fav);
+    const metric = (c) => FILT.sort === "roi" ? c.roi : FILT.sort === "win" ? c.winPct : c.netUnits;
+    rows.sort((a, b) => (b.fav - a.fav) || (metric(b) - metric(a)) || (b.settled - a.settled));
     return rows;
   }
 
@@ -211,6 +226,11 @@
       + '<label class="cap-ctl">Max risk / play $<input id="cap-safety" type="number" min="0" step="5" value="' + safety + '" placeholder="off"></label>'
       + '<span class="cap-ctl-note">' + (safety > 0 ? "capped at " + money(safety) + " per play" : "no cap — full unit sizes") + '</span>'
       + '</div>'
+      + '<div class="cap-filters">'
+      + ["today", "week", "month", "all"].map(r => '<button class="cap-chip' + (FILT.range === r ? ' cap-chip-on' : '') + '" data-range="' + r + '">' + ({ today: "Today", week: "Week", month: "Month", all: "All" }[r]) + '</button>').join("")
+      + '<button class="cap-chip' + (FILT.favOnly ? ' cap-chip-on' : '') + '" data-favonly="1">Favorites</button>'
+      + '<select id="cap-sort"><option value="units"' + (FILT.sort === "units" ? " selected" : "") + '>Sort: Units</option><option value="roi"' + (FILT.sort === "roi" ? " selected" : "") + '>Sort: ROI</option><option value="win"' + (FILT.sort === "win" ? " selected" : "") + '>Sort: Win%</option></select>'
+      + '</div>'
       + (rows.length ? '<div class="cap-summary">' + rows.length + ' capper' + (rows.length === 1 ? '' : 's') + ' · ' + totSettled + ' settled · net ' + unitsFmt(totNet) + ' (' + money(totNet * unitUSD) + ')</div>' : '')
       + '</div>';
 
@@ -289,6 +309,11 @@
       const id = btn.getAttribute("data-reject");
       if (id && confirm("Remove this pick? It won't count toward the capper.")) rejectBet(id);
     }));
+    root.querySelectorAll("[data-range]").forEach((btn) => btn.addEventListener("click", () => { FILT.range = btn.getAttribute("data-range"); render(); }));
+    const favBtn = root.querySelector("[data-favonly]");
+    if (favBtn) favBtn.addEventListener("click", () => { FILT.favOnly = !FILT.favOnly; render(); });
+    const sortSel = root.querySelector("#cap-sort");
+    if (sortSel) sortSel.addEventListener("change", () => { FILT.sort = sortSel.value; render(); });
   }
 
   // ---- one-time DOM injection ----
@@ -303,6 +328,10 @@
       + '.cap-ctl{display:inline-flex;align-items:center;gap:6px;background:#f4f4f6;border:1px solid #e6e6ea;border-radius:12px;padding:8px 12px;font-size:14px;font-weight:600;color:#14141a;}'
       + '.cap-ctl input{width:64px;border:none;background:#fff;border-radius:8px;padding:4px 8px;font-size:14px;font-weight:700;color:#14141a;text-align:right;}'
       + '.cap-ctl-note{font-size:12px;color:#8a8a93;}'
+      + '.cap-filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;}'
+      + '.cap-chip{background:#f4f4f6;border:1px solid #e6e6ea;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;color:#4b4b55;cursor:pointer;}'
+      + '.cap-chip-on{background:#14141a;border-color:#14141a;color:#fff;}'
+      + '#cap-sort{margin-left:auto;background:#f4f4f6;border:1px solid #e6e6ea;border-radius:10px;padding:5px 8px;font-size:13px;font-weight:600;color:#14141a;}'
       + '.cap-summary{margin-top:10px;font-size:13px;color:#6b6b76;font-weight:600;}'
       + '.cap-list{display:flex;flex-direction:column;gap:10px;}'
       + '.cap-card{background:#fff;border:1px solid #ececf0;border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.03);}'
