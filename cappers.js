@@ -144,43 +144,69 @@
     return rows;
   }
 
-  // How much money you'd have on the line, at your $/unit, over a time window.
-  // Counts every auto-placed pick (capper straights + your 0.25u parlays) by placed date.
-  function startOfRange(key) {
-    const now = Date.now();
-    if (key === "today") { const s = new Date(); s.setHours(0, 0, 0, 0); return s.getTime(); }
-    if (key === "week") return now - 7 * 864e5;
-    if (key === "month") return now - 30 * 864e5;
-    return 0; // all
+  // ---- Bankroll & P&L (play-money scoreboard for following every capper) ----
+  const _u = () => Math.max(0.01, +cfg().capperUnitUSD || 10);
+  function betStake(b) { return effUnits(b) * _u(); }          // money put up on a bet
+  function betPLusd(b) { return unitsPL(b) * _u(); }            // realized $ win/loss (0 if open/push)
+  const plCls = (v) => v > 0.004 ? "cap-pos" : (v < -0.004 ? "cap-neg" : "cap-flat");
+  const plStr = (v) => (v >= 0 ? "+" : "-") + money(Math.abs(v)).replace("-", "");
+
+  // Monday-anchored day/week starts (offset in days / weeks).
+  function dayStart(off) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + (off || 0)); return d.getTime(); }
+  function weekStart(off) { const d = new Date(); d.setHours(0, 0, 0, 0); const dow = (d.getDay() + 6) % 7; d.setDate(d.getDate() - dow + (off || 0) * 7); return d.getTime(); }
+
+  // Realized P&L for settled bets whose settle date falls in [start,end).
+  function periodPL(start, end) {
+    let pl = 0, w = 0, l = 0;
+    for (const b of CAP.bets) {
+      if (!isCapperBet(b) || !SETTLED[b.status]) continue;
+      const t = new Date(b.settledAt || b.placedAt || 0).getTime();
+      if (!t) continue;
+      if (start != null && t < start) continue;
+      if (end != null && t >= end) continue;
+      pl += betPLusd(b);
+      if (b.status === "won") w++; else if (b.status === "lost") l++;
+    }
+    return { pl, w, l };
   }
-  function spendInRange(key) {
-    const unitUSD = Math.max(0.01, +cfg().capperUnitUSD || 10);
-    const startMs = startOfRange(key);
-    let count = 0, units = 0;
+
+  function spendSummaryHtml() {
+    const unitUSD = _u();
+    let onLine = 0, openN = 0, risked = 0, allN = 0, pl = 0, w = 0, l = 0, p = 0;
     for (const b of CAP.bets) {
       if (!isCapperBet(b)) continue;
-      const d = new Date(b.placedAt || b.createdAt || 0).getTime();
-      if (key !== "all" && (!d || d < startMs)) continue;
-      units += effUnits(b);
-      count++;
+      allN++; risked += betStake(b);
+      if (OPENISH[b.status]) { onLine += betStake(b); openN++; }
+      if (SETTLED[b.status]) { pl += betPLusd(b); if (b.status === "won") w++; else if (b.status === "lost") l++; else if (b.status === "push") p++; }
     }
-    return { count, units, usd: units * unitUSD };
-  }
-  function spendSummaryHtml() {
-    const unitUSD = Math.max(0.01, +cfg().capperUnitUSD || 10);
-    const cells = [["today", "Today"], ["week", "This week"], ["month", "This month"], ["all", "All time"]]
-      .map(([k, label]) => {
-        const s = spendInRange(k);
-        return '<div class="cap-spend-cell"><div class="cap-spend-k">' + label + '</div>'
-          + '<div class="cap-spend-v">' + money(s.usd) + '</div>'
-          + '<div class="cap-spend-n">' + s.count + ' pick' + (s.count === 1 ? '' : 's') + ' · ' + s.units.toFixed(2) + 'u</div></div>';
-      }).join("");
+    const settledN = w + l + p;
     const unitLabel = unitUSD < 1 ? unitUSD.toFixed(2) : String(Math.round(unitUSD));
+
+    const head = [
+      { k: "Profit / Loss", v: plStr(pl), cls: plCls(pl), n: settledN ? (w + "-" + l + (p ? "-" + p : "") + " settled") : "nothing settled yet" },
+      { k: "On the line now", v: money(onLine), cls: "", n: openN + " open bet" + (openN === 1 ? "" : "s") },
+      { k: "Total risked", v: money(risked), cls: "", n: allN + " bets all-time" },
+    ].map(c => '<div class="cap-bank-cell"><div class="cap-bank-k">' + c.k + '</div>'
+      + '<div class="cap-bank-v ' + c.cls + '">' + c.v + '</div><div class="cap-bank-n">' + c.n + '</div></div>').join("");
+
+    const periods = [
+      ["Today", dayStart(0), null], ["Yesterday", dayStart(-1), dayStart(0)],
+      ["This week", weekStart(0), null], ["Last week", weekStart(-1), weekStart(0)], ["All time", null, null],
+    ].map(([label, s, e]) => {
+      const r = periodPL(s, e);
+      return '<div class="cap-per-cell"><div class="cap-per-k">' + label + '</div>'
+        + '<div class="cap-per-v ' + plCls(r.pl) + '">' + plStr(r.pl) + '</div>'
+        + '<div class="cap-per-n">' + (r.w + r.l ? r.w + "-" + r.l : "—") + '</div></div>';
+    }).join("");
+
     const presets = [0.5, 1, 2, 5, 10, 25, 50, 100]
       .map((v) => '<button class="cap-preset' + (Math.abs(unitUSD - v) < 0.001 ? ' cap-preset-on' : '') + '" data-unit="' + v + '">$' + (v < 1 ? v : Math.round(v)) + '</button>').join("");
-    return '<div class="cap-spend"><div class="cap-spend-h">Money on the line at $' + unitLabel
-      + '/unit <span class="cap-spend-note">(total staked following every capper)</span></div>'
-      + '<div class="cap-spend-grid">' + cells + '</div>'
+
+    return '<div class="cap-bank">'
+      + '<div class="cap-bank-h">Play-money scoreboard <span class="cap-bank-note">— if you followed <b>every</b> capper at $' + unitLabel + '/unit</span></div>'
+      + '<div class="cap-bank-top">' + head + '</div>'
+      + '<div class="cap-per-h">Profit / Loss by day</div>'
+      + '<div class="cap-per-grid">' + periods + '</div>'
       + '<div class="cap-spend-presets"><span class="cap-spend-presets-label">Try a unit size:</span>' + presets + '</div>'
       + '</div>';
   }
@@ -484,19 +510,25 @@
       + '.cap-chip-on{background:#14141a;border-color:#14141a;color:#fff;}'
       + '#cap-sort{margin-left:auto;background:#f4f4f6;border:1px solid #e6e6ea;border-radius:10px;padding:5px 8px;font-size:13px;font-weight:600;color:#14141a;}'
       + '.cap-summary{margin-top:10px;font-size:13px;color:#6b6b76;font-weight:600;}'
-      + '.cap-spend{margin-top:12px;background:#f7f7f9;border:1px solid #ececf0;border-radius:14px;padding:12px 14px;}'
-      + '.cap-spend-h{font-size:13px;font-weight:800;color:#14141a;margin-bottom:10px;}'
-      + '.cap-spend-note{font-weight:600;color:#9a9aa2;font-size:11px;}'
-      + '.cap-spend-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}'
-      + '.cap-spend-cell{background:#fff;border:1px solid #ececf0;border-radius:10px;padding:8px 10px;text-align:center;}'
-      + '.cap-spend-k{font-size:11px;font-weight:700;color:#8a8a93;text-transform:uppercase;letter-spacing:.03em;}'
-      + '.cap-spend-v{font-size:18px;font-weight:800;color:#14141a;line-height:1.2;margin-top:2px;}'
-      + '.cap-spend-n{font-size:10px;color:#9a9aa2;font-weight:600;margin-top:1px;}'
-      + '.cap-spend-presets{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;}'
+      + '.cap-bank{margin-top:12px;background:#f7f7f9;border:1px solid #ececf0;border-radius:14px;padding:12px 14px;}'
+      + '.cap-bank-h{font-size:13px;font-weight:800;color:#14141a;margin-bottom:10px;}'
+      + '.cap-bank-note{font-weight:600;color:#9a9aa2;font-size:11px;}'
+      + '.cap-bank-top{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}'
+      + '.cap-bank-cell{background:#fff;border:1px solid #ececf0;border-radius:10px;padding:10px;text-align:center;}'
+      + '.cap-bank-k{font-size:11px;font-weight:700;color:#8a8a93;text-transform:uppercase;letter-spacing:.03em;}'
+      + '.cap-bank-v{font-size:22px;font-weight:800;color:#14141a;line-height:1.15;margin-top:3px;}'
+      + '.cap-bank-n{font-size:10px;color:#9a9aa2;font-weight:600;margin-top:2px;}'
+      + '.cap-per-h{font-size:12px;font-weight:800;color:#14141a;margin:12px 0 6px;}'
+      + '.cap-per-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}'
+      + '.cap-per-cell{background:#fff;border:1px solid #ececf0;border-radius:9px;padding:7px 4px;text-align:center;}'
+      + '.cap-per-k{font-size:10px;font-weight:700;color:#8a8a93;}'
+      + '.cap-per-v{font-size:14px;font-weight:800;line-height:1.2;margin-top:2px;}'
+      + '.cap-per-n{font-size:9px;color:#b0b0b8;font-weight:600;}'
+      + '.cap-spend-presets{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;}'
       + '.cap-spend-presets-label{font-size:11px;color:#8a8a93;font-weight:700;}'
       + '.cap-preset{background:#fff;border:1px solid #e6e6ea;border-radius:999px;padding:4px 11px;font-size:12px;font-weight:800;color:#4b4b55;cursor:pointer;}'
       + '.cap-preset-on{background:#14141a;border-color:#14141a;color:#fff;}'
-      + '@media(max-width:520px){.cap-spend-grid{grid-template-columns:repeat(2,1fr);}}'
+      + '@media(max-width:520px){.cap-per-grid{grid-template-columns:repeat(3,1fr);}}'
       + '.cap-list{display:flex;flex-direction:column;gap:10px;}'
       + '.cap-card{background:#fff;border:1px solid #ececf0;border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.03);}'
       + '.cap-card-top{display:flex;align-items:center;gap:10px;cursor:pointer;}'
