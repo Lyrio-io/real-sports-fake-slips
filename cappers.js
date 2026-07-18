@@ -26,7 +26,7 @@
   // ---- data now comes from the always-on bot, not this phone ----
   const TG_BOT_URL = "https://tg-bot-production-fa2a.up.railway.app";
   const TG_TOKEN = "rsfs-2026-tipster-inbox-9x8k4m";
-  let CAP = { bets: [], review: [], loaded: false, error: null };
+  let CAP = { bets: [], review: [], loaded: false, error: null, api: null };
   let FILT = { range: "all", favOnly: false, sort: "units" };
 
   // Is a bet inside the selected time window? (by settle date, else placed date)
@@ -67,6 +67,45 @@
       });
     } catch (e) {}
     loadLeaderboard();
+  }
+
+  // Odds API credit status (free to check on the bot). Shows on the page + Settings.
+  async function loadApiUsage() {
+    try {
+      const r = await fetch(`${TG_BOT_URL}/api-usage`, { headers: { "X-Inbox-Token": TG_TOKEN } });
+      if (r.ok) CAP.api = await r.json();
+    } catch (e) {}
+    render();
+    try { injectSettingsApi(); } catch (e) {}
+  }
+  function apiStatusHtml() {
+    const a = CAP.api;
+    if (!a || a.remaining == null) return "";
+    const rem = a.remaining;
+    const cls = rem <= 0 ? "cap-api-out" : (rem < 100 ? "cap-api-low" : "cap-api-ok");
+    let msg;
+    if (rem <= 0) msg = "Odds API is OUT of credits — new picks can't match until you add a fresh key.";
+    else if (rem < 100) msg = rem + " Odds-API credits left — running low, grab a fresh key soon.";
+    else msg = rem + " Odds-API credits left" + (a.used != null ? " (" + a.used + " used)" : "") + ".";
+    return '<div class="cap-api ' + cls + '">' + esc(msg) + '</div>';
+  }
+  // Also drop the same status into the app's Settings tab (Jorge asked for it there).
+  function injectSettingsApi() {
+    const settings = document.querySelector('[data-tab-content="settings"]');
+    if (!settings) return;
+    const a = CAP.api;
+    let card = document.getElementById("cap-settings-api");
+    const rem = a ? a.remaining : null;
+    const total = a ? a.total : null;
+    const cls = rem == null ? "" : (rem <= 0 ? "cap-api-out" : rem < 100 ? "cap-api-low" : "cap-api-ok");
+    const body = rem == null
+      ? "Couldn't reach the bot to check Odds API usage."
+      : (rem <= 0
+        ? "<b>OUT of credits.</b> Odds API used " + (a.used ?? "?") + "/" + (total ?? "500") + ". Put a fresh free key in Railway (tg-bot service → Variables → ODDS_API_KEY), then reopen."
+        : "<b>" + rem + " credits left</b>" + (total ? " of " + total : "") + " (used " + (a.used ?? "?") + "). You get a nightly total at 10pm in your Telegram Saved Messages.");
+    const html = '<div class="cap-set-card ' + cls + '"><div class="cap-set-h">Odds API usage</div><div class="cap-set-b">' + body + '</div></div>';
+    if (!card) { card = document.createElement("div"); card.id = "cap-settings-api"; settings.insertBefore(card, settings.firstChild); }
+    card.innerHTML = html;
   }
 
   async function rejectBet(id) {
@@ -347,6 +386,7 @@
       + '</div>'
       + (rows.length ? '<div class="cap-summary">' + rows.length + ' capper' + (rows.length === 1 ? '' : 's') + ' · ' + totSettled + ' settled · net ' + unitsFmt(totNet) + ' (' + money(totNet * unitUSD) + ')</div>' : '')
       + (CAP.loaded && !CAP.error && CAP.bets.length ? spendSummaryHtml() : '')
+      + apiStatusHtml()
       + '</div>';
 
     let body;
@@ -529,6 +569,15 @@
       + '.cap-preset{background:#fff;border:1px solid #e6e6ea;border-radius:999px;padding:4px 11px;font-size:12px;font-weight:800;color:#4b4b55;cursor:pointer;}'
       + '.cap-preset-on{background:#14141a;border-color:#14141a;color:#fff;}'
       + '@media(max-width:520px){.cap-per-grid{grid-template-columns:repeat(3,1fr);}}'
+      + '.cap-api{margin-top:10px;font-size:12px;font-weight:700;padding:8px 12px;border-radius:10px;}'
+      + '.cap-api-ok{background:#eefcf2;color:#16a34a;border:1px solid #cdeed7;}'
+      + '.cap-api-low{background:#fff7e8;color:#b45309;border:1px solid #f5deb0;}'
+      + '.cap-api-out{background:#fdecec;color:#dc2626;border:1px solid #f3c9c9;}'
+      + '.cap-set-card{margin:12px;padding:14px;border-radius:14px;border:1px solid #ececf0;background:#fff;}'
+      + '.cap-set-h{font-size:14px;font-weight:800;color:#14141a;margin-bottom:6px;}'
+      + '.cap-set-b{font-size:13px;color:#4b4b55;line-height:1.5;}'
+      + '.cap-set-card.cap-api-out{background:#fdecec;border-color:#f3c9c9;}'
+      + '.cap-set-card.cap-api-low{background:#fff7e8;border-color:#f5deb0;}'
       + '.cap-list{display:flex;flex-direction:column;gap:10px;}'
       + '.cap-card{background:#fff;border:1px solid #ececf0;border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.03);}'
       + '.cap-card-top{display:flex;align-items:center;gap:10px;cursor:pointer;}'
@@ -624,6 +673,7 @@
       const r = orig.apply(this, arguments);
       // Refresh capper data both on the Cappers page and on Open Bets (tracked group).
       if (name === "cappers" || name === "open") { try { loadLeaderboard(); } catch (e) { console.warn("[cappers] load", e); } }
+      if (name === "cappers" || name === "settings") { try { loadApiUsage(); } catch (e) {} }
       return r;
     };
     window.switchTab.__capWrapped = true;
@@ -639,6 +689,7 @@
       window.renderCappers = loadLeaderboard;   // external refresh hook
       render();               // paint the shell (Loading…) immediately
       loadLeaderboard();      // then pull from the bot
+      loadApiUsage();         // and the Odds API credit status
       // refresh from the server while the Cappers OR Open Bets tab is open
       setInterval(() => { try { if (typeof state !== "undefined" && (state.activeTab === "cappers" || state.activeTab === "open")) loadLeaderboard(); } catch (e) {} }, 60 * 1000);
       console.log("[cappers] page ready");
