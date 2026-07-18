@@ -108,6 +108,18 @@
     card.innerHTML = html;
   }
 
+  async function manualSettle(id, result) {
+    if (!id || !result) return;
+    try {
+      await fetch(`${TG_BOT_URL}/settle-bet`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Inbox-Token": TG_TOKEN },
+        body: JSON.stringify({ id, result }),
+      });
+    } catch (e) {}
+    loadLeaderboard();
+  }
+
   async function rejectBet(id) {
     try {
       await fetch(`${TG_BOT_URL}/reject`, {
@@ -343,22 +355,38 @@
     const pt = (leg.point != null) ? " " + (leg.point > 0 ? "+" : "") + leg.point : "";
     return (side + pt).trim();
   }
+  // Date + time, e.g. "Jul 18, 5:16 PM".
+  function stamp(iso) {
+    if (!iso) return "";
+    try { return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); }
+    catch (e) { return ""; }
+  }
   function betLine(b) {
     const legs = Array.isArray(b.legs) ? b.legs.map(legText).filter(Boolean).join("  +  ") : "";
     const c = cfg();
     const unitUSD = Math.max(0.01, +c.capperUnitUSD || 10);
     const pl = unitsPL(b) * unitUSD;
+    const open = OPENISH[b.status] || !SETTLED[b.status];
     let statusCls = "cap-open", statusTxt = "OPEN";
     if (b.status === "won") { statusCls = "cap-won"; statusTxt = "WON " + money(pl); }
     else if (b.status === "lost") { statusCls = "cap-lost"; statusTxt = "LOST " + money(pl); }
     else if (b.status === "push") { statusTxt = "PUSH"; }
     else if (b.status === "void") { statusTxt = "VOID"; }
-    const when = b.placedAt ? new Date(b.placedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
+    // timestamps: always show placed; show settled time once graded.
+    let meta = "placed " + esc(stamp(b.placedAt));
+    if (SETTLED[b.status] && b.settledAt) meta += " · graded " + esc(stamp(b.settledAt));
+    meta += " · " + (+b.units || 1) + "u";
+    // manual settle buttons on still-open bets (for ones that won't auto-grade).
+    const settleBtns = open
+      ? '<span class="cap-settle">' + ["won", "lost", "push", "void"].map(r =>
+          '<button class="cap-set-btn cap-set-' + r + '" data-settle="' + esc(b.id) + '" data-r="' + r + '">' + r[0].toUpperCase() + '</button>').join("") + '</span>'
+      : "";
     return '<div class="cap-bet">'
       + cardThumb(b.cardId)
       + '<div class="cap-bet-main"><span class="cap-bet-pick">' + esc(legs || "(pick)") + '</span>'
       + betGamesHtml(b)
-      + '<span class="cap-bet-meta">placed ' + esc(when) + ' · ' + (+b.units || 1) + 'u' + verifyLink(b.tipsterLink) + rejectBtn(b.id) + '</span></div>'
+      + '<span class="cap-bet-meta">' + meta + verifyLink(b.tipsterLink) + rejectBtn(b.id) + '</span>'
+      + settleBtns + '</div>'
       + '<span class="cap-bet-status ' + statusCls + '">' + esc(statusTxt) + '</span></div>';
   }
 
@@ -382,8 +410,20 @@
       + '<button class="cap-expand" data-expand="' + esc(c.name) + '" aria-label="Show bets">▾</button>'
       + '</div>'
       + '<div class="cap-follow">' + follow + '</div>'
-      + '<div class="cap-bets" data-bets="' + esc(c.name) + '" hidden>' + c.bets.slice().reverse().map(betLine).join("") + '</div>'
+      + '<div class="cap-bets" data-bets="' + esc(c.name) + '" hidden>' + betsGrouped(c.bets) + '</div>'
       + '</div>';
+  }
+
+  // Split a capper's bets into Open (still live) and Settled (won/lost), each under
+  // its own heading — so results are clearly separated from open action.
+  function betsGrouped(bets) {
+    const arr = (bets || []).slice().reverse();
+    const open = arr.filter(b => !SETTLED[b.status]);
+    const settled = arr.filter(b => SETTLED[b.status]);
+    let h = "";
+    if (open.length) h += '<div class="cap-bets-sub">Open · ' + open.length + '</div>' + open.map(betLine).join("");
+    if (settled.length) h += '<div class="cap-bets-sub">Settled · ' + settled.length + '</div>' + settled.map(betLine).join("");
+    return h || '<div class="cap-bets-sub">No bets</div>';
   }
 
   function render() {
@@ -498,6 +538,10 @@
       const list = card && card.querySelector("[data-bets]");
       const exp = card && card.querySelector("[data-expand]");
       if (list) { list.hidden = !list.hidden; if (exp) exp.textContent = list.hidden ? "▾" : "▴"; }
+    }));
+    root.querySelectorAll("[data-settle]").forEach((btn) => btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      manualSettle(btn.getAttribute("data-settle"), btn.getAttribute("data-r"));
     }));
     root.querySelectorAll("[data-namesave]").forEach((btn) => btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-namesave");
@@ -626,6 +670,12 @@
       + '.cap-bet-main{min-width:0;}'
       + '.cap-bet-pick{display:block;font-size:13px;font-weight:600;color:#14141a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
       + '.cap-bet-meta{font-size:11px;color:#9a9aa2;}'
+      + '.cap-bets-sub{font-size:11px;font-weight:800;color:#8a8a93;text-transform:uppercase;letter-spacing:.04em;margin:10px 4px 4px;}'
+      + '.cap-settle{display:inline-flex;gap:4px;margin-top:5px;}'
+      + '.cap-set-btn{width:22px;height:22px;border-radius:6px;border:1px solid #e6e6ea;background:#fff;font-size:11px;font-weight:800;color:#6b6b76;cursor:pointer;line-height:1;}'
+      + '.cap-set-won:hover{background:#eefcf2;color:#16a34a;border-color:#cdeed7;}'
+      + '.cap-set-lost:hover{background:#fdecec;color:#dc2626;border-color:#f3c9c9;}'
+      + '.cap-set-push:hover,.cap-set-void:hover{background:#f2f2f5;color:#14141a;}'
       + '.cap-bet-game{display:block;font-size:11px;font-weight:700;color:#2563eb;text-decoration:none;margin:1px 0;}'
       + '.cap-bet-status{font-size:11px;font-weight:800;flex:none;white-space:nowrap;}'
       + '.cap-won{color:#16a34a;}.cap-lost{color:#dc2626;}.cap-open{color:#9a9aa2;}'
