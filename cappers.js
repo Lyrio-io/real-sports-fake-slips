@@ -309,6 +309,32 @@
     return id ? ' · <a class="cap-reject" data-reject="' + esc(id) + '">reject</a>' : "";
   }
 
+  // Game date/time + a tap-to-open link to that game (live score / box score).
+  function fmtGameTime(iso) {
+    if (!iso) return "";
+    const d = new Date(iso); if (isNaN(d.getTime())) return "";
+    return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+  function gameUrl(leg) {
+    const q = (leg.away && leg.home) ? (leg.away + " vs " + leg.home) : (leg.team || "");
+    return q ? "https://www.google.com/search?q=" + encodeURIComponent(q + " score") : null;
+  }
+  // One tappable line per distinct game in the bet: "Away @ Home · date time ↗".
+  function betGamesHtml(b) {
+    const legs = Array.isArray(b.legs) ? b.legs : [];
+    const seen = {}, rows = [];
+    for (const l of legs) {
+      if (!l.away || !l.home) continue;
+      const key = l.gameId || (l.away + l.home);
+      if (seen[key]) continue; seen[key] = 1;
+      const t = fmtGameTime(l.start);
+      const url = gameUrl(l);
+      const txt = esc(l.away + " @ " + l.home) + (t ? ' · ' + esc(t) : '');
+      rows.push(url ? '<a class="cap-bet-game" href="' + esc(url) + '" target="_blank" rel="noopener">' + txt + ' ↗</a>' : '<span class="cap-bet-game">' + txt + '</span>');
+    }
+    return rows.join("");
+  }
+
   // ---- rendering ----
   function legText(leg) {
     if (!leg) return "";
@@ -331,7 +357,8 @@
     return '<div class="cap-bet">'
       + cardThumb(b.cardId)
       + '<div class="cap-bet-main"><span class="cap-bet-pick">' + esc(legs || "(pick)") + '</span>'
-      + '<span class="cap-bet-meta">' + esc(when) + ' · ' + (+b.units || 1) + 'u' + verifyLink(b.tipsterLink) + rejectBtn(b.id) + '</span></div>'
+      + betGamesHtml(b)
+      + '<span class="cap-bet-meta">placed ' + esc(when) + ' · ' + (+b.units || 1) + 'u' + verifyLink(b.tipsterLink) + rejectBtn(b.id) + '</span></div>'
       + '<span class="cap-bet-status ' + statusCls + '">' + esc(statusTxt) + '</span></div>';
   }
 
@@ -512,6 +539,7 @@
       const stake = effUnits(b) * unitUSD;
       return '<div class="cap-bet">' + cardThumb(b.cardId)
         + '<div class="cap-bet-main"><span class="cap-bet-pick">' + esc(capperName(b)) + ": " + esc(legs || "(pick)") + '</span>'
+        + betGamesHtml(b)
         + '<span class="cap-bet-meta">' + (+b.units || 1) + 'u · would be ' + money(stake) + ' at $' + Math.round(unitUSD) + '/u' + verifyLink(b.tipsterLink) + '</span></div>'
         + '<span class="cap-bet-status cap-open">TRACKING</span></div>';
     }).join("");
@@ -598,6 +626,7 @@
       + '.cap-bet-main{min-width:0;}'
       + '.cap-bet-pick{display:block;font-size:13px;font-weight:600;color:#14141a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
       + '.cap-bet-meta{font-size:11px;color:#9a9aa2;}'
+      + '.cap-bet-game{display:block;font-size:11px;font-weight:700;color:#2563eb;text-decoration:none;margin:1px 0;}'
       + '.cap-bet-status{font-size:11px;font-weight:800;flex:none;white-space:nowrap;}'
       + '.cap-won{color:#16a34a;}.cap-lost{color:#dc2626;}.cap-open{color:#9a9aa2;}'
       + '.cap-empty{text-align:center;padding:36px 18px;color:#6b6b76;}'
