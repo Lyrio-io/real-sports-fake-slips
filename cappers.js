@@ -609,7 +609,38 @@
   function injectStyles() {
     if (document.getElementById("cap-styles")) return;
     const css = ''
-      + '#cappers-root{padding:16px;max-width:900px;margin:0 auto;}'
+      // App-wide: never let any screen scroll sideways on a phone (Jorge: vertical only).
+      + 'html,body{max-width:100%;overflow-x:hidden;}'
+      + '@media(max-width:1023px){body *{max-width:100%;}img,video,canvas,svg{height:auto;}}'
+      // ===== APP-WIDE DESIGN THEME (Jorge's colors + the new design language) =====
+      // Grey page so the app's white cards pop with real depth (was white-on-white).
+      + 'body{background:#eaecf1 !important;font-variant-numeric:tabular-nums;}'
+      + '[class*="bg-ink-900"]{background-color:#ffffff !important;}'
+      // Two-layer shadow (tight edge + wide lift) + softer border on every card-like block.
+      + '[class*="rounded-2xl"][class*="border-ink-700"],[class*="rounded-xl"][class*="border-ink-700"]{box-shadow:0 1px 2px rgba(10,10,10,.05),0 10px 30px rgba(10,10,10,.08) !important;border-color:#ececf1 !important;}'
+      + '.shadow-lg{box-shadow:0 2px 4px rgba(10,10,10,.05),0 18px 48px rgba(10,10,10,.12) !important;}'
+      // Tighter tracking on big headings, matching the design system.
+      + 'h1,h2,.text-2xl,.text-3xl,.text-4xl{letter-spacing:-.5px;}'
+      // Bottom nav floats on its own two-layer shadow.
+      + '.bottom-nav{box-shadow:0 -1px 2px rgba(10,10,10,.04),0 -10px 30px rgba(10,10,10,.06) !important;}'
+      // Card-like blocks lift on hover (desktop only; transform+shadow, no layout thrash).
+      + '@media(hover:hover){[class*="rounded-2xl"][class*="border-ink-700"]:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(10,10,10,.05),0 16px 40px rgba(10,10,10,.12) !important;transition:transform .18s cubic-bezier(.22,.75,.3,1),box-shadow .18s;}}'
+      // "Tap to load today\'s lines": slim LONG bar, not a big fat blob. The button has
+      // no class of its own, so reach it via :has(.sr-text) and lay the text out in a row.
+      + '.sr-text{flex-direction:row !important;align-items:center;gap:8px;text-align:left;min-width:0;}'
+      + '.sr-title{font-size:13px !important;font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+      + '.sr-sub{font-size:11px !important;opacity:.85;white-space:nowrap;}'
+      + '.sr-sub::before{content:"\\00b7 ";}'
+      + 'button:has(> .sr-text),button:has(.sr-text){height:44px !important;min-height:0 !important;width:auto !important;padding:0 14px !important;border-radius:999px !important;display:inline-flex !important;align-items:center;gap:9px;white-space:nowrap;max-width:calc(100vw - 74px);min-width:0;overflow:hidden;}'
+      // Shrink the icon/chevron so the 44px bar breathes and the words get the room.
+      // Total needed = 14+26+9+154+9+16+14 = 242px, which still fits a 320px phone (246 avail).
+      + 'button:has(.sr-text) .sr-icon{width:26px !important;height:26px !important;flex:0 0 auto;}'
+      + 'button:has(.sr-text) .sr-icon svg{width:14px !important;height:14px !important;}'
+      + 'button:has(.sr-text) .sr-arrow{width:16px !important;height:16px !important;flex:0 0 auto;}'
+      + 'div:has(> button > .sr-text){width:auto !important;height:auto !important;max-width:calc(100vw - 28px);display:flex !important;align-items:center;gap:8px;}'
+      + '@media(max-width:520px){.sr-sub{display:none !important;}}'   // one clean line on phones
+      // ===== end app-wide theme =====
+      + '#cappers-root{padding:16px;max-width:900px;margin:0 auto;overflow-x:hidden;}'
       + '.cap-head{margin-bottom:14px;}'
       + '.cap-title{font-size:26px;font-weight:800;letter-spacing:-.5px;color:#14141a;}'
       + '.cap-tagline{color:#6b6b76;font-size:14px;margin-top:2px;}'
