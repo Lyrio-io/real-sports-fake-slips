@@ -594,7 +594,9 @@
 
   /* === UNDERDOG-STYLE GAME CARD GRID === */
   .gc { position: relative; padding: 0; overflow: hidden; }
-  .gc-stripe { position: absolute; top: 0; width: 64px; height: 64px; pointer-events: none; opacity: 0; }
+  /* These carry each team's real color but were rendered at opacity:0 — pure dead color.
+     Bringing them back at a low opacity makes each game visually distinct at a glance. */
+  .gc-stripe { position: absolute; top: 0; width: 64px; height: 64px; pointer-events: none; opacity: .20; }
   .gc-stripe.left { left: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
   .gc-stripe.right { right: 0; clip-path: polygon(0 0, 100% 0, 100% 100%); }
 
@@ -685,10 +687,14 @@
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     padding: 10px 6px;
-    background: #ffffff;
-    border: 1px solid #e4e4e7;
+    /* Raised chip: a tone step off the white card so it reads as TAPPABLE at rest.
+       The old pure-#ffffff on a white card is why everything felt flat/boring. */
+    background: linear-gradient(180deg, #ffffff 0%, #f4f4f5 100%);
+    border: 1px solid #d4d4d8;
+    border-bottom: 2px solid rgba(0,184,107,0.30);   /* persistent accent hint (hover never fires on phones) */
     border-radius: 12px; cursor: pointer;
-    transition: border-color 140ms ease, transform 140ms ease;
+    box-shadow: 0 1px 2px rgba(10,10,10,.04);
+    transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
     min-height: 62px;
     text-align: center;
   }
@@ -701,19 +707,29 @@
       0 0 24px -4px rgba(0,184,107,0.2),
       0 12px 28px -8px rgba(15,23,42,0.10);
   }
-  .gc-cell:active { transform: scale(0.96); }
+  .gc-cell:active { transform: scale(0.96); background: #ecfdf5; border-color: #00b86b; }
   .gc-cell[data-selected="true"] {
-    background: linear-gradient(180deg, #a7f3d0 0%, #d1fae5 100%);
-    border-color: #00b86b;
-    box-shadow: 0 0 0 2px #00b86b, 0 8px 24px -4px rgba(0,184,107,0.3);
+    background: linear-gradient(180deg, #00b86b 0%, #047857 100%);
+    border-color: #047857; border-bottom-color: #047857;
+    box-shadow: 0 0 0 2px rgba(0,184,107,.35), 0 8px 24px -4px rgba(0,184,107,0.45);
+    transform: translateY(-1px);
   }
+  /* On the solid green chip everything must be white to stay readable. */
+  .gc-cell[data-selected="true"] .gc-cell-line,
+  .gc-cell[data-selected="true"] .gc-cell-price { color: #ffffff !important; }
+  .gc-cell[data-selected="true"] .gc-cell-line .arrow { color: rgba(255,255,255,.75); }
+  .gc-cell[data-selected="true"]::after {
+    content: '✓'; position: absolute; top: 3px; right: 6px;
+    font-size: 10px; font-weight: 800; color: #ffffff; opacity: .9;
+  }
+  .gc-cell { position: relative; }
   .gc-cell-line { font-size: 16px; font-weight: 800; color: #0a0a0a; font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: -0.01em; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px; }
   .gc-cell-line .arrow { color: #71717a; font-weight: 700; margin-right: 2px; }
   .gc-cell-price { font-size: 14px; color: #0a0a0a; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 3px; line-height: 1.1; }
   .gc-cell-price.pos { color: #00b86b; }
   .gc-cell-price.neg { color: #0a0a0a; }
   .gc-cell[data-selected="true"] .gc-cell-line { color: #00b86b; }
-  .gc-cell[data-selected="true"] .gc-cell-price { color: #d6e89b; }
+  .gc-cell[data-selected="true"] .gc-cell-price { color: #047857; }
   @media (max-width: 640px) {
     .gc-grid { grid-template-columns: minmax(0, 0.9fr) 1fr 1fr 1fr; gap: 6px; padding: 6px 10px 14px; }
     .gc-cell { padding: 8px 4px; min-height: 60px; border-radius: 12px; }
@@ -772,7 +788,7 @@
     display: grid; grid-template-columns: 1fr 64px 1fr; gap: 10px; align-items: center;
     padding: 6px 0;
     scroll-snap-align: center;
-    scroll-snap-stop: always;
+    scroll-snap-stop: normal;
     transition: opacity 200ms ease;
     opacity: 0.42;
   }
@@ -1855,12 +1871,6 @@
           <!-- AI PICKS PREVIEW (shows pick-of-the-day + parlay summary if analysis cached) -->
           <div id="ai-preview-slot"></div>
 
-          <!-- SHARP / PUBLIC MONEY (honest placeholder) -->
-          <div class="sharp-public-card">
-            <h4><span class="text-violet-500">●</span> Sharp / Public Money Splits</h4>
-            <p><strong>Not in this data source.</strong> The Odds API doesn't ship sharp money tracking or public betting %. Real-time splits require a separate paid feed — Action Network ($X/mo), OddsJam, or Sports Insights. If you connect one, I'll wire it up. The Slate Analyst's edge detection works on PRICING data alone (line-shopping wins, vig analysis), which is independent of public/sharp splits.</p>
-          </div>
-
           <!-- HERO -->
           <div class="hero-card rounded-2xl p-5 lg:p-6 mb-5 flex items-center justify-between flex-wrap gap-4">
             <div class="min-w-0">
@@ -1883,27 +1893,14 @@
             <label class="underline cursor-pointer font-bold">upload your backup file<input id="api-warning-import" type="file" accept=".json,application/json" class="hidden" /></label>.
           </div>
 
-          <!-- RESTORE BACKUP banner — shows on home when profile looks fresh -->
-          <div id="restore-banner" class="hidden mb-4">
-            <div class="rounded-2xl p-4 border border-emerald-300 shadow-sm" style="background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);">
-              <div class="flex items-start gap-3">
-                <div class="text-2xl">💾</div>
-                <div class="flex-1 min-w-0">
-                  <div class="font-bold text-sm text-zinc-900">Looks like a fresh start.</div>
-                  <div class="text-xs text-zinc-600 mt-0.5 mb-3">If you installed this on your home screen, your old bets are saved in your browser, not the app. Tap below to upload your JSON backup and pick up where you left off.</div>
-                  <div class="flex gap-2 flex-wrap">
-                    <label class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-sm cursor-pointer inline-flex items-center gap-2">
-                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                      Upload backup file
-                      <input id="home-import-file" type="file" accept=".json,application/json" class="hidden" />
-                    </label>
-                    <button id="restore-banner-dismiss" class="bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-300 px-3 py-2 rounded-xl text-sm">Not now</button>
-                  </div>
-                </div>
-              </div>
+          <!-- RESTORE BACKUP — one quiet line (full import also lives in Settings) -->
+          <div id="restore-banner" class="hidden mb-3">
+            <div class="flex items-center gap-2 text-xs text-ink-300 bg-ink-900 border border-ink-700 rounded-xl px-3 py-2">
+              <span class="flex-1 min-w-0">Returning? Your old bets live in this browser.</span>
+              <label class="text-neon-500 font-bold cursor-pointer whitespace-nowrap">Restore backup<input id="home-import-file" type="file" accept=".json,application/json" class="hidden" /></label>
+              <button id="restore-banner-dismiss" class="text-ink-400 font-bold px-1">×</button>
             </div>
           </div>
-
           <!-- Quick filter chips -->
           <div class="flex gap-2 overflow-x-auto scrollbar-thin pb-2 mb-4 -mx-4 px-4 lg:mx-0 lg:px-0">
             <div id="sport-chips" class="flex gap-2"></div>
@@ -1923,7 +1920,6 @@
           </div>
 
           <!-- Always-visible build stamp so we can confirm cache state in any view -->
-          <div class="text-[10px] text-zinc-400 font-mono mb-2">App build: 2026-07-07T17:53Z</div>
 
           <div id="morning-ritual"></div>
 
@@ -1951,7 +1947,7 @@
               </div>
               <div class="w-px h-12 bg-ink-700"></div>
               <div class="text-center">
-                <div class="text-[10px] uppercase tracking-widest text-ink-400">Multiplier</div>
+                <div class="text-[10px] uppercase tracking-widest text-ink-400">Parlay odds</div>
                 <div id="parlay-multiplier" class="num text-4xl lg:text-5xl font-bold display text-neon-500">—</div>
               </div>
               <div class="w-px h-12 bg-ink-700"></div>
@@ -2827,7 +2823,7 @@
     <div id="cooling-countdown" class="num text-6xl font-black my-4 text-neon-500">60</div>
     <div id="cooling-bet-summary" class="text-sm text-ink-200 mb-4 bg-ink-800 rounded-xl p-3"></div>
     <div class="flex gap-2">
-      <button id="cooling-cancel" class="flex-1 bg-ink-700 hover:bg-ink-600 text-white font-bold py-2.5 rounded-xl">Cancel bet</button>
+      <button id="cooling-cancel" class="flex-1 bg-ink-700 hover:bg-ink-600 text-ink-100 font-bold py-2.5 rounded-xl">Cancel bet</button>
       <button id="cooling-confirm" class="flex-1 bg-danger-600 hover:bg-danger-500 text-white font-bold py-2.5 rounded-xl">Place anyway</button>
     </div>
   </div>
@@ -3433,14 +3429,20 @@ function vigClass(vigPct) {
   return 'text-danger-500';
 }
 const decimalToAmerican = d => d >= 2 ? '+' + Math.round((d-1)*100) : Math.round(-100/(d-1)).toString();
-const fmtAmerican = a => (a > 0 ? '+' : '') + a;
+const fmtAmerican = a => { const n = +a; return Number.isFinite(n) ? (n > 0 ? '+' : '') + Math.round(n) : '\u2014'; };
+ // Parlay/any decimal price shown to the user as American odds (+204), never 2.05.
+ const fmtDecAsAmerican = d => (Number.isFinite(d) && d > 1.0001) ? fmtAmerican(decimalToAmerican(d)) : '\u2014';
 const profit = (s, d) => s * (d - 1);
 const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
 const nowISO = () => new Date().toISOString();
 const APP_BUILD = '2026-07-07T17:53Z';
 const escapeHtml = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Turn machine tags like "high_vig" into readable "High vig"
-const humanize = s => String(s == null ? '' : s).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
+const PLAIN_TAG = { line_shopping:'Better price here', sharp_market:'Honest line', low_vig:'Small house cut',
+   high_vig:'House takes too much', illiquid:'Barely any books on it', favorite_parlay_drag:'Favorites drag a parlay down',
+   strong:'Strong', moderate:'Decent', other:'Other' };
+ const humanize = s => { const k = String(s == null ? '' : s).trim(); if (PLAIN_TAG[k]) return PLAIN_TAG[k];
+   return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim(); };
 const prettyMarket = key => {
   const map = {
     h2h: 'Moneyline', spreads: 'Spread', totals: 'Total',
@@ -3595,7 +3597,17 @@ function renderBetCanvas(bet) {
   return new Promise((resolve) => {
     const status = bet.status;   // 'pending' | 'won' | 'lost' | 'push'
     const pl = status === 'won' ? (bet.payout - bet.stake) : status === 'lost' ? -bet.stake : 0;
-    const W = 800, H = 1100;
+    const W = 800;
+    // Size the ticket to its content — a 2-leg slip shouldn't carry the same dead
+    // white space as a 6-leg one.
+    const _legs = bet.legs || [];
+    const _shown = Math.min(_legs.length, 6);
+    const _rowH = _legs.length > 4 ? 62 : 74;
+    const _settled = (bet.status === 'won' || bet.status === 'lost');
+    const H = Math.round(
+      80 + 300 + (_shown * _rowH) + (_legs.length > 6 ? 34 : 0)
+      + 54 + (_settled ? 150 : 20) + 110 + 80
+    );
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
@@ -3635,40 +3647,84 @@ function renderBetCanvas(bet) {
     // Divider
     ctx.strokeStyle = '#e4e4e7'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(cardX + 36, cardY + 260); ctx.lineTo(cardX + cardW - 36, cardY + 260); ctx.stroke();
-    // Rows: Odds, Cost, Payout, Settled at
-    const rows = [
-      ['Odds', fmtAmerican(bet.american)],
-      ['Stake', '$' + bet.stake.toFixed(2)],
-      [status === 'won' ? 'Paid out' : status === 'lost' ? 'Paid out' : 'Payout if win', '$' + (status === 'won' ? bet.payout.toFixed(2) : status === 'lost' ? '0.00' : bet.toWin.toFixed(2))],
-    ];
-    let ry = cardY + 300;
-    for (const [k, v] of rows) {
-      ctx.fillStyle = '#71717a'; ctx.font = '24px -apple-system'; ctx.textAlign = 'left';
-      ctx.fillText(k, cardX + 36, ry);
-      ctx.fillStyle = '#0a0a0a'; ctx.font = '900 28px -apple-system'; ctx.textAlign = 'right';
-      ctx.fillText(v, cardX + cardW - 36, ry);
-      ry += 48;
-    }
-    // Big P/L
-    if (status === 'won' || status === 'lost') {
-      const plText = (pl >= 0 ? '+' : '') + '$' + Math.abs(pl).toFixed(2);
-      ctx.fillStyle = pl >= 0 ? '#00b86b' : '#ef4444';
-      ctx.font = '900 64px -apple-system'; ctx.textAlign = 'center';
-      ctx.fillText(plText, cardX + cardW/2, ry + 50);
-      ry += 90;
-    }
-    // Legs (parlay)
-    if (bet.legs.length > 1) {
-      ctx.fillStyle = '#71717a'; ctx.font = '800 14px -apple-system'; ctx.textAlign = 'left';
-      ctx.fillText('LEGS', cardX + 36, ry + 30);
-      ctx.fillStyle = '#0a0a0a'; ctx.font = '600 18px -apple-system';
-      let ly = ry + 60;
-      for (const l of bet.legs.slice(0, 5)) {
-        const txt = `• ${(l.outcome || '').slice(0, 28)}${l.point != null ? ' ' + (l.point > 0 ? '+' : '') + l.point : ''}  ${fmtAmerican(l.american)}`;
-        ctx.fillText(txt, cardX + 36, ly); ly += 28;
+    // ---- LEGS ARE THE STAR: stacked rows, each with its own result ----
+    // (Old design buried the legs in a tiny bullet list under a receipt-style
+    //  label/value table, which left a big dead white gap. This flips it.)
+    const legs = bet.legs || [];
+    const legStatus = (l) => {
+      if (l.status && l.status !== 'pending') return l.status;   // explicit truth
+      if (status === 'won') return 'won';    // a won parlay means EVERY leg won
+      return null;                            // otherwise don't guess which leg lost
+    };
+    const oddsStr = (a) => fmtAmerican(a);
+    let ly = cardY + 296;
+    const rowH = legs.length > 4 ? 62 : 74;
+    for (const l of legs.slice(0, 6)) {
+      const st = legStatus(l);
+      const isWin = st === 'won', isLoss = st === 'lost';
+      // soft row chip
+      ctx.fillStyle = isWin ? '#f0fdf4' : isLoss ? '#fef2f2' : '#fafafa';
+      roundRect(cardX + 30, ly - rowH + 22, cardW - 60, rowH - 10, 14); ctx.fill();
+      // accent spine
+      ctx.fillStyle = isWin ? '#00b86b' : isLoss ? '#ef4444' : '#d4d4d8';
+      roundRect(cardX + 30, ly - rowH + 22, 5, rowH - 10, 3); ctx.fill();
+      // team / pick
+      const name = String(l.outcome || l.team || 'Pick');
+      const pts = l.point != null ? ' ' + (l.point > 0 ? '+' : '') + l.point : '';
+      ctx.fillStyle = '#0a0a0a';
+      ctx.font = `800 ${legs.length > 4 ? 24 : 27}px -apple-system, system-ui, sans-serif`;
+      ctx.textAlign = 'left';
+      let label = name + pts;
+      while (ctx.measureText(label).width > cardW - 300 && label.length > 6) label = label.slice(0, -2);
+      ctx.fillText(label, cardX + 50, ly);
+      const nameW = ctx.measureText(label).width;   // measure with the NAME font, before switching
+      // price, spaced off the name
+      ctx.fillStyle = '#52525b';
+      ctx.font = `700 ${legs.length > 4 ? 22 : 25}px -apple-system, system-ui, sans-serif`;
+      ctx.fillText(oddsStr(l.american), cardX + 50 + nameW + 16, ly);
+      // result pill on the right
+      if (st) {
+        const pillTxt = st.toUpperCase();
+        ctx.font = '900 17px -apple-system, system-ui, sans-serif';
+        const pw = ctx.measureText(pillTxt).width + 30;
+        ctx.fillStyle = isWin ? '#00b86b' : '#ef4444';
+        roundRect(cardX + cardW - 44 - pw, ly - 26, pw, 34, 17); ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+        ctx.fillText(pillTxt, cardX + cardW - 44 - pw / 2, ly - 2);
       }
-      if (bet.legs.length > 5) ctx.fillText(`+ ${bet.legs.length - 5} more`, cardX + 36, ly);
+      ly += rowH;
     }
+    if (legs.length > 6) {
+      ctx.fillStyle = '#71717a'; ctx.font = '600 18px -apple-system'; ctx.textAlign = 'left';
+      ctx.fillText(`+ ${legs.length - 6} more`, cardX + 50, ly); ly += 34;
+    }
+
+    // ---- compact money strip: stake -> payout ----
+    ly += 10;
+    ctx.strokeStyle = '#e4e4e7'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cardX + 36, ly); ctx.lineTo(cardX + cardW - 36, ly); ctx.stroke();
+    ly += 44;
+    const paid = status === 'won' ? bet.payout : status === 'lost' ? 0 : bet.toWin != null ? (bet.stake + bet.toWin) : bet.payout;
+    const money = (n) => '$' + Number(n || 0).toFixed(2);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#71717a'; ctx.font = '600 19px -apple-system';
+    ctx.fillText('Bet ' + money(bet.stake), cardX + 40, ly);
+    ctx.fillStyle = '#71717a'; ctx.font = '600 19px -apple-system'; ctx.textAlign = 'center';
+    ctx.fillText(oddsStr(bet.american), cardX + cardW / 2, ly);
+    ctx.textAlign = 'right';
+    ctx.fillText((status === 'won' ? 'Paid ' : status === 'lost' ? 'Paid ' : 'To win ') + money(paid), cardX + cardW - 40, ly);
+
+    // ---- THE NUMBER: what you actually won/lost ----
+    if (status === 'won' || status === 'lost') {
+      const plText = (pl >= 0 ? '+' : '-') + '$' + Math.abs(pl).toFixed(2);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#71717a'; ctx.font = '800 16px -apple-system';
+      ctx.fillText(pl >= 0 ? 'PROFIT' : 'LOSS', cardX + cardW / 2, ly + 58);
+      ctx.fillStyle = pl >= 0 ? '#00b86b' : '#ef4444';
+      ctx.font = '900 78px -apple-system, system-ui, sans-serif';
+      ctx.fillText(plText, cardX + cardW / 2, ly + 132);
+    }
+
     // Footer: timestamp + watermark
     ctx.fillStyle = '#a1a1aa'; ctx.font = '16px -apple-system'; ctx.textAlign = 'center';
     const stampLabel = status === 'pending' ? 'Placed' : 'Settled';
@@ -4839,7 +4895,13 @@ async function showAltPicker(gameId, sportKey, market) {
       best.dataset.active = 'true';
     }
   }
-  list.addEventListener('scroll', updateActive, { passive: true });
+  // Throttle to one layout read per frame — the old handler measured EVERY row on
+  // every scroll event, which is what made the picker feel jerky.
+  let _rafPending = false;
+  list.addEventListener('scroll', () => {
+    if (_rafPending) return; _rafPending = true;
+    requestAnimationFrame(() => { _rafPending = false; updateActive(); });
+  }, { passive: true });
 
   // Dynamically size top/bottom padding so first/last rows can scroll to center without
   // creating a huge empty band of dead space when scrolled near the edges.
@@ -4975,6 +5037,7 @@ function renderLineDial(g, sportKey, market, currentPoint) {
     </div>
     <input type="range" class="line-dial" min="0" max="${points.length - 1}" step="1" value="${idx}"
       data-dial-game="${g.id}" data-dial-sport="${sportKey}" data-dial-market="${market}"
+      data-dial-value-for="${g.id}|${market}"
       data-dial-points='${JSON.stringify(points).replace(/'/g, '&#39;')}' />
     <div class="line-dial-ticks">
       <span>${fmt(min)}</span>
@@ -5042,6 +5105,52 @@ function _espnTeamRecord(sportKey, teamName, type) {
   return null;
 }
 // Starting pitchers (MLB only) — returns array of { side, name, era, record, score }
+/* ===== MLB OFFICIAL probable pitchers (statsapi.mlb.com — free, no key) =====
+   Second, authoritative source used to VERIFY what ESPN says. A name is only shown
+   when both sources agree; if they disagree we show nothing rather than a guess. */
+const _mlbOfficial = { date: null, byTeam: null, loading: false };
+function _mlbNorm(s) {
+  return String(s || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z ]/g, '').trim();
+}
+async function loadMlbOfficialProbables() {
+  const d = new Date();
+  const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if (_mlbOfficial.date === key || _mlbOfficial.loading) return _mlbOfficial.byTeam;
+  _mlbOfficial.loading = true;
+  try {
+    const r = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${key}&hydrate=probablePitcher,team`);
+    if (r.ok) {
+      const j = await r.json();
+      const map = {};
+      for (const day of j.dates || []) for (const g of day.games || []) {
+        for (const side of ['away','home']) {
+          const t = g.teams?.[side]; if (!t?.team?.name) continue;
+          const pitcher = t.probablePitcher?.fullName || null;
+          map[_mlbNorm(t.team.name)] = pitcher;                       // full name key
+          map[_mlbNorm(t.team.name.split(' ').pop())] = pitcher;      // nickname key
+        }
+      }
+      _mlbOfficial.byTeam = map; _mlbOfficial.date = key;
+    }
+  } catch (e) { /* offline -> fall back to ESPN-only below */ }
+  _mlbOfficial.loading = false;
+  return _mlbOfficial.byTeam;
+}
+// Do the two sources agree on this team's starter?
+//   'ok'      -> agree (or MLB data unavailable, so ESPN stands alone)
+//   'conflict'-> they disagree; caller must NOT display a name
+function _pitcherAgreement(teamName, espnName) {
+  const map = _mlbOfficial.byTeam;
+  if (!map || !espnName) return 'ok';
+  const official = map[_mlbNorm(teamName)] ?? map[_mlbNorm(String(teamName).split(' ').pop())];
+  if (official === undefined || official === null) return 'ok';   // MLB hasn't posted one
+  const a = _mlbNorm(official), b = _mlbNorm(espnName);
+  if (a === b) return 'ok';
+  const la = a.split(' ').pop(), lb = b.split(' ').pop();          // surname match handles "M. Perez"
+  return (la && la === lb) ? 'ok' : 'conflict';
+}
+
 function _espnProbables(sportKey, awayName, homeName, commenceTime) {
   if (sportKey !== 'baseball_mlb') return null;
   const cache = _liveCache?.[sportKey]?.data; if (!cache) return null;
@@ -5441,16 +5550,16 @@ function renderGameCard(g, sportKey, marketFilter) {
   function vigPill(label, v, awayPrice, homePrice) {
     if (!v) return '';
     const cls = vigClass(v.vigPct);
-    const tag = v.vigPct >= 6 ? '⚠ trap' : v.vigPct < 4.5 ? 'sharp' : 'avg';
+    const tag = v.vigPct >= 6 ? '⚠ overpriced' : v.vigPct < 4.5 ? 'good price' : 'normal';
     return `<div class="vig-cell" title="Fair away ${fmtAmerican(v.sideAFairAmerican)} · fair home ${fmtAmerican(v.sideBFairAmerican)}">
       <span class="text-[10px] text-ink-400 uppercase tracking-wider font-semibold">${label}</span>
-      <span class="${cls} text-[11px] font-bold num ml-1">${v.vigPct.toFixed(1)}% ${tag}</span>
-      <span class="text-[10px] text-ink-300 num ml-1">fair: ${fmtAmerican(v.sideAFairAmerican)}/${fmtAmerican(v.sideBFairAmerican)}</span>
+      <span class="${cls} text-[11px] font-bold num ml-1">${v.vigPct.toFixed(1)}% cut · ${tag}</span>
+      <span class="text-[10px] text-ink-300 num ml-1">true price: ${fmtAmerican(v.sideAFairAmerican)}/${fmtAmerican(v.sideBFairAmerican)}</span>
     </div>`;
   }
   const vigFooter = (spreadV || totalV || mlV) ? `
     <div class="vig-footer">
-      <div class="vig-footer-label">📊 Vig &amp; fair price</div>
+      <div class="vig-footer-label">What the house keeps</div>
       <div class="vig-rows">
         ${vigPill('Spread', spreadV)}
         ${vigPill('Total', totalV)}
@@ -5556,7 +5665,7 @@ function _legacyUnused() {
     const lblA = useAltA ? `${useAltA.point > 0 ? '+' : ''}${useAltA.point}` : '—';
     const lblH = useAltH ? `${useAltH.point > 0 ? '+' : ''}${useAltH.point}` : '—';
     marketsHtml += `<div>
-      <div class="text-[11px] uppercase tracking-wider text-white font-bold mb-2">Spread${isAltSelected ? ' <span class="text-violet-500 font-bold">· ALT</span>' : ''}</div>
+      <div class="text-[11px] uppercase tracking-wider text-ink-300 font-bold mb-2">Spread${isAltSelected ? ' <span class="text-violet-500 font-bold">· ALT</span>' : ''}</div>
       <div class="grid grid-cols-2 gap-2">
         ${pickButton(meta('spreads', away, useAltA, lblA), `${away}`, 'Away', lblA)}
         ${pickButton(meta('spreads', home, useAltH, lblH), `${home}`, 'Home', lblH)}
@@ -5566,7 +5675,7 @@ function _legacyUnused() {
   }
   if (showH2H) {
     marketsHtml += `<div>
-      <div class="text-[11px] uppercase tracking-wider text-white font-bold mb-2">Moneyline</div>
+      <div class="text-[11px] uppercase tracking-wider text-ink-300 font-bold mb-2">Moneyline</div>
       <div class="grid grid-cols-2 gap-2">
         ${pickButton(meta('h2h', away, h2hAway, 'ML'), `${away}`, 'win outright')}
         ${pickButton(meta('h2h', home, h2hHome, 'ML'), `${home}`, 'win outright')}
@@ -5582,7 +5691,7 @@ function _legacyUnused() {
     const isAltSelected = altCacheData && state.lineSelections[`${g.id}:totals`] != null;
     const tp = useO?.point ?? '';
     marketsHtml += `<div>
-      <div class="text-[11px] uppercase tracking-wider text-white font-bold mb-2">Total${isAltSelected ? ' <span class="text-violet-500 font-bold">· ALT</span>' : ''}</div>
+      <div class="text-[11px] uppercase tracking-wider text-ink-300 font-bold mb-2">Total${isAltSelected ? ' <span class="text-violet-500 font-bold">· ALT</span>' : ''}</div>
       <div class="grid grid-cols-2 gap-2">
         ${pickButton(meta('totals', 'Over', useO, `O ${tp}`, tp), 'Over', useO?.book || 'best price', `${tp}`)}
         ${pickButton(meta('totals', 'Under', useU, `U ${tp}`, tp), 'Under', useU?.book || 'best price', `${tp}`)}
@@ -5616,10 +5725,10 @@ function _legacyUnused() {
     </div>
     <div class="px-4 sm:px-5 pt-4 pb-2">
       <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
-        <div class="flex items-center gap-2.5 min-w-0">${teamAvatar(away, 'lg')}<div class="min-w-0"><div class="text-[10px] text-white font-bold uppercase tracking-wider">Away</div><div class="font-bold text-base leading-tight truncate">${escapeHtml(away)}</div></div></div>
+        <div class="flex items-center gap-2.5 min-w-0">${teamAvatar(away, 'lg')}<div class="min-w-0"><div class="text-[10px] text-ink-300 font-bold uppercase tracking-wider">Away</div><div class="font-bold text-base leading-tight truncate">${escapeHtml(away)}</div></div></div>
         <span class="text-ink-400 text-xs hidden sm:block">vs</span>
         <div class="flex sm:hidden items-center justify-center text-ink-400 text-xs gap-2 my-0.5"><span class="h-px flex-1 bg-ink-700"></span>vs<span class="h-px flex-1 bg-ink-700"></span></div>
-        <div class="flex items-center gap-2.5 min-w-0">${teamAvatar(home, 'lg')}<div class="min-w-0"><div class="text-[10px] text-white font-bold uppercase tracking-wider">Home</div><div class="font-bold text-base leading-tight truncate">${escapeHtml(home)}</div></div></div>
+        <div class="flex items-center gap-2.5 min-w-0">${teamAvatar(home, 'lg')}<div class="min-w-0"><div class="text-[10px] text-ink-300 font-bold uppercase tracking-wider">Home</div><div class="font-bold text-base leading-tight truncate">${escapeHtml(home)}</div></div></div>
       </div>
     </div>
     <div class="px-5 pb-5 space-y-4">
@@ -5919,12 +6028,23 @@ function addLegFromButton(btn) {
   if (idx >= 0) state.slip.splice(idx, 1);
   else state.slip.push(leg);
   renderSlip(); renderParlay();
-  document.querySelectorAll('.pick').forEach(syncPickSelection);
+  syncAllSelections();
 }
-function syncPickSelection(btn) {
-  const leg = JSON.parse(btn.dataset.leg);
-  const sel = state.slip.some(l => l.gameId===leg.gameId && l.market===leg.market && l.outcome===leg.outcome && l.point===leg.point);
-  btn.dataset.selected = sel ? 'true' : 'false';
+// Highlight IS the selection: one key, one sweep over EVERY tappable pick surface.
+// Previously only `.pick` nodes re-synced, so the main games grid (.gc-cell[data-leg])
+// never lit up after a tap — the pick was in the slip but looked unselected.
+const legKey = l => `${l.gameId}|${l.market}|${l.outcome}|${l.point}`;
+function syncAllSelections() {
+  const keys = new Set((state.slip || []).map(legKey));
+  document.querySelectorAll('.pick[data-leg], .gc-cell[data-leg], .gc-nrfi-btn[data-leg]').forEach(b => {
+    let l; try { l = JSON.parse(b.dataset.leg); } catch (e) { return; }
+    b.dataset.selected = keys.has(legKey(l)) ? 'true' : 'false';
+  });
+}
+function syncPickSelection(btn) {   // kept as an alias so existing callers still work
+  if (!btn || !btn.dataset || !btn.dataset.leg) return syncAllSelections();
+  let leg; try { leg = JSON.parse(btn.dataset.leg); } catch (e) { return; }
+  btn.dataset.selected = (state.slip || []).some(l => legKey(l) === legKey(leg)) ? 'true' : 'false';
 }
 function periodSuffix(market) {
   // Maps period market keys to friendly suffixes like "F5", "Q1", "1H", "P1"
@@ -5976,14 +6096,14 @@ function renderSlip() {
           <div class="text-[11px] text-ink-400 truncate">${escapeHtml(l.away)} @ ${escapeHtml(l.home)} · ${escapeHtml(l.book)}</div>
         </div>
         <div class="text-right shrink-0">
-          <div class="num font-semibold ${l.american > 0 ? 'text-neon-500' : 'text-white'}">${fmtAmerican(l.american)}</div>
+          <div class="num font-semibold ${l.american > 0 ? 'text-neon-500' : 'text-ink-100'}">${fmtAmerican(l.american)}</div>
           <button class="text-[11px] text-ink-400 hover:text-danger-500 mt-0.5" data-rm="${i}">remove</button>
         </div>
       </div>
     </div>`).join('');
   legsDiv.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => {
     state.slip.splice(+b.dataset.rm, 1); renderSlip(); renderParlay();
-    document.querySelectorAll('.pick').forEach(syncPickSelection);
+    syncAllSelections();
   }));
 
   const sameGame = new Set(state.slip.map(l => l.gameId));
@@ -6018,13 +6138,13 @@ function renderSlip() {
     let kellyText = '';
     if (kelly && kelly.bankroll > 0) {
       if (kelly.f <= 0) {
-        kellyText = ` · <span class="text-danger-500">Kelly: -EV, skip</span>`;
+        kellyText = ` · <span class="text-danger-500">Bad price — skip this one</span>`;
       } else {
         const half = kelly.f / 2;
         const halfDollar = Math.round(kelly.bankroll * half);
         const overRecommend = stake > kelly.bankroll * half;
         const cls = overRecommend ? 'text-warn-500' : 'text-neon-500';
-        kellyText = ` · <span class="${cls}">½ Kelly: ${fmt$(halfDollar)} (${(half*100).toFixed(1)}% BR)</span>`;
+        kellyText = ` · <span class="${cls}">Smart size: ${fmt$(halfDollar)}</span>`;
       }
     }
     helper.innerHTML = base + kellyText;
@@ -6050,14 +6170,14 @@ function renderSlip() {
     }));
   }
 
-  document.getElementById('slip-mode').textContent = isSGP && sgpAllowed ? `${state.slip.length}-Leg Same-Game Parlay (high vig)` : (state.slip.length === 1 ? 'Single Bet' : (isParlay ? `${state.slip.length}-Leg Parlay · ${combinedDec.toFixed(2)}x` : 'Invalid: same-game legs'));
+  document.getElementById('slip-mode').textContent = isSGP && sgpAllowed ? `${state.slip.length}-Leg Same-Game Parlay (big house cut)` : (state.slip.length === 1 ? 'Single Bet' : (isParlay ? `${state.slip.length}-Leg Parlay · ${fmtDecAsAmerican(combinedDec)}` : 'Invalid: same-game legs'));
   document.getElementById('slip-odds').textContent = state.slip.length === 1 ? fmtAmerican(state.slip[0].american) : decimalToAmerican(combinedDec);
   document.getElementById('slip-towin').textContent = fmt$(towin);
   document.getElementById('slip-implied').textContent = (implied*100).toFixed(2) + '%';
 
   const warn = document.getElementById('slip-warning'); warn.textContent = '';
   if (isSGP && !sgpAllowed) warn.textContent = 'Same-game parlays disabled in settings.';
-  else if (isSGP && sgpAllowed) warn.textContent = '⚠ Same-game parlays carry high vig. Books love these.';
+  else if (isSGP && sgpAllowed) warn.textContent = '⚠ Same-game parlays take a much bigger house cut. Books love these.';
   else if (state.slip.length >= 4) warn.textContent = `${state.slip.length}-leg parlay = ~${(100 - implied*100).toFixed(1)}% bust rate.`;
   else if (P() && stake > P().bankroll) warn.textContent = `Stake exceeds bankroll (${fmt$(P().bankroll)}).`;
 
@@ -6074,7 +6194,7 @@ function renderParlay() {
   const isValidParlay = state.slip.length >= 2 && sameGame.size === state.slip.length;
   const combinedDec = state.slip.reduce((a,l) => a * l.decimal, 1);
 
-  document.getElementById('parlay-multiplier').textContent = state.slip.length ? combinedDec.toFixed(2) + 'x' : '—';
+  document.getElementById('parlay-multiplier').textContent = state.slip.length ? fmtDecAsAmerican(combinedDec) : '—';
   const stake = parseFloat(document.getElementById('parlay-stake').value) || 10;
   const win = state.slip.length ? profit(stake, combinedDec) : 0;
   document.getElementById('parlay-payout').textContent = state.slip.length ? fmt$(win) : '—';
@@ -6105,7 +6225,7 @@ function renderParlay() {
       </div>`).join('');
     list.querySelectorAll('[data-prm]').forEach(b => b.addEventListener('click', () => {
       state.slip.splice(+b.dataset.prm, 1); renderSlip(); renderParlay();
-      document.querySelectorAll('.pick').forEach(syncPickSelection);
+      syncAllSelections();
     }));
   }
 
@@ -6186,8 +6306,8 @@ function placeBet() {
   // Vig sanity check: warn if any leg sits on a juiced market (>6% vig)
   const juicedLegs = state.slip.map(l => ({ leg: l, vig: vigForLeg(l) })).filter(x => x.vig != null && x.vig > 6);
   if (juicedLegs.length) {
-    const lines = juicedLegs.map(x => `· ${prettyMarket(x.leg.market)} ${x.leg.outcome}${x.leg.point != null ? ' ' + x.leg.point : ''} — vig ${x.vig.toFixed(1)}%`).join('\n');
-    if (!confirm(`⚠ Juiced market${juicedLegs.length > 1 ? 's' : ''}:\n${lines}\n\nThe book's cut on ${juicedLegs.length > 1 ? 'these' : 'this'} is way above the usual 4-5%. You're paying a premium. Bet anyway?`)) return;
+    const lines = juicedLegs.map(x => `· ${prettyMarket(x.leg.market)} ${x.leg.outcome}${x.leg.point != null ? ' ' + x.leg.point : ''} — house keeps ${x.vig.toFixed(1)}%`).join('\n');
+    if (!confirm(`⚠ Overpriced${juicedLegs.length > 1 ? ' bets' : ' bet'}:\n${lines}\n\nThe book's cut on ${juicedLegs.length > 1 ? 'these' : 'this'} is way above the usual 4-5%. You're paying a premium. Bet anyway?`)) return;
   }
 
   // SGP blocker: refuse same-game parlays >3 legs without acknowledgment
@@ -6195,7 +6315,7 @@ function placeBet() {
   for (const l of state.slip) { sgpGames[l.gameId] = (sgpGames[l.gameId] || 0) + 1; }
   const maxSameGame = Math.max(...Object.values(sgpGames));
   if (maxSameGame >= 4) {
-    if (!confirm(`⚠ ${maxSameGame}-leg same-game parlay.\n\nSGPs >3 legs have crushing correlation-adjusted vig — books juice these massively because amateurs love them. Real hit rate is way below what the price implies. Bet anyway?`)) return;
+    if (!confirm(`⚠ ${maxSameGame}-leg same-game parlay.\n\nThe house cut stacks up fast on same-game parlays this big, and these hit far less often than the price suggests. Bet anyway?`)) return;
   }
 
   // Run guardrail checks
@@ -6246,7 +6366,7 @@ async function runGutCheck(stake) {
       body: JSON.stringify({
         model: state.analystModel,
         max_tokens: 400,
-        system: `You are talking to a friend who is new to sports betting. Explain like he's 10 years old — no jargon, no percentages without saying what they mean, no Wall Street talk.
+        system: `You are texting a friend who bets but hates jargon. Be short and direct — no talking down, no percentages without saying what they mean, no Wall Street talk.
 
 You're given a bet someone is about to place. Decide: should they bet it, skip it, or wait?
 
@@ -6320,8 +6440,8 @@ function showGutCheckModal({ loading, result, error, stake }) {
       ${result.biggest_concern ? `<div class="mt-2 text-[11px] text-ink-300"><strong class="text-ink-200">Biggest concern:</strong> ${escapeHtml(result.biggest_concern)}</div>` : ''}
     </div>
     <div class="flex gap-2">
-      <button id="gc-place" class="flex-1 ${verdict==='bet' ? 'bg-neon-500 text-ink-950' : 'bg-ink-700 text-white'} font-bold py-2.5 rounded-xl">${verdict==='bet' ? 'Place bet' : 'Place anyway'}</button>
-      <button id="gc-skip" class="flex-1 bg-ink-700 hover:bg-ink-600 text-white font-bold py-2.5 rounded-xl">Cancel</button>
+      <button id="gc-place" class="flex-1 ${verdict==='bet' ? 'bg-neon-500 text-ink-950' : 'bg-ink-700 text-ink-100'} font-bold py-2.5 rounded-xl">${verdict==='bet' ? 'Place bet' : 'Place anyway'}</button>
+      <button id="gc-skip" class="flex-1 bg-ink-700 hover:bg-ink-600 text-ink-100 font-bold py-2.5 rounded-xl">Cancel</button>
     </div>
     <label class="flex items-center gap-2 mt-3 text-[11px] text-ink-300 cursor-pointer"><input type="checkbox" id="gc-disable" class="accent-neon-500"> Disable gut-check until I turn it back on in Settings</label>`;
   document.getElementById('gc-place').onclick = () => {
@@ -6357,7 +6477,7 @@ function actuallyPlace(stake) {
   p.bets.push(bet); p.bankroll -= stake; persistProfiles();
   state.slip = []; renderSlip(); renderParlay(); renderHeader();
   const ri = document.getElementById('slip-reason'); if (ri) ri.value = '';
-  document.querySelectorAll('.pick').forEach(syncPickSelection);
+  syncAllSelections();
   showBetPlaced(bet);
 }
 
@@ -6693,7 +6813,7 @@ function applyTemplate(name) {
     if (!confirm(`This template would add ${legs.length} legs. That's a brutal parlay. Continue anyway?`)) return;
   }
   state.slip = legs; renderSlip(); renderParlay();
-  document.querySelectorAll('.pick').forEach(syncPickSelection);
+  syncAllSelections();
   switchTab('parlay');
 }
 
@@ -7069,8 +7189,13 @@ async function populateLiveStates() {
     const awayName = awayRow?.dataset.team, homeName = homeRow?.dataset.team;
     if (!awayName || !homeName) return;
     const commence = awayRow?.dataset.commence || homeRow?.dataset.commence || '';
-    const probables = _espnProbables(sk, awayName, homeName, commence);
+    let probables = _espnProbables(sk, awayName, homeName, commence);
     if (!probables || !probables.length) { slot.innerHTML = ''; return; }
+    // TWO-SOURCE CHECK: drop any pitcher MLB's official feed contradicts. Showing
+    // nothing beats showing a wrong starter.
+    probables = probables.filter(p =>
+      _pitcherAgreement(p.side === 'home' ? homeName : awayName, p.name) !== 'conflict');
+    if (!probables.length) { slot.innerHTML = '<div class="gc-pitcher"><span class="gc-pitcher-stats">Starters TBD</span></div>'; return; }
     slot.innerHTML = probables.map(p => {
       const bucket = pitcherBucket(p.score);
       const label = pitcherLabel(p.score);
@@ -8200,6 +8325,10 @@ function renderMorningRitual() {
   })();
   // Loss Recovery Coach — swap the morning ritual content when down significantly
   const nudge = getLossRecoveryNudge(p);
+  // DECLUTTER: without a nudge this card just repeats the hero (name, bankroll,
+  // record) and pushes the actual games further down the phone screen. Only show it
+  // when it has something to say.
+  if (!nudge) { host.innerHTML = ''; return; }
   const mrClass = nudge ? `morning-ritual-card mr-coach-${nudge.severity}` : 'morning-ritual-card';
   host.innerHTML = `
     <div class="${mrClass}">
@@ -8396,7 +8525,7 @@ function compileSlate() {
   };
 }
 
-const ANALYST_SYSTEM_PROMPT = `You're explaining today's bets to a 10-year-old friend who has never bet before. Talk like you're at the dinner table — no Wall Street talk, no jargon, no naked percentages without explaining what they mean in real life.
+const ANALYST_SYSTEM_PROMPT = `You're texting a sharp friend who bets but hates jargon. Be direct and confident — say the call and the reason, no lecturing, no talking down, no Wall Street talk, no jargon, no naked percentages without explaining what they mean in real life.
 
 You DO NOT predict winners — you have no crystal ball. What you DO is spot which bets have GOOD PRICES and which have BAD PRICES, then explain why in plain English.
 
@@ -8441,9 +8570,9 @@ OUTPUT JSON (strict, no markdown wrapper):
     "american": -110,
     "edge_type": "line_shopping|sharp_market|low_vig|other",
     "strength": "strong|moderate",
-    "reasoning": "3-4 plain sentences a 10-year-old can follow. Use comparisons. Say what each number MEANS in dollars or out-of-100. End with: 'One bet is still a gamble — even smart bets lose sometimes.'"
+    "reasoning": "2-3 short, confident sentences. Plain words, no jargon. Lead with the call and why the price is good. Put any number in dollars. Do NOT add disclaimers or lecture about gambling."
   },
-  "summary": "2-3 sentences about how today's prices look overall. Plain English only — no jargon. Example: 'Today's baseball games have honest prices — books are only taking a small cut. One game looks like a trap, three look fair.'",
+  "summary": "1-2 sentences about the PRICES only (how big the cuts are, whether any book is out of line). No predictions. Plain English only — no jargon. Example: 'Today's baseball games have honest prices — books are only taking a small cut. One game looks like a trap, three look fair.'",
   "edges": [
     { "bet": "...", "gameId": "...", "outcome": "...", "market": "...", "point": null|number, "american": -110, "edge_type": "...", "strength": "strong|moderate", "reasoning": "2-3 simple sentences. Explain in everyday words why this is a good price." }
   ],
@@ -8457,6 +8586,14 @@ OUTPUT JSON (strict, no markdown wrapper):
   },
   "warning": "always include this exact text: 'Even when the math looks good, ONE bet is still a gamble. The numbers only work in your favor if you make MANY bets like this over time, not on any single one.'"
 }
+
+HARD LIMIT ON WHAT YOU KNOW (read this twice):
+You are given PRICES ONLY. You do NOT know injuries, lineups, starting pitchers, weather,
+rest, travel, or form. You therefore CANNOT say who is likely to win. Never imply you can.
+Every claim you make must be provable from the prices in the input — which book pays more,
+how big the house cut is, and how one price compares to another. If a pick's only merit is
+"the price is good", say exactly that and nothing more. Do not invent narrative reasons
+("the bullpen is tired", "they play well at home") — you have no data for any of it.
 
 RULES:
 - ONLY analyze games present in the input JSON. NEVER invent, reference, or mention any team, league, or game that is not in the input. If a sport is not in the input, do not bring it up.
@@ -8631,7 +8768,7 @@ function renderAnalysis() {
     html += `<div class="bg-ink-900 border border-ink-700 rounded-2xl p-4">
       <div class="flex items-center gap-2 mb-3">
         <span class="text-neon-500 text-lg">●</span>
-        <h3 class="display font-bold text-base">Strongest edges</h3>
+        <h3 class="display font-bold text-base">Best prices today</h3>
         <span class="text-xs text-ink-400 num">${edges.length}</span>
       </div>
       <div class="space-y-2">
@@ -8657,7 +8794,7 @@ function renderAnalysis() {
     html += `<div class="bg-ink-900 border border-ink-700 rounded-2xl p-4">
       <div class="flex items-center gap-2 mb-3">
         <span class="text-danger-500 text-lg">●</span>
-        <h3 class="display font-bold text-base">Weakest picks · traps to avoid</h3>
+        <h3 class="display font-bold text-base">Skip these</h3>
         <span class="text-xs text-ink-400 num">${traps.length}</span>
       </div>
       <div class="space-y-2">
@@ -8714,7 +8851,7 @@ function renderAnalysis() {
       <div class="bg-ink-900 rounded-lg p-2.5 mb-2 grid grid-cols-3 gap-2 text-center">
         <div><div class="text-[9px] uppercase tracking-wider text-ink-400 font-bold">True hit rate</div><div class="num font-bold text-sm ${hitCls}">${(trueHitRate * 100).toFixed(1)}%</div></div>
         <div><div class="text-[9px] uppercase tracking-wider text-ink-400 font-bold">Book implied</div><div class="num font-bold text-sm text-ink-200">${(impliedHitRate * 100).toFixed(1)}%</div></div>
-        <div><div class="text-[9px] uppercase tracking-wider text-ink-400 font-bold">Edge per $1</div><div class="num font-bold text-sm ${edgeCls}">${edgePct >= 0 ? '+' : ''}${edgePct.toFixed(1)}%</div></div>
+        <div><div class="text-[9px] uppercase tracking-wider text-ink-400 font-bold">Profit per $1</div><div class="num font-bold text-sm ${edgeCls}">${edgePct >= 0 ? '+' : ''}${edgePct.toFixed(1)}%</div></div>
       </div>
       <div class="text-[11px] text-ink-300 leading-snug mb-2.5">${escapeHtml(obj.reasoning || '')}</div>
       <div class="flex gap-2 flex-wrap">
@@ -8759,7 +8896,7 @@ function renderAnalysis() {
     const leg = JSON.parse(b.dataset.leg);
     const idx = state.slip.findIndex(l => l.gameId===leg.gameId && l.market===leg.market && l.outcome===leg.outcome && l.point===leg.point);
     if (idx >= 0) state.slip.splice(idx, 1); else state.slip.push(leg);
-    renderSlip(); renderParlay(); document.querySelectorAll('.pick').forEach(syncPickSelection);
+    renderSlip(); renderParlay(); syncAllSelections();
     toast(idx >= 0 ? 'Removed from slip' : 'Added to slip');
   }));
   out.querySelectorAll('.add-parlay').forEach(b => b.addEventListener('click', () => {
@@ -8767,7 +8904,7 @@ function renderAnalysis() {
     const legs = items.map(legFromAnalysisItem).filter(Boolean);
     if (!legs.length) return toast('Legs unavailable — refresh lines');
     state.slip = legs; renderSlip(); renderParlay();
-    document.querySelectorAll('.pick').forEach(syncPickSelection);
+    syncAllSelections();
     switchTab('parlay');
     toast(`Loaded ${legs.length}-leg parlay into slip`);
   }));
@@ -9134,8 +9271,8 @@ function renderAiPreview() {
       <div class="ai-preview-pod-reason">${escapeHtml((pod.reasoning || '').slice(0, 240))}${pod.reasoning && pod.reasoning.length > 240 ? '…' : ''}</div>
     </div>` : ''}
     <div class="ai-preview-stats">
-      <div class="ai-preview-stat"><span class="num">${edges.length}</span><span class="lbl">Edges</span></div>
-      <div class="ai-preview-stat"><span class="num" style="color:#ef4444">${traps.length}</span><span class="lbl">Traps</span></div>
+      <div class="ai-preview-stat"><span class="num">${edges.length}</span><span class="lbl">Good</span></div>
+      <div class="ai-preview-stat"><span class="num" style="color:#ef4444">${traps.length}</span><span class="lbl">Skip</span></div>
       <div class="ai-preview-stat"><span class="num" style="color:#facc15">${parlayCount}</span><span class="lbl">Parlay Candidates</span></div>
     </div>
   </div>`;
@@ -9855,10 +9992,28 @@ function init() {
 
   document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
   document.getElementById('refresh-btn').addEventListener('click', refreshLines);
+  // THE LINE DIAL. It previously had no listener anywhere, so dragging it did nothing.
+  // 'input' only repaints the little number (cheap, smooth); 'change' (finger up) commits
+  // the chosen line and re-renders once.
+  document.addEventListener('input', (e) => {
+    const d = e.target.closest && e.target.closest('.line-dial'); if (!d) return;
+    let pts; try { pts = JSON.parse(d.dataset.dialPoints); } catch (err) { return; }
+    const pt = pts[+d.value]; if (pt == null) return;
+    const out = document.querySelector(`[data-dial-value="${d.dataset.dialValueFor}"]`);
+    if (out) out.textContent = (pt > 0 ? '+' : '') + pt;
+  });
+  document.addEventListener('change', (e) => {
+    const d = e.target.closest && e.target.closest('.line-dial'); if (!d) return;
+    let pts; try { pts = JSON.parse(d.dataset.dialPoints); } catch (err) { return; }
+    const pt = pts[+d.value]; if (pt == null) return;
+    state.lineSelections[`${d.dataset.dialGame}:${d.dataset.dialMarket}`] = parseFloat(pt);
+    renderLines();
+  });
+  loadMlbOfficialProbables().catch(() => {});   // second pitcher source, verifies ESPN
   document.getElementById('market-filter').addEventListener('change', renderLines);
   document.getElementById('search').addEventListener('input', renderLines);
 
-  document.getElementById('clear-slip').addEventListener('click', () => { state.slip = []; renderSlip(); renderParlay(); document.querySelectorAll('.pick').forEach(syncPickSelection); });
+  document.getElementById('clear-slip').addEventListener('click', () => { state.slip = []; renderSlip(); renderParlay(); syncAllSelections(); });
   document.getElementById('place-bet').addEventListener('click', placeBet);
   document.getElementById('stake-input').addEventListener('input', renderSlip);
   document.querySelectorAll('.quick-stake').forEach(b => b.addEventListener('click', () => { document.getElementById('stake-input').value = b.dataset.stake; renderSlip(); }));
@@ -9876,7 +10031,7 @@ function init() {
   document.getElementById('parlay-stake').addEventListener('input', renderParlay);
   document.querySelectorAll('.parlay-quick').forEach(b => b.addEventListener('click', () => { document.getElementById('parlay-stake').value = b.dataset.stake; renderParlay(); }));
   document.getElementById('parlay-place').addEventListener('click', placeParlay);
-  document.getElementById('parlay-clear').addEventListener('click', () => { state.slip = []; renderSlip(); renderParlay(); document.querySelectorAll('.pick').forEach(syncPickSelection); });
+  document.getElementById('parlay-clear').addEventListener('click', () => { state.slip = []; renderSlip(); renderParlay(); syncAllSelections(); });
   document.querySelectorAll('.parlay-template').forEach(b => b.addEventListener('click', () => applyTemplate(b.dataset.template)));
 
   document.getElementById('settle-btn').addEventListener('click', autoSettle);
