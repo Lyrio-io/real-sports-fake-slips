@@ -6,12 +6,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#ffffff" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="RSFS" />
 <!-- Force iOS / browsers to always fetch a fresh index.html so new deploys reach the user without manual cache-busting -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
 <title>Real Sports Fake Slips</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -44,6 +48,37 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+  /* ===== NATIVE-APP FEEL =====
+     These are the things that give a web page away on iOS: the blue tap flash,
+     text selection on UI chrome, the long-press callout, and rubber-band scroll
+     chaining that exposes the page behind. Kill all of them. */
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { overscroll-behavior-y: none; }
+  body {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    text-rendering: optimizeLegibility;
+  }
+  /* Text stays selectable where it's actually content, not on controls. */
+  button, a, .chip, .tab-btn, .gc-cell, .bottom-nav, .bottom-nav-btn, .nav-rail-btn,
+  .cap-card, .cap-chip, label, [role="button"], .pick {
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+  /* Momentum scrolling everywhere that scrolls. */
+  .scroll-y, [data-tab-content], .modal-body { -webkit-overflow-scrolling: touch; }
+  /* Installed (home-screen) mode: respect the notch + home indicator. */
+  @media (display-mode: standalone) {
+    body { padding-top: env(safe-area-inset-top); }
+    .bottom-nav { padding-bottom: calc(env(safe-area-inset-bottom) + 6px); }
+  }
+  /* Tabs cross-fade + lift instead of snapping — the single biggest "feels smooth" win. */
+  @keyframes rsfsTabIn { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
+  .rsfs-tab-anim { animation: rsfsTabIn 260ms cubic-bezier(.22,.75,.3,1); }
+  /* Buttons acknowledge the press immediately (native apps always do). */
+  button:active, .chip:active, .bottom-nav-btn:active, .nav-rail-btn:active { transform: scale(.97); }
+  button, .chip, .bottom-nav-btn { transition: transform 90ms ease; }
+  @media (prefers-reduced-motion: reduce) { .rsfs-tab-anim { animation: none; } }
+
   :root { --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-top: env(safe-area-inset-top, 0px); }
   * { -webkit-tap-highlight-color: transparent; }
   html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
@@ -3488,7 +3523,53 @@ const profileColor = name => { if (!name) return '#d4d4d8'; let h=0; for (const 
 const profileInitial = n => (n || '?').trim().charAt(0).toUpperCase();
 
 const P = () => state.profiles[state.currentProfile] || null;
-const persistProfiles = () => save(LS.PROFILES, state.profiles);
+const persistProfiles = () => { save(LS.PROFILES, state.profiles); cloudBackupSoon(); };
+
+/* ===== CLOUD BACKUP =====
+   Bets used to live ONLY in this browser. Clearing Safari data wiped them with no
+   way back. Now every change is mirrored to the bot's persistent volume. */
+const CLOUD_URL = 'https://tg-bot-production-fa2a.up.railway.app';
+const CLOUD_TOKEN = 'rsfs-2026-tipster-inbox-9x8k4m';
+let _cloudTimer = null, _lastCloudJSON = '';
+function cloudBackupSoon() {
+  clearTimeout(_cloudTimer);
+  _cloudTimer = setTimeout(cloudBackupNow, 4000);   // debounce bursts of writes
+}
+async function cloudBackupNow() {
+  try {
+    const payload = { profiles: state.profiles, currentProfile: state.currentProfile, v: 1 };
+    const json = JSON.stringify(payload);
+    if (json === _lastCloudJSON) return;            // nothing changed
+    const r = await fetch(`${CLOUD_URL}/app-backup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Inbox-Token': CLOUD_TOKEN },
+      body: JSON.stringify({ payload }),
+    });
+    if (r.ok) { _lastCloudJSON = json; localStorage.setItem('psb.cloudSavedAt', new Date().toISOString()); }
+  } catch (e) { /* offline — the next change retries */ }
+}
+// If this browser has no bets but the server does, offer to bring them back.
+async function cloudRestoreCheck() {
+  try {
+    const local = Object.values(state.profiles || {});
+    const hasLocalBets = local.some(p => p && Array.isArray(p.bets) && p.bets.length);
+    if (hasLocalBets) return;
+    const r = await fetch(`${CLOUD_URL}/app-backup?token=${CLOUD_TOKEN}`, { headers: { 'X-Inbox-Token': CLOUD_TOKEN } });
+    if (!r.ok) return;
+    const j = await r.json();
+    if (!j.ok || !j.payload || !j.payload.profiles) return;
+    const remote = Object.values(j.payload.profiles);
+    const remoteBets = remote.reduce((a, p) => a + ((p && p.bets) ? p.bets.length : 0), 0);
+    if (!remoteBets) return;
+    const when = j.savedAt ? new Date(j.savedAt).toLocaleString() : 'earlier';
+    if (confirm(`Found a saved backup with ${remoteBets} bet${remoteBets === 1 ? '' : 's'} (from ${when}).\n\nRestore it to this device?`)) {
+      state.profiles = j.payload.profiles;
+      if (j.payload.currentProfile) { state.currentProfile = j.payload.currentProfile; save(LS.CURRENT, state.currentProfile); }
+      save(LS.PROFILES, state.profiles);
+      location.reload();
+    }
+  } catch (e) { /* ignore */ }
+}
 function ensureProfile(name) {
   if (!state.profiles[name]) {
     state.profiles[name] = { bankroll: 1000, starting: 1000, bets: [], settings: { ...DEFAULT_PROFILE_SETTINGS } };
@@ -9757,6 +9838,9 @@ function switchTab(name) {
   state.activeTab = name;
   document.querySelectorAll('[data-tab]').forEach(b => b.dataset.active = b.dataset.tab === name ? 'true' : 'false');
   document.querySelectorAll('[data-tab-content]').forEach(d => d.dataset.active = d.dataset.tabContent === name ? 'true' : 'false');
+  // Cross-fade the incoming panel so tabs glide instead of snapping.
+  const pane = document.querySelector(`[data-tab-content="${name}"]`);
+  if (pane) { pane.classList.remove('rsfs-tab-anim'); void pane.offsetWidth; pane.classList.add('rsfs-tab-anim'); }
   // Show the back-arrow on the mobile header for any non-Lines tab
   const homeBtn = document.getElementById('header-home-btn');
   if (homeBtn) homeBtn.classList.toggle('hidden', name === 'lines');
@@ -10438,6 +10522,41 @@ function startAutoSettleLoop() {
   }, AUTO_SETTLE_INTERVAL_MS);
 }
 document.addEventListener('DOMContentLoaded', init);
+setTimeout(() => { try { cloudRestoreCheck(); } catch (e) {} }, 3000);
+
+/* ===== INSTALL COACH =====
+   The #1 reason this "feels like a browser" is that it IS one — Safari's URL bar
+   and toolbar are on screen. Installing to the Home Screen runs it fullscreen with
+   no browser chrome. iOS gives no beforeinstallprompt, so prompt manually. */
+(function () {
+  function installed() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+  const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const KEY = 'psb.a2hs.dismissed';
+  function show() {
+    if (installed() || localStorage.getItem(KEY) === '1' || document.getElementById('a2hs')) return;
+    const el = document.createElement('div');
+    el.id = 'a2hs';
+    el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 84px);z-index:9999;' +
+      'background:#0a0c0b;color:#fff;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;' +
+      'box-shadow:0 8px 30px rgba(0,0,0,.28);font:600 13px -apple-system,system-ui,sans-serif;' +
+      'transform:translate3d(0,120%,0);transition:transform .38s cubic-bezier(.16,.84,.24,1)';
+    el.innerHTML = '<div style="flex:1;min-width:0;line-height:1.35">' +
+      '<div style="font-weight:800;font-size:14px;margin-bottom:2px">Install for the full-screen app</div>' +
+      '<div style="opacity:.65">Tap Share, then <b>Add to Home Screen</b> \u2014 no address bar, opens instantly.</div></div>' +
+      '<button id="a2hs-x" style="flex:none;background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:10px;' +
+      'width:30px;height:30px;font-size:16px;font-weight:800">\u00d7</button>';
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.style.transform = 'translate3d(0,0,0)'; });
+    document.getElementById('a2hs-x').addEventListener('click', () => {
+      localStorage.setItem(KEY, '1');
+      el.style.transform = 'translate3d(0,120%,0)';
+      setTimeout(() => el.remove(), 400);
+    });
+  }
+  if (iOS && !installed()) setTimeout(show, 2500);
+})();
 </script><script src="tg-inbox.js"></script>
 <script src="cappers.js"></script>
 </body>
