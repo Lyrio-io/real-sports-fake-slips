@@ -3548,27 +3548,58 @@ async function cloudBackupNow() {
     if (r.ok) { _lastCloudJSON = json; localStorage.setItem('psb.cloudSavedAt', new Date().toISOString()); }
   } catch (e) { /* offline — the next change retries */ }
 }
-// If this browser has no bets but the server does, offer to bring them back.
-async function cloudRestoreCheck() {
+/* ===== TWO-WAY SYNC =====
+   Every browser (phone Safari, Mac Chrome, the installed app) is a SEPARATE storage
+   silo — a bet placed on the phone literally does not exist on the Mac. That's why
+   history looked like it "didn't transfer". This merges BOTH directions:
+   pull server -> union bets by id -> recompute bankroll -> save -> push back.
+   Union-by-id means a bet is never dropped, so it's safe to run on every device. */
+function _mergeProfiles(localP, remoteP) {
+  const out = JSON.parse(JSON.stringify(localP || {}));
+  for (const [name, rp] of Object.entries(remoteP || {})) {
+    if (!rp) continue;
+    if (!out[name]) { out[name] = JSON.parse(JSON.stringify(rp)); continue; }
+    const lp = out[name];
+    const byId = new Map();
+    for (const b of (lp.bets || [])) if (b && b.id) byId.set(b.id, b);
+    for (const b of (rp.bets || [])) {
+      if (!b || !b.id) continue;
+      const cur = byId.get(b.id);
+      if (!cur) { byId.set(b.id, b); continue; }
+      const score = v => (v.settledAt ? 2 : 0) + (v.status && v.status !== 'pending' ? 1 : 0);
+      if (score(b) > score(cur)) byId.set(b.id, b);   // prefer the settled copy
+    }
+    const bets = [...byId.values()].sort((a, c) => new Date(a.placedAt || 0) - new Date(c.placedAt || 0));
+    lp.bets = bets;
+    lp.starting = (lp.starting != null ? lp.starting : (rp.starting != null ? rp.starting : 1000));
+    const staked = bets.reduce((a, b) => a + (+b.stake || 0), 0);
+    const back = bets.reduce((a, b) => a + (+b.payout || 0), 0);
+    lp.bankroll = Math.round((lp.starting - staked + back) * 100) / 100;
+    if (!lp.settings && rp.settings) lp.settings = rp.settings;
+  }
+  return out;
+}
+async function cloudSync() {
   try {
-    const local = Object.values(state.profiles || {});
-    const hasLocalBets = local.some(p => p && Array.isArray(p.bets) && p.bets.length);
-    if (hasLocalBets) return;
     const r = await fetch(`${CLOUD_URL}/app-backup?token=${CLOUD_TOKEN}`, { headers: { 'X-Inbox-Token': CLOUD_TOKEN } });
     if (!r.ok) return;
     const j = await r.json();
-    if (!j.ok || !j.payload || !j.payload.profiles) return;
-    const remote = Object.values(j.payload.profiles);
-    const remoteBets = remote.reduce((a, p) => a + ((p && p.bets) ? p.bets.length : 0), 0);
-    if (!remoteBets) return;
-    const when = j.savedAt ? new Date(j.savedAt).toLocaleString() : 'earlier';
-    if (confirm(`Found a saved backup with ${remoteBets} bet${remoteBets === 1 ? '' : 's'} (from ${when}).\n\nRestore it to this device?`)) {
-      state.profiles = j.payload.profiles;
-      if (j.payload.currentProfile) { state.currentProfile = j.payload.currentProfile; save(LS.CURRENT, state.currentProfile); }
-      save(LS.PROFILES, state.profiles);
-      location.reload();
+    const remote = (j && j.ok && j.payload && j.payload.profiles) ? j.payload.profiles : null;
+    if (!remote) { cloudBackupNow(); return; }
+    const beforeJSON = JSON.stringify(state.profiles || {});
+    const merged = _mergeProfiles(state.profiles || {}, remote);
+    if (JSON.stringify(merged) === beforeJSON) { cloudBackupNow(); return; }
+    const count = o => Object.values(o).reduce((a, p) => a + ((p && p.bets) ? p.bets.length : 0), 0);
+    const gained = count(merged) - count(JSON.parse(beforeJSON));
+    state.profiles = merged;
+    save(LS.PROFILES, state.profiles);
+    _lastCloudJSON = '';
+    await cloudBackupNow();
+    if (gained > 0) {
+      try { toast(`Synced ${gained} bet${gained === 1 ? '' : 's'} from your other device`); } catch (e) {}
+      try { renderHeader(); renderOpenBets(); renderHistory(); } catch (e) {}
     }
-  } catch (e) { /* ignore */ }
+  } catch (e) { /* offline — retries on the next tick */ }
 }
 function ensureProfile(name) {
   if (!state.profiles[name]) {
@@ -10522,7 +10553,9 @@ function startAutoSettleLoop() {
   }, AUTO_SETTLE_INTERVAL_MS);
 }
 document.addEventListener('DOMContentLoaded', init);
-setTimeout(() => { try { cloudRestoreCheck(); } catch (e) {} }, 3000);
+setTimeout(() => { try { cloudSync(); } catch (e) {} }, 2500);
+setInterval(() => { try { cloudSync(); } catch (e) {} }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { try { cloudSync(); } catch (e) {} } });
 
 /* ===== INSTALL COACH =====
    The #1 reason this "feels like a browser" is that it IS one — Safari's URL bar
