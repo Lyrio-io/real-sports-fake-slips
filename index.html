@@ -3581,7 +3581,7 @@ function _mergeProfiles(localP, remoteP) {
 }
 async function cloudSync() {
   try {
-    const r = await fetch(`${CLOUD_URL}/app-backup?token=${CLOUD_TOKEN}`, { headers: { 'X-Inbox-Token': CLOUD_TOKEN } });
+    const r = await fetch(`${CLOUD_URL}/app-backup?union=1&token=${CLOUD_TOKEN}`, { headers: { 'X-Inbox-Token': CLOUD_TOKEN } });
     if (!r.ok) return;
     const j = await r.json();
     const remote = (j && j.ok && j.payload && j.payload.profiles) ? j.payload.profiles : null;
@@ -6558,6 +6558,7 @@ function actuallyPlace(stake) {
     S().sources.push({ name: sourceName, category: 'free' });
   }
   p.bets.push(bet); p.bankroll -= stake; persistProfiles();
+  cloudBackupNow();   // flush this bet to the server right now, no debounce
   state.slip = []; renderSlip(); renderParlay(); renderHeader();
   const ri = document.getElementById('slip-reason'); if (ri) ri.value = '';
   syncAllSelections();
@@ -7750,7 +7751,7 @@ function formatCountdown(ms) {
   if (hrs > 0) return `${hrs}h ${min}m`;
   return `${min}m`;
 }
-function manualSettle(betId, result) { const p=P(); if (!p) return; const b=p.bets.find(x=>x.id===betId); if (!b) return; b.legs.forEach(l => l.status = result==='push'?'push':result); finalizeBet(b, result); }
+function manualSettle(betId, result) { const p=P(); if (!p) return; const b=p.bets.find(x=>x.id===betId); if (!b) return; setTimeout(cloudBackupNow, 0); b.legs.forEach(l => l.status = result==='push'?'push':result); finalizeBet(b, result); }
 function cancelBet(betId) { const p=P(); if (!p) return; const b=p.bets.find(x=>x.id===betId); if (!b) return; b.status='void'; b.payout=b.stake; b.settledAt=nowISO(); p.bankroll+=b.stake; persistProfiles(); renderOpenBets(); renderHeader(); renderHistory(); renderStats(); toast('Voided.'); }
 /* ===== Settle Animations + Haptics =====
    Casino-feel feedback when bets settle: ascending tone + confetti for wins,
