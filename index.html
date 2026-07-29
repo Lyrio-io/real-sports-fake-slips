@@ -71,6 +71,11 @@
     body { padding-top: env(safe-area-inset-top); }
     .bottom-nav { padding-bottom: calc(env(safe-area-inset-bottom) + 6px); }
   }
+  /* The fixed bottom nav (66px) + floating refresh pill sat ON TOP of page content,
+     swallowing taps on anything near the bottom of a tab. Reserve room for them. */
+  @media (max-width: 1023px) {
+    [data-tab-content] { padding-bottom: calc(env(safe-area-inset-bottom) + 190px) !important; }
+  }
   /* Tabs cross-fade + lift instead of snapping — the single biggest "feels smooth" win. */
   @keyframes rsfsTabIn { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
   .rsfs-tab-anim { animation: rsfsTabIn 260ms cubic-bezier(.22,.75,.3,1); }
@@ -2309,7 +2314,8 @@
 
               <div class="flex flex-wrap gap-2 mt-3">
                 <button id="manual-reset-now" class="bg-ink-700 hover:bg-ink-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Reset bankroll now</button>
-                <button id="deposit-to-savings" class="bg-ink-700 hover:bg-ink-600 text-white text-xs font-bold px-3 py-2 rounded-lg">+ Add to Savings</button>
+                <button id="add-funds-btn" class="bg-neon-500 text-ink-950 text-xs font-bold px-3 py-2 rounded-lg">+ Add money</button>
+                <button id="deposit-to-savings" class="bg-ink-700 hover:bg-ink-600 text-ink-100 text-xs font-bold px-3 py-2 rounded-lg">+ Add to Savings</button>
                 <button id="reset-bankroll" class="bg-danger-600 hover:bg-danger-500 text-white text-xs font-bold px-3 py-2 rounded-lg ml-auto">Wipe this profile</button>
               </div>
               <p class="text-[11px] text-ink-400 mt-2">Goal: $2,500 = half unit at standard sizing.</p>
@@ -3525,6 +3531,38 @@ const profileInitial = n => (n || '?').trim().charAt(0).toUpperCase();
 const P = () => state.profiles[state.currentProfile] || null;
 const persistProfiles = () => { save(LS.PROFILES, state.profiles); cloudBackupSoon(); };
 
+/* ===== TOP UP =====
+   Money you put in is tracked as its own ledger (p.deposits) so it's never confused
+   with winnings. Bankroll math everywhere is:
+       bankroll = starting + deposits - staked + payouts
+   Deposits MUST be in that formula or a sync would silently erase them. */
+function totalDeposits(p) {
+  return ((p && p.deposits) || []).reduce((a, d) => a + (+d.amount || 0), 0);
+}
+function addFunds(amount, note) {
+  const p = P(); if (!p) return null;
+  amount = Math.round((+amount || 0) * 100) / 100;
+  if (!(amount > 0)) { try { toast('Enter an amount above $0'); } catch (e) {} return null; }
+  if (!Array.isArray(p.deposits)) p.deposits = [];
+  const entry = { id: uid(), at: nowISO(), amount, note: (note || '').slice(0, 60) || null };
+  p.deposits.push(entry);
+  p.bankroll = Math.round((p.bankroll + amount) * 100) / 100;
+  persistProfiles();
+  cloudBackupNow();                       // straight to the server, no debounce
+  try { renderHeader(); renderSettings(); } catch (e) {}
+  try { toast(`Added ${fmt$(amount)} — bankroll ${fmt$(p.bankroll)}`); } catch (e) {}
+  return entry;
+}
+function promptAddFunds() {
+  const p = P(); if (!p) return;
+  const v = prompt('How much do you want to add to your bankroll?', '100');
+  if (v === null) return;
+  const amt = parseFloat(String(v).replace(/[^0-9.]/g, ''));
+  if (!isFinite(amt) || amt <= 0) { try { toast('Enter a number above 0'); } catch (e) {} return; }
+  addFunds(amt, 'Top up');
+}
+window.addFunds = addFunds; window.promptAddFunds = promptAddFunds;
+
 /* ===== CLOUD BACKUP =====
    Bets used to live ONLY in this browser. Clearing Safari data wiped them with no
    way back. Now every change is mirrored to the bot's persistent volume. */
@@ -3572,9 +3610,16 @@ function _mergeProfiles(localP, remoteP) {
     const bets = [...byId.values()].sort((a, c) => new Date(a.placedAt || 0) - new Date(c.placedAt || 0));
     lp.bets = bets;
     lp.starting = (lp.starting != null ? lp.starting : (rp.starting != null ? rp.starting : 1000));
+    // Union deposits by id too, then include them — otherwise a sync would erase
+    // money the user added.
+    const depMap = new Map();
+    for (const d of (lp.deposits || [])) if (d && d.id) depMap.set(d.id, d);
+    for (const d of (rp.deposits || [])) if (d && d.id && !depMap.has(d.id)) depMap.set(d.id, d);
+    lp.deposits = [...depMap.values()].sort((a, c) => new Date(a.at || 0) - new Date(c.at || 0));
+    const deposited = lp.deposits.reduce((a, d) => a + (+d.amount || 0), 0);
     const staked = bets.reduce((a, b) => a + (+b.stake || 0), 0);
     const back = bets.reduce((a, b) => a + (+b.payout || 0), 0);
-    lp.bankroll = Math.round((lp.starting - staked + back) * 100) / 100;
+    lp.bankroll = Math.round((lp.starting + deposited - staked + back) * 100) / 100;
     if (!lp.settings && rp.settings) lp.settings = rp.settings;
   }
   return out;
@@ -10097,6 +10142,7 @@ function init() {
     renderLines();
   });
   loadMlbOfficialProbables().catch(() => {});   // second pitcher source, verifies ESPN
+  { const b = document.getElementById('add-funds-btn'); if (b) b.addEventListener('click', promptAddFunds); }
   document.getElementById('market-filter').addEventListener('change', renderLines);
   document.getElementById('search').addEventListener('input', renderLines);
 
@@ -10572,10 +10618,12 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { tr
     if (installed() || localStorage.getItem(KEY) === '1' || document.getElementById('a2hs')) return;
     const el = document.createElement('div');
     el.id = 'a2hs';
-    el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 84px);z-index:9999;' +
+    // Sits ABOVE the floating refresh pill + bottom nav. At the old bottom+84px it
+    // overlapped them and swallowed taps (z-index 9999 wins every hit test).
+    el.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 8px);z-index:60;' +
       'background:#0a0c0b;color:#fff;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;' +
       'box-shadow:0 8px 30px rgba(0,0,0,.28);font:600 13px -apple-system,system-ui,sans-serif;' +
-      'transform:translate3d(0,120%,0);transition:transform .38s cubic-bezier(.16,.84,.24,1)';
+      'transform:translate3d(0,-160%,0);transition:transform .38s cubic-bezier(.16,.84,.24,1)';
     el.innerHTML = '<div style="flex:1;min-width:0;line-height:1.35">' +
       '<div style="font-weight:800;font-size:14px;margin-bottom:2px">Install for the full-screen app</div>' +
       '<div style="opacity:.65">Tap Share, then <b>Add to Home Screen</b> \u2014 no address bar, opens instantly.</div></div>' +
@@ -10583,11 +10631,13 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { tr
       'width:30px;height:30px;font-size:16px;font-weight:800">\u00d7</button>';
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.transform = 'translate3d(0,0,0)'; });
-    document.getElementById('a2hs-x').addEventListener('click', () => {
-      localStorage.setItem(KEY, '1');
-      el.style.transform = 'translate3d(0,120%,0)';
+    const hide = (remember) => {
+      if (remember) localStorage.setItem(KEY, '1');
+      el.style.transform = 'translate3d(0,-160%,0)';
       setTimeout(() => el.remove(), 400);
-    });
+    };
+    document.getElementById('a2hs-x').addEventListener('click', () => hide(true));
+    setTimeout(() => { if (document.body.contains(el)) hide(false); }, 14000);  // never linger
   }
   if (iOS && !installed()) setTimeout(show, 2500);
 })();
