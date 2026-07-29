@@ -2315,6 +2315,7 @@
               <div class="flex flex-wrap gap-2 mt-3">
                 <button id="manual-reset-now" class="bg-ink-700 hover:bg-ink-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Reset bankroll now</button>
                 <button id="add-funds-btn" class="bg-neon-500 text-ink-950 text-xs font-bold px-3 py-2 rounded-lg">+ Add money</button>
+                <button id="account-key-btn" class="bg-ink-700 hover:bg-ink-600 text-ink-100 text-xs font-bold px-3 py-2 rounded-lg">Sync account…</button>
                 <button id="deposit-to-savings" class="bg-ink-700 hover:bg-ink-600 text-ink-100 text-xs font-bold px-3 py-2 rounded-lg">+ Add to Savings</button>
                 <button id="reset-bankroll" class="bg-danger-600 hover:bg-danger-500 text-white text-xs font-bold px-3 py-2 rounded-lg ml-auto">Wipe this profile</button>
               </div>
@@ -3568,6 +3569,25 @@ window.addFunds = addFunds; window.promptAddFunds = promptAddFunds;
    way back. Now every change is mirrored to the bot's persistent volume. */
 const CLOUD_URL = 'https://tg-bot-production-fa2a.up.railway.app';
 const CLOUD_TOKEN = 'rsfs-2026-tipster-inbox-9x8k4m';
+/* ===== ACCOUNT KEY =====
+   iOS gives the Home-Screen app its OWN storage, separate from Safari — so they only
+   act like one account because they sync through the server. The key below decides
+   WHICH account a device joins. Same key on every device = one shared account.
+   A different key = a completely separate person with their own bets. */
+const ACCT_KEY_LS = 'psb.account';
+function getAccountKey() {
+  let k = localStorage.getItem(ACCT_KEY_LS);
+  if (!k) { k = 'jorge'; localStorage.setItem(ACCT_KEY_LS, k); }   // existing data lives here
+  return k;
+}
+function setAccountKey(k) {
+  k = String(k || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 32);
+  if (!k) return null;
+  localStorage.setItem(ACCT_KEY_LS, k);
+  _lastCloudJSON = '';
+  return k;
+}
+window.getAccountKey = getAccountKey; window.setAccountKey = setAccountKey;
 let _cloudTimer = null, _lastCloudJSON = '';
 function cloudBackupSoon() {
   clearTimeout(_cloudTimer);
@@ -3578,7 +3598,7 @@ async function cloudBackupNow() {
     const payload = { profiles: state.profiles, currentProfile: state.currentProfile, v: 1 };
     const json = JSON.stringify(payload);
     if (json === _lastCloudJSON) return;            // nothing changed
-    const r = await fetch(`${CLOUD_URL}/app-backup`, {
+    const r = await fetch(`${CLOUD_URL}/app-backup?account=${encodeURIComponent(getAccountKey())}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Inbox-Token': CLOUD_TOKEN },
       body: JSON.stringify({ payload }),
@@ -3605,7 +3625,14 @@ function _mergeProfiles(localP, remoteP) {
       const cur = byId.get(b.id);
       if (!cur) { byId.set(b.id, b); continue; }
       const score = v => (v.settledAt ? 2 : 0) + (v.status && v.status !== 'pending' ? 1 : 0);
-      if (score(b) > score(cur)) byId.set(b.id, b);   // prefer the settled copy
+      const winner = score(b) > score(cur) ? b : cur;
+      // "tracking only" is STICKY — if either copy says this wasn't real money, keep
+      // that. Otherwise a device with an older copy silently turns the auto-parlays
+      // back into real bets and wrecks the bankroll.
+      if (b.trackingOnly || cur.trackingOnly) {
+        winner.trackingOnly = true; winner.stake = 0; winner.payout = 0; winner.toWin = 0;
+      }
+      byId.set(b.id, winner);
     }
     const bets = [...byId.values()].sort((a, c) => new Date(a.placedAt || 0) - new Date(c.placedAt || 0));
     lp.bets = bets;
@@ -3626,7 +3653,7 @@ function _mergeProfiles(localP, remoteP) {
 }
 async function cloudSync() {
   try {
-    const r = await fetch(`${CLOUD_URL}/app-backup?union=1&token=${CLOUD_TOKEN}`, { headers: { 'X-Inbox-Token': CLOUD_TOKEN } });
+    const r = await fetch(`${CLOUD_URL}/app-backup?union=1&account=${encodeURIComponent(getAccountKey())}&token=${CLOUD_TOKEN}`, { headers: { 'X-Inbox-Token': CLOUD_TOKEN } });
     if (!r.ok) return;
     const j = await r.json();
     const remote = (j && j.ok && j.payload && j.payload.profiles) ? j.payload.profiles : null;
@@ -10143,6 +10170,21 @@ function init() {
   });
   loadMlbOfficialProbables().catch(() => {});   // second pitcher source, verifies ESPN
   { const b = document.getElementById('add-funds-btn'); if (b) b.addEventListener('click', promptAddFunds); }
+  { const b = document.getElementById('account-key-btn'); if (b) b.addEventListener('click', () => {
+      const cur = getAccountKey();
+      const v = prompt(
+        'SYNC ACCOUNT\n\nEvery device using this name shares the same bets.\n' +
+        'Put this same name on your phone, Safari and Mac to keep them in sync.\n' +
+        'Give someone a DIFFERENT name and they get their own separate bets.\n\nAccount name:', cur);
+      if (v === null) return;
+      const k = setAccountKey(v);
+      if (!k) { toast('Use letters or numbers'); return; }
+      if (k === cur) { toast('Already on "' + k + '"'); return; }
+      if (confirm('Switch to account "' + k + '"?\n\nThis device will now load that account\'s bets.')) {
+        state.profiles = {}; save(LS.PROFILES, state.profiles);
+        cloudSync().then(() => location.reload());
+      }
+    }); }
   document.getElementById('market-filter').addEventListener('change', renderLines);
   document.getElementById('search').addEventListener('input', renderLines);
 
