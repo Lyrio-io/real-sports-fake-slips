@@ -2,7 +2,7 @@
 // Provides PWA install, lock-screen notifications, and network-first delivery
 // of index.html so new deploys reach the user without manual cache-busting.
 
-const RUNTIME = 'rsfs-runtime-v1';
+const RUNTIME = 'rsfs-runtime-v2';
 
 self.addEventListener('install', (e) => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
@@ -22,13 +22,15 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   // Same-origin navigation / index.html only — let everything else (Tailwind CDN, ESPN, Odds API) pass through untouched.
   if (url.origin !== self.location.origin) return;
+  // Never cache private account pages or API responses, including navigations.
+  if (url.pathname.startsWith('/kalshi') || url.pathname.startsWith('/api/')) return;
   const isHtml = req.mode === 'navigate' || req.destination === 'document' || url.pathname === '/' || url.pathname.endsWith('.html');
   if (!isHtml) return;
   e.respondWith((async () => {
     try {
       const fresh = await fetch(req, { cache: 'no-store' });
       const cache = await caches.open(RUNTIME);
-      cache.put(req, fresh.clone());
+      if (fresh.ok && !fresh.headers.get('cache-control')?.includes('no-store')) cache.put(req, fresh.clone());
       return fresh;
     } catch (err) {
       const cache = await caches.open(RUNTIME);
