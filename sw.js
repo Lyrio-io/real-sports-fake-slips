@@ -23,7 +23,7 @@ self.addEventListener('fetch', (e) => {
   // Same-origin navigation / index.html only — let everything else (Tailwind CDN, ESPN, Odds API) pass through untouched.
   if (url.origin !== self.location.origin) return;
   // Never cache private account pages or API responses, including navigations.
-  if (url.pathname.startsWith('/kalshi') || url.pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/research') || url.pathname.startsWith('/kalshi') || url.pathname.startsWith('/api/')) return;
   const isHtml = req.mode === 'navigate' || req.destination === 'document' || url.pathname === '/' || url.pathname.endsWith('.html');
   if (!isHtml) return;
   e.respondWith((async () => {

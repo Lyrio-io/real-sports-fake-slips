@@ -68,7 +68,7 @@ test('private routes require auth, block writes and never serve source or creden
   t.after(() => new Promise(resolve => server.close(resolve)));
   const base = `http://127.0.0.1:${server.address().port}`;
   const headers = { Authorization: 'Basic ' + Buffer.from(env.KALSHI_VIEWER_USER + ':' + env.KALSHI_VIEWER_PASSWORD).toString('base64') };
-  for (const route of ['/kalshi/', '/api/kalshi/portfolio']) assert.equal((await fetch(base + route)).status, 401);
+  for (const route of ['/kalshi/', '/api/kalshi/portfolio', '/research/', '/api/research/games']) assert.equal((await fetch(base + route)).status, 401);
   assert.equal(count, 0);
   const page = await fetch(base + '/kalshi/', { headers }); assert.equal(page.status, 200);
   assert.equal(page.headers.get('cache-control'), 'no-store'); assert.match(page.headers.get('content-security-policy'), /frame-ancestors 'none'/);
@@ -77,7 +77,7 @@ test('private routes require auth, block writes and never serve source or creden
     assert.equal((await fetch(base + route, { method: 'POST', headers })).status, 405);
   }
   assert.equal(count, 1);
-  for (const route of ['/.env', '/.env.example', '/server.cjs', '/server/kalshi.cjs', '/.git/config', '/PROJECT_STATE.md', '/kalshi.html', '/package.json']) {
+  for (const route of ['/.env', '/.env.example', '/server.cjs', '/kalshi-client.cjs', '/kalshi.test.cjs', '/sports-research.cjs', '/research.html', '/.git/config', '/PROJECT_STATE.md', '/kalshi.html', '/package.json']) {
     assert.equal((await fetch(base + route)).status, 404, route);
   }
   assert.equal((await fetch(base + '/api/kalshi/portfolio', { headers: { ...headers, 'Sec-Fetch-Site': 'cross-site' } })).status, 403);

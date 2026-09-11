@@ -57,3 +57,15 @@ Snapshots are cached in server memory for 30 seconds, concurrent refreshes are c
 - [Kalshi market metadata](https://docs.kalshi.com/api-reference/market/get-market)
 - [Kalshi balance](https://docs.kalshi.com/api-reference/portfolio/get-balance)
 - [Railway variables](https://docs.railway.com/guides/variables)
+
+## Sports research and CLV
+
+The private `/research/` page uses the same viewer login. Set `ODDS_API_KEY` (The Odds API) and `ANTHROPIC_API_KEY` in the app service. Optional `ANTHROPIC_MODEL` must support the `web_search_20250305` tool; the default is `claude-haiku-4-5-20251001`. Existing values can be reused. Research consumes provider credits only when requested; odds refreshes consume odds quota. Reports are cached for 15 minutes, odds for 60 seconds, and research is limited to 20 new reports per hour per process. Quotas reset on restart and are not distributed across replicas.
+
+Only upcoming moneyline matchups are included. Quotes older than 15 minutes are excluded. The market baseline removes margin within each bookmaker and averages the resulting probabilities; it is not an independently calibrated forecast. AI web research distinguishes cited facts, possible impacts, market pricing, and a tentative lean or Pass. Travel, time zones, injuries and weather can inform interpretation but do not create a proven edge. Reports require citations and a completed provider response. Source quality and late changes still require judgment. No Kalshi account data is sent to the AI service.
+
+The paper journal saves only in the current browser. Save a quote before kickoff, then refresh before kickoff for a same-book reference. After kickoff, CLV proxy = entry decimal odds / last observed pregame decimal odds − 1. The reference must have been updated after the entry and within 10 minutes before kickoff. Missing references remain unavailable. This is not a guaranteed final closing quote and does not collect in the background. Different books, outcomes, in-play prices and missing data cannot substitute for the reference. CLV measures price quality after entry; it cannot be known when making the original pick and does not guarantee a win.
+
+The original sandbox's closing-line collector also now uses same-book, same-point observations only before kickoff. Old post-kickoff snapshots are retained in storage but excluded from metrics. Its cents figure is a difference in decimal-odds return per $1 stake; the new journal uses the ratio definition above. This release is a research workflow, not a backtested or calibrated sports forecasting model. Training one would require timestamped historical features, closing prices, results, and out-of-sample evaluation.
+
+`POST /api/research/briefing` generates analysis only. All Kalshi routes remain GET-only, with no trade placement. The private research page shares authentication and no-store protections; `/research` is also excluded from service-worker caching.

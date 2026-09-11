@@ -1824,6 +1824,7 @@
     </div>
     <nav class="flex-1 p-3 space-y-1">
       <a href="/kalshi/" class="nav-rail-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-300 hover:bg-ink-800"><span class="font-semibold">Kalshi · Read only</span></a>
+      <a href="/research/" class="nav-rail-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-300 hover:bg-ink-800">Sports research</a>
       <button class="nav-rail-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-300 hover:bg-ink-800 hover:text-white" data-tab="lines">
         <svg class="nav-icon w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
         <span class="font-semibold">Lines</span>
@@ -2816,6 +2817,7 @@
     <h3 class="display text-lg font-bold mb-3 px-2">More</h3>
     <div class="grid grid-cols-2 gap-2">
       <a href="/kalshi/" class="more-item bg-ink-800 hover:bg-ink-700 rounded-2xl p-4 text-left flex items-center gap-3">Kalshi · Read only</a>
+      <a href="/research/" class="more-item bg-ink-800 hover:bg-ink-700 rounded-2xl p-4 text-left flex items-center gap-3">Sports research</a>
       <button class="more-item bg-ink-800 hover:bg-ink-700 active:scale-95 transition rounded-2xl p-4 text-left flex items-center gap-3" data-tab="stats">
         <svg class="w-6 h-6 text-neon-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-7"/></svg>
         <div><div class="font-bold text-sm">Stats</div><div class="text-[11px] text-ink-300">Goals, P&amp;L, sport breakdown</div></div>
@@ -3995,12 +3997,12 @@ const ACHIEVEMENTS = [
   { id: 'ten_settled', name: 'Getting Serious', icon: '📊', desc: 'Grade 10 bets', check: p => (p.bets || []).filter(b => b.status === 'won' || b.status === 'lost').length >= 10 },
   { id: 'beat_close_5', name: 'Sharper Than the Book', icon: '🔪', desc: 'Beat the closing line on 5 legs', check: p => {
     let n = 0; for (const b of (p.bets || [])) for (const l of (b.legs || [])) {
-      if (l.closingLine != null && americanToDecimal(l.american) > americanToDecimal(l.closingLine)) n++;
+      if (validClosingProxy(l) && americanToDecimal(l.american) > americanToDecimal(l.closingLine)) n++;
     } return n >= 5;
   } },
   { id: 'positive_clv_streak', name: 'Beat the Close 20', icon: '⚔️', desc: 'Beat the closing line 20 times total', check: p => {
     let n = 0; for (const b of (p.bets || [])) for (const l of (b.legs || [])) {
-      if (l.closingLine != null && americanToDecimal(l.american) > americanToDecimal(l.closingLine)) n++;
+      if (validClosingProxy(l) && americanToDecimal(l.american) > americanToDecimal(l.closingLine)) n++;
     } return n >= 20;
   } },
   { id: 'discipline_3', name: 'Three-Day Pro', icon: '🧘', desc: '3-day discipline streak', check: p => computeDisciplineStreak(p) >= 3 },
@@ -4062,7 +4064,7 @@ function computePerformanceScore(p) {
   let clvScore = 0;
   const clvLegs = [];
   for (const b of settled) for (const l of (b.legs || [])) {
-    if (l.closingLine == null) continue;
+    if (!validClosingProxy(l)) continue;
     clvLegs.push(americanToDecimal(l.american) > americanToDecimal(l.closingLine) ? 1 : 0);
   }
   if (clvLegs.length >= 5) {
@@ -4278,29 +4280,32 @@ function lineMoveSinceOpen(gameId, market, outcome, point, currentAmerican) {
   return { openAmerican: snap.american, deltaCents };
 }
 
-// CLV capture: for any open bet whose game has STARTED within the last 30 min, snapshot
-// the current best price on each leg as the "closing line" — the gold standard for
-// sharpness. Beating the close = real skill; trailing it = paying retail.
+// Only a same-book pregame observation can be used as a closing proxy.
+// Older snapshots captured after kickoff remain stored but are excluded from metrics.
+function validClosingProxy(leg) {
+  const start = Date.parse(leg.start), at = Date.parse(leg.closingLineAt);
+  return leg.closingSource === 'pregame-same-book-v1' && leg.closingLine != null &&
+    at < start && at >= start - 10 * 60000 && Date.now() >= start;
+}
 function snapshotClosingLines(sportKey, games) {
-  const profiles = Object.values(state.profiles || {});
   let dirty = false;
   const now = Date.now();
-  for (const prof of profiles) {
-    for (const b of prof.bets || []) {
-      if (b.status !== 'pending') continue;
-      for (const leg of b.legs || []) {
-        if (leg.sportKey !== sportKey) continue;
-        if (leg.closingLine != null) continue;
-        if (!leg.start) continue;
-        const startMs = new Date(leg.start).getTime();
-        // Only snapshot if game has started within last 30 minutes (close to "the close")
-        if (now < startMs || now > startMs + 30 * 60 * 1000) continue;
+  for (const prof of Object.values(state.profiles || {})) {
+    for (const bet of prof.bets || []) {
+      if (bet.status !== 'pending') continue;
+      for (const leg of bet.legs || []) {
+        const start = Date.parse(leg.start);
+        if (leg.sportKey !== sportKey || !Number.isFinite(start) || now >= start || now < start - 10 * 60000) continue;
         const game = games.find(g => g.id === leg.gameId);
-        if (!game) continue;
-        const close = bestOddsForOutcome(game, leg.market, leg.outcome, leg.point);
-        if (!close) continue;
-        leg.closingLine = close.american;
-        leg.closingLineAt = nowISO();
+        const book = game?.bookmakers?.find(b => b.title === leg.book);
+        const market = book?.markets?.find(m => m.key === leg.market);
+        const updated = Date.parse(market?.last_update || book?.last_update);
+        if (!Number.isFinite(updated) || updated >= start || updated < start - 10 * 60000 || updated > now) continue;
+        const quote = market.outcomes?.find(o => o.name === leg.outcome && (leg.point == null ? o.point == null : o.point === leg.point));
+        if (!quote || !Number.isFinite(quote.price) || Math.abs(quote.price) < 100) continue;
+        leg.closingLine = quote.price;
+        leg.closingLineAt = new Date(updated).toISOString();
+        leg.closingSource = 'pregame-same-book-v1';
         dirty = true;
       }
     }
@@ -9499,7 +9504,7 @@ function renderVsCard() {
     // CLV %
     let beat = 0, totalLegs = 0;
     for (const b of settled) for (const l of (b.legs || [])) {
-      if (l.closingLine == null) continue;
+      if (!validClosingProxy(l)) continue;
       totalLegs++;
       if (americanToDecimal(l.american) > americanToDecimal(l.closingLine)) beat++;
     }
@@ -9732,13 +9737,13 @@ function renderClvPanel() {
   const legCLVs = [];
   for (const b of settled) {
     for (const l of b.legs || []) {
-      if (l.closingLine == null) continue;
+      if (!validClosingProxy(l)) continue;
       const clv = clvCents(l.american, l.closingLine);
       if (clv != null) legCLVs.push({ clv, source: b.source || '—', sport: sportAbbr(l.sportKey), market: l.market });
     }
   }
   if (!legCLVs.length) {
-    el.innerHTML = `<div class="text-ink-400">No closing-line snapshots yet. Closing prices are captured automatically when the app refreshes during the last 30 min before a game starts — so keep the app open near tipoff. After ~10 captured legs, you\'ll see your CLV % here.</div>`;
+    el.innerHTML = `<div class="text-ink-400">No valid pregame closing proxies yet. Keep the app open and refresh within 10 minutes before kickoff. Only the same book and line qualify; old post-kickoff snapshots are excluded. These are observed proxies, not verified final closes.</div>`;
     return;
   }
   const avg = legCLVs.reduce((a, x) => a + x.clv, 0) / legCLVs.length;
@@ -9747,11 +9752,11 @@ function renderClvPanel() {
   el.innerHTML = `
     <div class="grid grid-cols-3 gap-3 mb-3">
       <div class="bg-ink-800 rounded-xl p-3 text-center">
-        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Avg CLV</div>
+        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Avg price difference (proxy)</div>
         <div class="num text-xl font-bold ${cls} mt-1">${avg >= 0 ? '+' : ''}${avg.toFixed(1)}¢</div>
       </div>
       <div class="bg-ink-800 rounded-xl p-3 text-center">
-        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Beat the close</div>
+        <div class="text-[10px] uppercase tracking-wider text-ink-400 font-bold">Beat pregame proxy</div>
         <div class="num text-xl font-bold ${beatRate >= 55 ? 'text-neon-500' : beatRate >= 45 ? 'text-warn-500' : 'text-danger-500'} mt-1">${beatRate.toFixed(0)}%</div>
       </div>
       <div class="bg-ink-800 rounded-xl p-3 text-center">

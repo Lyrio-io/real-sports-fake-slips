@@ -4,13 +4,14 @@ const path = require('node:path');
 const { createHash, timingSafeEqual } = require('node:crypto');
 const { createKalshi, KalshiError } = require('./kalshi-client.cjs');
 
+const { createResearch } = require('./sports-research.cjs');
 const publicFiles = new Set(['index.html', 'manifest.json', 'sw.js', 'tg-inbox.js', 'cappers.js',
-  'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'kalshi.css', 'kalshi-ui.js']);
+  'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'kalshi.css', 'kalshi-ui.js', 'research-ui.js', 'research.css']);
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.json': 'application/json' };
 function digest(value) { return createHash('sha256').update(value).digest(); }
 function createServer(env = process.env, injectedClient) {
-  let client = injectedClient;
+  let client = injectedClient, research;
   return http.createServer(async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
@@ -21,7 +22,7 @@ function createServer(env = process.env, injectedClient) {
     };
     try {
       const url = new URL(req.url, 'http://localhost');
-      const privateRoute = url.pathname === '/kalshi' || url.pathname === '/kalshi/' || url.pathname.startsWith('/api/kalshi');
+      const privateRoute = url.pathname === '/kalshi' || url.pathname === '/kalshi/' || url.pathname.startsWith('/api/kalshi') || ['/research','/research/'].includes(url.pathname) || url.pathname.startsWith('/api/research');
       if (privateRoute) {
         res.setHeader('X-Frame-Options', 'DENY');
         res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
@@ -37,6 +38,15 @@ function createServer(env = process.env, injectedClient) {
           return reply(401, { error: 'Sign in with your private viewer username and password.' });
         }
       }
+      if (req.method === 'POST' && url.pathname === '/api/research/briefing') {
+        if (!req.headers['content-type']?.startsWith('application/json')) return reply(415, {error:'Use JSON.'});
+        let body = '';
+        for await (const chunk of req) { body += chunk; if (Buffer.byteLength(body)>8192) return reply(413,{error:'Research note is too large.'}); }
+        let data; try { data=JSON.parse(body); } catch { return reply(400,{error:'Invalid research request.'}); }
+        if (!data || typeof data !== 'object') return reply(400,{error:'Invalid research request.'});
+        research ||= createResearch(env);
+        return reply(200, await research.briefing(data.sport,data.id,data.note));
+      }
       if (!['GET', 'HEAD'].includes(req.method)) {
         res.setHeader('Allow', 'GET, HEAD');
         return reply(405, { error: 'This integration is read-only.' });
@@ -46,11 +56,13 @@ function createServer(env = process.env, injectedClient) {
         client ||= createKalshi(env);
         return reply(200, await client.snapshot());
       }
+      if (url.pathname === '/api/research/games') { research ||= createResearch(env); return reply(200, await research.games(url.searchParams.get('sport'))); }
       if (url.pathname.startsWith('/api/')) return reply(404, { error: 'Not found.' });
       let file = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
       if (['kalshi', 'kalshi/'].includes(file)) file = 'kalshi.html';
+      else if (['research','research/'].includes(file)) file = 'research.html';
       else if (file === 'mocks' || file === 'mocks/') file = 'mocks/index.html';
-      if (!(privateRoute && file === 'kalshi.html') && !publicFiles.has(file) && !/^mocks\/[a-zA-Z0-9-]+\.html$/.test(file)) return reply(404, { error: 'Not found.' });
+      if (!(privateRoute && ['kalshi.html','research.html'].includes(file)) && !publicFiles.has(file) && !/^mocks\/[a-zA-Z0-9-]+\.html$/.test(file)) return reply(404, { error: 'Not found.' });
       const content = await readFile(path.join(__dirname, file));
       res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream' });
       res.end(req.method === 'HEAD' ? undefined : content);
